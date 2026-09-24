@@ -1,0 +1,12 @@
+# Per-host runtime state for the internal-mirror stack. Never commit.
+data/
+runtime/
+
+# Verdaccio / devpi working data (also covered by named volumes, but the bind-mount
+# helpers under utils/{verdaccio,pypiserver} should stay empty in git).
+verdaccio/storage/
+verdaccio/plugins/
+pypiserver/packages/
+
+# nginx bootstrap artifacts (downloaded archives, extracted trees).
+nginx/data/

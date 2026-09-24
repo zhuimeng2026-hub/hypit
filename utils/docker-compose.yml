@@ -1,0 +1,165 @@
+# Internal mirrors for a Hypit installation on a closed LAN.
+#
+# What lives here
+#   - verdaccio        — npm/pnpm registry proxy + cache (port 4873)
+#   - devpi            — PEP 503 PyPI proxy + cache (port 4874), so `uv` finds packages
+#   - chrome-mirror    — nginx serving chrome-for-testing archives (port 8088)
+#   - ffmpeg-mirror    — nginx serving BtbN ffmpeg builds for win/linux/mac (port 8089)
+#   - whisperx-lan-proxy
+#                       — socat in host network mode, exposing the loopback-only
+#                         `hypit-whisperx` service already running on this box
+#                         (0.0.0.0:18765 -> 127.0.0.1:8765)
+#
+# Bootstrap
+#   cp .env.example .env  &&  edit HYPIT_LAN_HOST and ports as needed
+#   docker compose pull
+#   docker compose up -d
+#   docker compose run --rm chrome-mirror-bootstrap     # one-time Chrome fetch
+#   docker compose run --rm ffmpeg-mirror-bootstrap     # one-time ffmpeg fetch
+#
+# All four mirrors are designed to be the SOLE upstream for Win10 clients; the
+# clients never reach the public internet.
+
+name: hypit-internal-mirrors
+
+x-data-root: &data_root ${HYPIT_DATA_ROOT:-/opt/hypit/.internal-mirrors}
+
+services:
+  verdaccio:
+    image: verdaccio/verdaccio:${HYPIT_VERDACCIO_TAG:-6}
+    container_name: hypit-verdaccio
+    restart: unless-stopped
+    ports:
+      - "${HYPIT_NPM_PORT:-4873}:4873"
+    environment:
+      VERDACCIO_HOST: 0.0.0.0
+    volumes:
+      - ./verdaccio/config.yaml:/verdaccio/conf/config.yaml:ro
+      - verdaccio-storage:/verdaccio/storage
+      - verdaccio-plugins:/verdaccio/plugins
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4873/-/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  devpi:
+    # PEP 503 simple index for uv. devpi-server caches packages from the upstream
+    # PyPI on first request; subsequent hits are served from disk.
+    image: ghcr.io/hesch/devpi:${HYPIT_DEVPI_TAG:-6.13.0}
+    container_name: hypit-devpi
+    restart: unless-stopped
+    ports:
+      - "${HYPIT_PYPI_PORT:-4874}:80"
+    environment:
+      DEVPI_SERVER_ROOT: /data/server
+    volumes:
+      - devpi-data:/data
+    # devpi needs a one-time init: the root index must exist before clients can use it.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        if [ ! -f /data/server/.serverversion ]; then
+          devpi-init --serverdir /data/server
+          devpi-server --serverdir /data/server --host 0.0.0.0 --port 80 &
+          INIT_PID=$$!
+          # Wait for the server to accept connections before continuing.
+          for i in $$(seq 1 30); do
+            if devpi use http://127.0.0.1:80 --clientdir /data/client 2>/dev/null; then break; fi
+            sleep 1
+          done
+          # Create the mirror index that proxies the upstream simple index.
+          devpi login root --password= --clientdir /data/client || true
+          devpi index -c public mirror https://pypi.org/simple/ --clientdir /data/client
+          # Anonymous read, no write.
+          devpi policy public empty_perms=anon_read,authenticated_write \
+            --clientdir /data/client || true
+          kill "$$INIT_PID" 2>/dev/null || true
+          wait "$$INIT_PID" 2>/dev/null || true
+        fi
+        exec devpi-server --serverdir /data/server --host 0.0.0.0 --port 80
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80/+api"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  chrome-mirror:
+    image: nginx:${HYPIT_NGINX_TAG:-1.27-alpine}
+    container_name: hypit-chrome-mirror
+    restart: unless-stopped
+    ports:
+      - "${HYPIT_CHROME_PORT:-8088}:80"
+    volumes:
+      - ./nginx/conf.d/chrome-mirror.conf:/etc/nginx/conf.d/chrome-mirror.conf:ro
+      - chrome-mirror-data:/usr/share/nginx/html:ro
+    # Use the same nginx for both chrome and ffmpeg; the chrome-mirror container only
+    # exposes the chrome server block, but the volume is shared with ffmpeg-mirror via
+    # a sibling service in the same compose.
+    depends_on: []
+
+  chrome-mirror-bootstrap:
+    # One-shot container that downloads the pinned chrome-for-testing archives into the
+    # shared volume. Run once after the first `up`, or whenever HYPIT_CHROME_VERSION
+    # changes. Mounts the same volume as chrome-mirror in read-write mode.
+    image: alpine:3.20
+    container_name: hypit-chrome-mirror-bootstrap
+    profiles: ["bootstrap"]
+    environment:
+      HYPIT_CHROME_VERSION: ${HYPIT_CHROME_VERSION:-138.0.7204.157}
+      HYPIT_CHROME_UPSTREAM: ${HYPIT_CHROME_UPSTREAM:-https://storage.googleapis.com/chrome-for-testing-public/}
+    volumes:
+      - chrome-mirror-data:/out
+      - ./nginx/scripts/bootstrap-chrome-mirror.sh:/bootstrap.sh:ro
+    entrypoint: ["/bin/sh", "/bootstrap.sh"]
+
+  ffmpeg-mirror:
+    image: nginx:${HYPIT_NGINX_TAG:-1.27-alpine}
+    container_name: hypit-ffmpeg-mirror
+    restart: unless-stopped
+    ports:
+      - "${HYPIT_FFMPEG_PORT:-8089}:80"
+    volumes:
+      - ./nginx/conf.d/ffmpeg-mirror.conf:/etc/nginx/conf.d/ffmpeg-mirror.conf:ro
+      - ffmpeg-mirror-data:/usr/share/nginx/html:ro
+
+  ffmpeg-mirror-bootstrap:
+    image: alpine:3.20
+    container_name: hypit-ffmpeg-mirror-bootstrap
+    profiles: ["bootstrap"]
+    volumes:
+      - ffmpeg-mirror-data:/out
+      - ./nginx/scripts/bootstrap-ffmpeg-mirror.sh:/bootstrap.sh:ro
+    entrypoint: ["/bin/sh", "/bootstrap.sh"]
+
+  whisperx-lan-proxy:
+    # The local `hypit-whisperx` service binds 127.0.0.1:8765 on this box (see
+    # services/whisperx/src/hypit_whisperx_service/server.py:89). This container shares
+    # the host network namespace, listens on the LAN-reachable 18765, and forwards each
+    # connection to loopback:8765. It is the cheapest way to expose the service without
+    # restarting it.
+    image: alpine/socat:${HYPIT_SOCAT_TAG:-1.8.0.0}
+    container_name: hypit-whisperx-lan-proxy
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - "TCP-LISTEN:${HYPIT_WHISPERX_LAN_PORT:-18765},reuseaddr,fork,bind=0.0.0.0 TCP:127.0.0.1:8765"
+    healthcheck:
+      # /proc/net/tcp doesn't expose LISTEN from inside an unprivileged container; the
+      # simplest cross-check is to dial the upstream through the proxy itself.
+      test: ["CMD", "sh", "-c", "echo > /dev/tcp/127.0.0.1/${HYPIT_WHISPERX_LAN_PORT:-18765}"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  verdaccio-storage:
+  verdaccio-plugins:
+  devpi-data:
+  chrome-mirror-data:
+  ffmpeg-mirror-data:
+
+networks:
+  default:
+    name: hypit-internal-net

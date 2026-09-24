@@ -1,0 +1,56 @@
+# Verdaccio config — anonymous read, npm proxy with on-disk cache, no write unless
+# explicitly authenticated. Mirrors the upstream `registry.npmjs.org` lazily; once a
+# tarball is fetched it lives forever under verdaccio-storage.
+
+storage: /verdaccio/storage
+plugins: /verdaccio/plugins
+
+web:
+  title: Hypit internal npm registry
+  enable: true
+
+auth:
+  htpasswd:
+    file: /verdaccio/conf/htpasswd     # not mounted; empty auth = disabled auth
+
+# Anonymous clients can read and search the entire registry. Uploads require a login
+# (we ship no users, so the registry is effectively read-only for clients).
+packages:
+  '@*/*':
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
+    proxy: npmjs
+  '**':
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
+    proxy: npmjs
+
+uplinks:
+  npmjs:
+    url: ${HYPIT_NPM_UPSTREAM:-https://registry.npmjs.org/}
+    cache: true
+    maxage: 30m
+    timeout: 30s
+    maxfailures: 5
+    fail_timeout: 5m
+
+# Anonymous read means a client without auth tokens can still install — that is the
+# goal. We do not allow publishing without explicit login, so the LAN cannot
+# accidentally pollute the cache with private names.
+server:
+  keepAliveTimeout: 60
+  legacy: true
+
+listen:
+  - 0.0.0.0:4873
+
+security:
+  api:
+    legacy: true
+
+log:
+  type: stdout
+  format: pretty
+  level: info
