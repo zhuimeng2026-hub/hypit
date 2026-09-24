@@ -15,6 +15,10 @@ npx skills add hypit-ai/hypit -g
 
 Skill 提供制作知识，可执行的 `hypit` 包提供命令、组件、Runtime 和 Studio。Agent 可以找到已有的可执行安装，或准备选定的发行版本。Skill、可执行程序和视频项目各有自己的位置，也通过各自的安装渠道更新。
 
+> **客户端是内网部署？** `npx skills add` 会走公网 GitHub 拉 Skill。内网 LAN 上需要从
+> 局域 git 镜像 clone 仓库，再把 `skills/hypit/` 拷到 Agent 的 skills 目录。完整步骤见
+> [Win10 客户端走内网镜像](./win10-internal-mirrors.md#2e-装-hypit-skill--从-clone-的仓库拷出来)。
+
 ## 发展作品
 
 理解参考片会在整片与细节之间往返：开头为什么抓人，表演怎样推进论述，画面、字幕、图形和声音各自发挥什么作用。带词时间的转写与帧序列帮助定位细节：什么出现了，如何运动，为什么在此刻重要。Agent 把整体理解与精确观察记入项目的参考笔记。

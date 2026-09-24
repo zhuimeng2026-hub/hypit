@@ -13,8 +13,14 @@ description: 开始 Hypit 开发工作。
 | uv | latest | Python 环境管理 |
 | ffmpeg / ffprobe | 较新的稳定版 | 媒体处理 |
 | Chrome / Chromium | 由 `hypit runtime up` 下载 | 本地 HyperFrames 渲染 |
+| git | 较新的稳定版 | 克隆 Hypit 仓库 |
 
 只有 Node.js 与 pnpm 是硬性要求。其余都只在跑真实 Builds 时才需要。
+
+> **客户端是内网部署？** 如果机器没有公网访问（或不应使用公网），上面所有依赖都
+> 由 LAN 自托管的镜像提供。开始安装之前先看 [Win10 客户端走内网镜像](./win10-internal-mirrors.md)，
+> 那篇指南用一段命令把 `~/.npmrc`、`uv.toml`、ffmpeg PATH、`hypit.runtime.json`、
+> `git clone`、Skill 安装全部串起来。
 
 首次本地渲染前执行 `hypit programs up --runtime <profile> --endpoint <render-instance>`。
 `hypit runtime up --runtime <profile>` 也会准备 Profile 的程序并启动 Worker。

@@ -33,6 +33,11 @@ For an existing installation, ask the Agent to check `hypit version --check` and
 `hypit --version` and `npm view @hypit/hypit@latest version`. The executable and Skill have separate
 update channels; the Agent can update the relevant installation while preserving your project.
 
+> **LAN-only deployment?** `npx skills add` reaches github.com to fetch the Skill. On a closed
+> LAN, install from the local git mirror instead — clone the repository and copy `skills/hypit/`
+> into your Agent's skill directory. The full sequence lives in
+> [Win10 client over an internal mirror LAN](./guide/win10-internal-mirrors.md#2e-install-the-hypit-skill-from-the-cloned-repo).
+
 ## 2. Bring a reference and explain what should change
 
 <video controls playsInline preload="metadata" width="100%" src="https://storage.googleapis.com/hypit-public-assets/quickstart/2026-09-10/clone_a_video_with_your_product.mp4"></video>

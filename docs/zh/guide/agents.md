@@ -18,6 +18,10 @@ npx skills add hypit-ai/hypit -g
 随后 Agent 可以找到或安装 `@hypit/hypit` 可执行程序。把参考视频或创作要求交给它，说明想要的结果。
 [快速开始](../quickstart.md) 介绍实际制作过程。这里列出的是使用方式；合作关系在下方单独标明。
 
+> **客户端是内网部署？** `npx skills add` 会走公网 GitHub 拉 Skill。内网 LAN 上需要从
+> 局域 git 镜像 clone 仓库，再把 `skills/hypit/` 拷到 Agent 的 skills 目录。完整步骤见
+> [Win10 客户端走内网镜像](./win10-internal-mirrors.md#2e-装-hypit-skill--从-clone-的仓库拷出来)。
+
 终端、桌面应用或浏览器都可以是入口。真正影响制作的是背后的工作环境：能否访问项目文件、
 执行 Hypit 与所选工具，以及把作品展示给你。使用远程 Agent 时，将素材交给它实际运行的环境，
 通过该环境的预览转发或文件交付查看作品。远程机器的 localhost 地址，并不是你电脑上的预览地址。

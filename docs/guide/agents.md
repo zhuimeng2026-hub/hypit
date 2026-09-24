@@ -20,6 +20,10 @@ The Agent can then locate or install the `@hypit/hypit` executable. Give it a re
 brief and describe the result you want. [Quickstart](../quickstart.md) covers the production itself.
 Listing an Agent here describes a way to use Hypit; partnerships are identified separately below.
 
+> **LAN-only deployment?** `npx skills add` reaches github.com to fetch the Skill. On a closed
+> LAN, clone the repo from the internal git mirror and copy `skills/hypit/` into the Agent's
+> skills directory. See [Win10 client over an internal mirror LAN](./win10-internal-mirrors.md#2e-install-the-hypit-skill-from-the-cloned-repo).
+
 A terminal, desktop app or browser can each be the front door. What matters is the environment
 behind it: access to project files, an execution environment for Hypit and its selected tools,
 and a way to show you the work. With a remote Agent, upload or connect the material to its working

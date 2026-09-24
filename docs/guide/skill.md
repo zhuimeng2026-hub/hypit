@@ -20,6 +20,11 @@ components, Runtime, and Studio. Your Agent can locate an existing executable in
 the selected release. The Skill, executable, and video project have independent locations and update
 through their own installation channels.
 
+> **LAN-only deployment?** `npx skills add` reaches github.com to fetch the Skill. On a closed
+> LAN, install from the local git mirror instead — clone the repository and copy `skills/hypit/`
+> into your Agent's skill directory. The full sequence lives in
+> [Win10 client over an internal mirror LAN](./win10-internal-mirrors.md#2e-install-the-hypit-skill-from-the-cloned-repo).
+
 ## Develop the work
 
 Understanding a reference moves between the whole piece and the details that explain it: why the

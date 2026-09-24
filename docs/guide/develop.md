@@ -13,8 +13,15 @@ description: Getting started with Hypit development.
 | uv | latest | Python environment management |
 | ffmpeg / ffprobe | recent stable | media processing |
 | Chrome / Chromium | downloaded by `hypit runtime up` | local HyperFrames rendering |
+| git | recent stable | cloning the Hypit repository |
 
 Node.js and pnpm are the only hard requirements. The rest are needed only for live Builds.
+
+> **LAN-only deployment?** If the client has no public-internet access (or should not
+> use it), every dependency above is served by a self-hosted mirror on the LAN. Read
+> [Win10 client over an internal mirror LAN](./win10-internal-mirrors.md) before
+> installing anything — that guide covers the `~/.npmrc`, `uv.toml`, ffmpeg on PATH,
+> `hypit.runtime.json`, `git clone` and Skill install in one sequence.
 
 Before the first local render, run `hypit programs up --runtime <profile> --endpoint <render-instance>`.
 `hypit runtime up --runtime <profile>` also prepares the Profile's programs and starts its Worker.

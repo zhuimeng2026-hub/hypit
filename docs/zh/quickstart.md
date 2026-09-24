@@ -24,6 +24,10 @@ Hypit 框架免费使用；Coding Agent 和模型服务各自有账户与费用�
 
 已有安装可以让 Agent 用 `hypit version --check` 核对版本和[发布说明](https://github.com/hypit-ai/hypit/releases)。旧版没有这个命令时，可以用 `hypit --version` 和 `npm view @hypit/hypit@latest version`。程序和 Skill 分别更新，Agent 可以保留视频项目，只更新这次需要的安装。
 
+> **客户端是内网部署？** `npx skills add` 会走公网 GitHub 拉 Skill。内网 LAN 上需要从
+> 局域 git 镜像 clone 仓库，再把 `skills/hypit/` 拷到 Agent 的 skills 目录。完整步骤见
+> [Win10 客户端走内网镜像](./guide/win10-internal-mirrors.md#2e-装-hypit-skill--从-clone-的仓库拷出来)。
+
 ## 2. 提供参考，说明想改什么
 
 <video controls playsInline preload="metadata" width="100%" src="https://storage.googleapis.com/hypit-public-assets/quickstart/2026-09-10/clone_a_video_with_your_product.mp4"></video>
