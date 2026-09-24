@@ -12,11 +12,17 @@
 | Chrome Headless Shell | nginx | nginx:1.27-alpine | **8088** | `hypit.runtime.json` 的 `browserDownloadBaseUrl` |
 | ffmpeg / ffprobe | nginx | nginx:1.27-alpine | **8089** | `PATH` 或 `hypit.runtime.json` 的 `ffmpegPath`/`ffprobePath` |
 | 本机 whisperx 暴露 | socat | alpine/socat | **18765** → 127.0.0.1:8765 | `provider-whisperx-local` 的 endpoint `baseUrl` |
+| Hypit 源码 / Skill | 自建 `nginx + git` 裸仓库 dumb-HTTP | `hypit/git-mirror:1`（`utils/git-mirror/Dockerfile`） | **3030** | `git clone http://<host>:3030/hypit.git`；Skill 走 `cp -r skills/hypit ~/.claude/skills/hypit` |
 
 PyPI 镜像用 nginx 直接反代 `pypi.org` + 磁盘 `proxy_cache`：比 devpi 轻量、不需要 Python、wheel 文件会被 PyPI 自带的 `Cache-Control: max-age=1y` 直接缓存一年。
 
 `whisperx-lan-proxy` 是 `network_mode: host`，直接把宿主机的 `127.0.0.1:8765`
 （即本机已运行的 `hypit-whisperx` 进程）通过 `0.0.0.0:18765` 暴露到 LAN。
+
+`git-mirror` 是只读 dumb-HTTP（不带 `git-http-backend` CGI — Alpine 的 git 包不包含它），
+首次启动 `git clone --bare` 拉一份全量上游（约 150MB，几分钟），之后后台每
+`HYPIT_GIT_REFRESH_SECONDS` 秒（默认 1 小时）`git fetch` 一次并 `git update-server-info`。
+客户端只能 `git clone` / `git pull`；`git push` 在协议层就不可达。
 
 ## 服务端一次性搭建
 
@@ -25,7 +31,8 @@ cd /opt/hypit/utils
 
 cp .env.example .env                 # 修改 HYPIT_LAN_HOST 与端口（如果冲突）
 docker compose pull
-docker compose up -d verdaccio devpi chrome-mirror ffmpeg-mirror whisperx-lan-proxy
+docker compose build git-mirror      # 第一次构建 git-mirror 镜像
+docker compose up -d verdaccio pypi-mirror chrome-mirror ffmpeg-mirror whisperx-lan-proxy git-mirror
 
 # 一次性下载 chrome-for-testing 归档（~150MB）
 docker compose --profile bootstrap run --rm chrome-mirror-bootstrap
@@ -33,12 +40,18 @@ docker compose --profile bootstrap run --rm chrome-mirror-bootstrap
 # 一次性下载 ffmpeg 构建（~150MB）
 docker compose --profile bootstrap run --rm ffmpeg-mirror-bootstrap
 
+# git-mirror 首次启动会自己 git clone --bare 上游（~150MB），看 docker logs 看进度。
+# 等 docker inspect --format '{{.State.Health.Status}}' hypit-git-mirror == healthy
+
 # 验证
-curl -s http://127.0.0.1:4873/-/ping                   # → ok
-curl -s http://127.0.0.1:4874/+api                    # → devpi JSON
-curl -sI http://127.0.0.1:8088/win32/138.0.7204.157/chrome-headless-shell-win32.zip | head -1
-curl -sI http://127.0.0.1:8089/win64/ffmpeg-7.1.1-win64-gpl.zip | head -1
-curl -s http://127.0.0.1:18765/health                 # → {"ok":true,...}
+curl -s http://127.0.0.1:4873/-/ping                                # → ok
+curl -s -o /dev/null -w '%{http_code}\n' \
+     http://127.0.0.1:4874/healthz                                  # → 200
+curl -sI http://127.0.0.1:8088/156.0.8073.0/win32/chrome-headless-shell-win32.zip | head -1
+curl -sI http://127.0.0.1:8089/win64/ffmpeg-master-latest-win64-gpl.zip | head -1
+curl -s http://127.0.0.1:18765/health                               # → {"ok":true,...}
+curl -s http://127.0.0.1:3030/healthz                               # → ok
+git clone http://127.0.0.1:3030/hypit.git /tmp/probe && rm -rf /tmp/probe   # smoke test
 ```
 
 ### 已知的环境问题
@@ -74,12 +87,12 @@ pnpm config get registry
 pnpm view @hypit/hypit version       # 任何请求都会经 verdaccio 走到上游并缓存
 ```
 
-### 2) PyPI / uv → devpi
+### 2) PyPI / uv → nginx 反代
 
 ```powershell
 # C:\Users\<you>\AppData\Roaming\uv\uv.toml
 [index]
-url = "http://192.168.20.173:4874/public/simple/"
+url = "http://192.168.20.173:4874/simple/"
 ```
 
 验证：
@@ -147,12 +160,47 @@ ffprobe -version
 }
 ```
 
+### 6) Hypit 源码 / Skill → git-mirror
+
+裸仓库 dumb-HTTP 镜像：
+
+```powershell
+# 用 LAN 上的 git-mirror 克隆 Hypit 源码
+git clone http://192.168.20.173:3030/hypit.git D:\work\hypit
+cd D:\work\hypit
+```
+
+装 Skill（绕开 `npx skills add` 的公网 GitHub 依赖 — 直接从 clone 的目录拷到 Agent skills 目录）：
+
+```powershell
+# Claude Code / Codex 用户级 skills 目录（其它 Agent 看自身文档）
+$skillsDir = "$env:USERPROFILE\.claude\skills"
+New-Item -ItemType Directory -Force -Path $skillsDir | Out-Null
+Copy-Item -Recurse -Force .\skills\hypit "$skillsDir\hypit"
+```
+
+> 这个镜像只能 `git clone` / `git fetch`，**不能 push**。每次后台循环会重新
+> `git fetch origin`（默认 1 小时），所以 `git pull` 永远拿到最新 refs。
+
+验证：
+
+```powershell
+git -C D:\work\hypit log --oneline -1     # 应该显示上游最新 commit
+ls "$env:USERPROFILE\.claude\skills\hypit\SKILL.md"   # 应当存在
+```
+
 ## 运维小贴士
 
 - Verdaccio 缓存命中：第一次 `pnpm install` 慢，后续 `pnpm install --offline` 即可纯本地。
-- devpi 第一次拉完大包后，建议 `devpi-server --serverdir /data/server` 加 `--offline-mode` 重启以拒绝任何公网回源（最严苛的隔离）。
+- pypi-mirror 是 nginx 反代 + 磁盘 `proxy_cache`：wheel 会被 PyPI 自带的
+  `Cache-Control: max-age=1y` 直接缓存一年；如果想拒绝任何公网回源，把
+  `nginx/conf.d/pypi-mirror.conf` 里的 `proxy_pass` 换成一个固定上游并去掉
+  `proxy_cache_use_stale`，那台 nginx 就退化成纯缓存。
 - chrome-mirror 和 ffmpeg-mirror 都用 `autoindex on` 提供目录索引，方便手动找文件。
-- 这套栈没有强依赖 Verdaccio / devpi 的鉴权；如果你公司 LAN 范围比较大、想加一层 basic-auth，
-  在各服务的 nginx 上加 `auth_basic` 即可（verdaccio 自身也有 htpasswd 钩子）。
+- git-mirror 用 dumb-HTTP（不带 `git-http-backend` CGI），首启 `git clone --bare` 全量上游；
+  后续后台每 `HYPIT_GIT_REFRESH_SECONDS` 秒 `git fetch` 一次。强行只想在线服务的客户端，
+  可以 `docker exec hypit-git-mirror pkill -STOP -f 'git fetch'` 暂停刷新，或者直接停容器。
+- 这套栈没有强依赖 Verdaccio / pypi-mirror 的鉴权；如果你公司 LAN 范围比较大、想加一层
+  basic-auth，在各服务的 nginx 上加 `auth_basic` 即可（verdaccio 自身也有 htpasswd 钩子）。
 - `whisperx-host-bind.sh` 是给"不想跑 docker 的老机器"准备的 iptables 替代方案，
   跟 compose 里的 `whisperx-lan-proxy` 二选一即可，**不要同时用**，否则流量会被双向重写。

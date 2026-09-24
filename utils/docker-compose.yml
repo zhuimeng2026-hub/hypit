@@ -10,6 +10,8 @@
 #                       — socat in host network mode, exposing the loopback-only
 #                         `hypit-whisperx` service already running on this box
 #                         (0.0.0.0:18765 -> 127.0.0.1:8765)
+#   - git-mirror       — bare-repo smart-http mirror of github.com/hypit-ai/hypit
+#                         (port 3030). Read-only; one-way `git fetch` every hour.
 #
 # Bootstrap
 #   cp .env.example .env  &&  edit HYPIT_LAN_HOST and ports as needed
@@ -18,7 +20,7 @@
 #   docker compose run --rm chrome-mirror-bootstrap     # one-time Chrome fetch
 #   docker compose run --rm ffmpeg-mirror-bootstrap     # one-time ffmpeg fetch
 #
-# All four mirrors are designed to be the SOLE upstream for Win10 clients; the
+# All mirrors are designed to be the SOLE upstream for Win10 clients; the
 # clients never reach the public internet.
 
 name: hypit-internal-mirrors
@@ -137,6 +139,25 @@ services:
       timeout: 3s
       retries: 5
 
+  git-mirror:
+    # Read-only smart-HTTP mirror of github.com/hypit-ai/hypit.git so a Win10 client
+    # with no public internet can still `git clone` the source tree. Built from
+    # utils/git-mirror/ (nginx + fcgiwrap + git). First boot does a `git clone --bare`
+    # from HYPIT_GIT_UPSTREAM (long pole — ~150MB); afterwards a background loop
+    # `git fetch origin` every HYPIT_GIT_REFRESH_SECONDS keeps refs fresh.
+    build:
+      context: ./git-mirror
+    image: hypit/git-mirror:${HYPIT_GIT_MIRROR_TAG:-1}
+    container_name: hypit-git-mirror
+    restart: unless-stopped
+    ports:
+      - "${HYPIT_GIT_PORT:-3030}:80"
+    environment:
+      HYPIT_GIT_UPSTREAM: ${HYPIT_GIT_UPSTREAM:-https://github.com/hypit-ai/hypit.git}
+      HYPIT_GIT_REFRESH_SECONDS: ${HYPIT_GIT_REFRESH_SECONDS:-3600}
+    volumes:
+      - git-mirror-data:/var/lib/git
+
 volumes:
   verdaccio-storage:
   verdaccio-plugins:
@@ -144,6 +165,7 @@ volumes:
   pypi-mirror-tmp:
   chrome-mirror-data:
   ffmpeg-mirror-data:
+  git-mirror-data:
 
 networks:
   default:
