@@ -10,7 +10,7 @@ description: 一段 PowerShell 命令序列，把 Win10 客户端指到 LAN 自�
 下文统一使用 `192.168.20.173` 作为镜像主机 LAN IP，请替换为你服务端实际的
 `HYPIT_LAN_HOST`。
 
-## 0. 前置检查 — 确认服务端五个服务都活着
+## 0. 前置检查 — 确认服务端六个服务都活着
 
 在 LAN 内任意机器上：
 
@@ -21,9 +21,10 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 curl -sI http://192.168.20.173:8088/156.0.8073.0/win32/chrome-headless-shell-win32.zip | head -1
 curl -sI http://192.168.20.173:8089/win64/ffmpeg-master-latest-win64-gpl.zip | head -1
 curl -s http://192.168.20.173:18765/health                # whisperx 代理 → {"ok":true,...}
+curl -s http://192.168.20.173:3030/healthz                # git-mirror → "ok"
 ```
 
-五项都必须返回非错误响应。任一项失败，先修服务端，不要先动客户端。
+六项都必须返回非错误响应。任一项失败，先修服务端，不要先动客户端。
 
 ## 1. 装工具链（一次性，约 5 分钟）
 
@@ -48,7 +49,9 @@ pnpm --version          # → 10.33.x
 # 选个工作目录。路径深度别超过 ~30 字符：太长会撞 Win10 260 字符限制。
 cd D:\work
 
-git clone https://github.com/hypit-ai/hypit.git
+# 从 LAN 上的 git-mirror 克隆，不要走 github.com — 这个镜像是 dumb-HTTP、只读，
+# 后台每 1 小时从上游 git fetch 一次。客户端走 git push 在协议层就不可达。
+git clone http://192.168.20.173:3030/hypit.git
 cd hypit
 ```
 
@@ -139,6 +142,29 @@ $cfg | ConvertTo-Json -Depth 10 | Set-Content hypit.runtime.json -Encoding utf8
 > 无 fragment（见 `packages/provider-hyperframes-local/src/browser.ts`）。上面这种写法就是它
 > 唯一接受的格式。
 
+### 2e. 装 Hypit Skill — 从 clone 的仓库拷出来
+
+`npx skills add hypit-ai/hypit -g` 要走公网 GitHub，在内网 LAN 上不通。Skill 本身就在
+你刚 clone 的仓库里 — 把它拷到 Agent 的 skills 目录，跟 `skills add` 效果一样：
+
+```powershell
+# Claude Code / Codex 用户级 skills 目录（其它 Agent 以自身文档为准）。
+$skillsRoot = "$env:USERPROFILE\.claude\skills"
+New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+
+# 如果之前装过同名 skill，先删掉再覆盖 — 跟 repo 当前 commit 对齐。
+if (Test-Path "$skillsRoot\hypit") {
+    Remove-Item "$skillsRoot\hypit" -Recurse -Force
+}
+Copy-Item -Recurse -Force .\skills\hypit "$skillsRoot\hypit"
+
+# Agent 实际读取的文件就在这里 — 用它确认安装到位。
+Test-Path "$skillsRoot\hypit\SKILL.md"     # → True
+```
+
+重启 Agent 让它加载新的 skill 目录。上游 `skills/hypit/` 更新时，重新跑一遍 `Copy-Item`
+覆盖即可 — 这就是内网版的 `npx skills add ...`。
+
 ## 3. 装依赖 + 验证
 
 ```powershell
@@ -212,6 +238,9 @@ pnpm test:image-opencv
 | `pnpm check` 报 `koffi` 加载失败 | 原生依赖对不上 | `pnpm install --frozen-lockfile --force`；koffi 在 Node 22/24 上有 win32-x64 预编译 |
 | Provider 报 `chromePath ... not found` | 镜像空 / 版本不对 | 在服务端跑 `docker compose --profile bootstrap run --rm chrome-mirror-bootstrap`；`curl -I http://192.168.20.173:8088/156.0.8073.0/win32/chrome-headless-shell-win32.zip` |
 | Provider 连不上 whisperx | socat 容器没跑 / LAN IP 错 | 服务端：`docker ps \| grep whisperx-lan-proxy`；`curl http://192.168.20.173:18765/health` |
+| `git clone http://192.168.20.173:3030/hypit.git` 失败 | git-mirror 没起 / LAN IP 错 | 服务端：`docker ps \| grep git-mirror`；`curl http://192.168.20.173:3030/healthz` 应该输出 `ok` |
+| `git clone` 中途 403 / 404 | nginx alias 配错或 pack index 没刷新 | 服务端：`docker exec hypit-git-mirror git -C /var/lib/git/hypit.git update-server-info` |
+| Agent 找不到 `hypit` skill | 没拷到 Agent 的 skills 目录 | 重跑步骤 2e，再重启 Agent。Agent 实际读的是 `$env:USERPROFILE\.claude\skills\hypit\SKILL.md`。 |
 | `uv pip install` 超时 | pypi-mirror nginx 不健康 | 服务端：`docker logs hypit-pypi-mirror --tail 20`；`curl http://192.168.20.173:4874/simple/faster-whisper/` 应该 200 |
 | Studio 起来了但显示 "no runtime" | `hypit.runtime.json` 不在工作区根目录 | 确认 `Get-Location` 在 repo 内且 `Test-Path hypit.runtime.json` 是 `True` |
 | 文件路径太长（>260 字符） | Win10 没开长路径 | `git config --system core.longpaths true`；或开组策略 "Enable Win32 long paths" |

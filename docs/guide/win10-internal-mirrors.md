@@ -22,9 +22,10 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 curl -sI http://192.168.20.173:8088/156.0.8073.0/win32/chrome-headless-shell-win32.zip | head -1
 curl -sI http://192.168.20.173:8089/win64/ffmpeg-master-latest-win64-gpl.zip | head -1
 curl -s http://192.168.20.173:18765/health                # whisperx proxy → {"ok":true,...}
+curl -s http://192.168.20.173:3030/healthz                # git-mirror → "ok"
 ```
 
-All five must return non-error responses. If one fails, fix the server before continuing.
+All six must return non-error responses. If one fails, fix the server before continuing.
 
 ## 1. Install the toolchain (one-time, ~5 min)
 
@@ -50,7 +51,9 @@ you stay on a pinned commit.
 # Pick a working directory. Avoid paths deeper than ~30 chars; long paths break some Windows APIs.
 cd D:\work
 
-git clone https://github.com/hypit-ai/hypit.git
+# Clone from the LAN git-mirror, NOT github.com — the mirror is dumb-HTTP, read-only,
+# refreshes every hour from upstream. Push is unreachable at the protocol level.
+git clone http://192.168.20.173:3030/hypit.git
 cd hypit
 ```
 
@@ -144,6 +147,31 @@ $cfg | ConvertTo-Json -Depth 10 | Set-Content hypit.runtime.json -Encoding utf8
 > credentials, query or fragment. The URL form above is what `packages/provider-hyperframes-local/src/browser.ts`
 > enforces.
 
+### 2e. Install the Hypit Skill from the cloned repo
+
+`npx skills add hypit-ai/hypit -g` reaches github.com, so it does not work on an offline
+LAN. The Skill ships inside the repository you just cloned — copy it into your Agent's
+skill directory and it behaves identically to `skills add`:
+
+```powershell
+# Claude Code / Codex — user-global skill directory.
+$skillsRoot = "$env:USERPROFILE\.claude\skills"
+New-Item -ItemType Directory -Force -Path $skillsRoot | Out-Null
+
+# Replace any previously installed copy to keep it in sync with this checkout.
+if (Test-Path "$skillsRoot\hypit") {
+    Remove-Item "$skillsRoot\hypit" -Recurse -Force
+}
+Copy-Item -Recurse -Force .\skills\hypit "$skillsRoot\hypit"
+
+# Sanity check: the file the Agent loads should be at this exact path.
+Test-Path "$skillsRoot\hypit\SKILL.md"     # → True
+```
+
+Restart your Agent so it picks up the new skill directory. When the upstream
+`skills/hypit/` directory moves, re-run `Copy-Item` over the top — that is the LAN
+equivalent of `npx skills add ...` updating.
+
 ## 3. Install dependencies and verify
 
 ```powershell
@@ -218,6 +246,9 @@ pnpm test:image-opencv
 | `pnpm check` complains about `koffi` not loading | Native dep mismatch | Reinstall with `pnpm install --frozen-lockfile --force`; koffi ships win32-x64 prebuilds for Node 22/24. |
 | Provider says `chromePath ... not found` | Mirror empty / wrong version | Re-run `docker compose --profile bootstrap run --rm chrome-mirror-bootstrap` on the server; check `curl -I http://192.168.20.173:8088/156.0.8073.0/win32/chrome-headless-shell-win32.zip` |
 | Provider cannot reach whisperx | socat container not running, or LAN IP wrong | On server: `docker ps | grep whisperx-lan-proxy`. Then `curl http://192.168.20.173:18765/health` |
+| `git clone http://192.168.20.173:3030/hypit.git` is unreachable | git-mirror not running, or LAN IP wrong | On server: `docker ps | grep git-mirror`; `curl http://192.168.20.173:3030/healthz` should print `ok` |
+| `git clone` returns 403 / 404 mid-fetch | nginx alias issue or pack index not generated | On server: `docker exec hypit-git-mirror git -C /var/lib/git/hypit.git update-server-info` |
+| Agent can't find `hypit` skill | Skill not copied into Agent skills dir | Re-run step 2e; restart the Agent. The file path the Agent reads is `$env:USERPROFILE\.claude\skills\hypit\SKILL.md`. |
 | `uv pip install` times out | pypi-mirror nginx not healthy | On server: `docker logs hypit-pypi-mirror --tail 20`; confirm `curl http://192.168.20.173:4874/simple/faster-whisper/` returns 200 |
 | Studio starts but shows "no runtime" | `hypit.runtime.json` not in workspace root | Confirm `Get-Location` is inside the repo and `Test-Path hypit.runtime.json` is `True` |
 | File path too long errors (>260 chars) | Win10 long-path policy off | `git config --system core.longpaths true`; or enable the group policy "Enable Win32 long paths". |
