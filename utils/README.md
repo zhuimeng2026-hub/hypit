@@ -8,10 +8,12 @@
 | 用途 | 服务 | 镜像 | 端口（默认） | 客户端写入位置 |
 |---|---|---|---|---|
 | npm / pnpm | Verdaccio | verdaccio/verdaccio:6 | **4873** | `~/.npmrc` 的 `registry=` |
-| PyPI（uv 拉包） | devpi | ghcr.io/hesch/devpi:6.13.0 | **4874** | `~/.config/uv/uv.toml` 的 `[index].url` |
+| PyPI（uv 拉包） | nginx 代理 + proxy_cache | nginx:1.27-alpine | **4874** | `~/.config/uv/uv.toml` 的 `[index].url` |
 | Chrome Headless Shell | nginx | nginx:1.27-alpine | **8088** | `hypit.runtime.json` 的 `browserDownloadBaseUrl` |
 | ffmpeg / ffprobe | nginx | nginx:1.27-alpine | **8089** | `PATH` 或 `hypit.runtime.json` 的 `ffmpegPath`/`ffprobePath` |
 | 本机 whisperx 暴露 | socat | alpine/socat | **18765** → 127.0.0.1:8765 | `provider-whisperx-local` 的 endpoint `baseUrl` |
+
+PyPI 镜像用 nginx 直接反代 `pypi.org` + 磁盘 `proxy_cache`：比 devpi 轻量、不需要 Python、wheel 文件会被 PyPI 自带的 `Cache-Control: max-age=1y` 直接缓存一年。
 
 `whisperx-lan-proxy` 是 `network_mode: host`，直接把宿主机的 `127.0.0.1:8765`
 （即本机已运行的 `hypit-whisperx` 进程）通过 `0.0.0.0:18765` 暴露到 LAN。

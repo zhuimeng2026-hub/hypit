@@ -29,7 +29,10 @@ packages:
 
 uplinks:
   npmjs:
-    url: ${HYPIT_NPM_UPSTREAM:-https://registry.npmjs.org/}
+    # Hardcoded; verdaccio 6 does not substitute ${VAR} in uplink URLs.
+    # Change here if your network policy forbids registry.npmjs.org and you need
+    # to point at a mirror (e.g. https://registry.npmmirror.com/).
+    url: https://registry.npmjs.org/
     cache: true
     maxage: 30m
     timeout: 30s

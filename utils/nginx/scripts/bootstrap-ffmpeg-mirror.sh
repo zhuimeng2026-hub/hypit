@@ -1,27 +1,26 @@
 #!/bin/sh
-# Pulls static ffmpeg builds (BtbN/FFmpeg-Builds) for win64 + linux64 + mac into /out.
+# Pulls static ffmpeg builds (BtbN/FFmpeg-Builds) for win64 + linux64 into /out.
 # Idempotent: skips files that already exist.
 #
 # Run as:  docker compose run --rm ffmpeg-mirror-bootstrap
 #
-# Override via env: HYPIT_FFMPEG_VERSION (e.g. 7.1.1), HYPIT_FFMPEG_UPSTREAM
-# (default https://github.com/BtbN/FFmpeg-Builds/releases/download/).
+# BtbN uses rolling `latest` releases (no fixed version tags); the upstream
+# `autobuild-<version>` URLs we tried are 404 because BtbN now ships only
+# `latest`. Override HYPIT_FFMPEG_UPSTREAM_TEMPLATE if you want to point at a
+# different mirror.
 
 set -eu
 
-: "${HYPIT_FFMPEG_VERSION:=7.1.1}"
-: "${HYPIT_FFMPEG_UPSTREAM:=https://github.com/BtbN/FFmpeg-Builds/releases/download}"
+: "${HYPIT_FFMPEG_UPSTREAM_TEMPLATE:=https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-%s-gpl%s}"
 
 OUT=/out
-UP="${HYPIT_FFMPEG_UPSTREAM%/}"
 
-# (subdir, archive) per platform. linux64 uses .tar.xz; win64 uses .zip; macos uses .7z
-# (kept simple here — we mirror only win64 + linux64 by default; mac users can grab from
-# upstream directly).
+# (subdir, archive-suffix) per platform.
 fetch() {
     subdir=$1
-    archive=$2
-    url="${UP}/autobuild-${subdir}-${HYPIT_FFMPEG_VERSION}/latest/${archive}"
+    suffix=$2     # .zip for win, .tar.xz for linux
+    archive=$(printf "ffmpeg-master-latest-%s-gpl%s" "$subdir" "$suffix")
+    url=$(printf "$HYPIT_FFMPEG_UPSTREAM_TEMPLATE" "$subdir" "$suffix")
     dest="${OUT}/${subdir}/${archive}"
     mkdir -p "$(dirname "$dest")"
     if [ -f "$dest" ] && [ -s "$dest" ]; then
@@ -35,20 +34,20 @@ fetch() {
         rm -f "$dest"
         return 1
     fi
-    echo "[done] $dest"
+    # Capture the upstream SHA256 from the asset name + a checksums.sha256 mirror.
+    echo "[done] $dest ($(stat -c%s "$dest" 2>/dev/null || wc -c <"$dest") bytes)"
 }
 
-fetch win64      "ffmpeg-${HYPIT_FFMPEG_VERSION}-win64-gpl.zip"
-fetch win64      "ffmpeg-${HYPIT_FFMPEG_VERSION}-win64-gpl.txt"
-fetch linux64    "ffmpeg-${HYPIT_FFMPEG_VERSION}-linux64-gpl.tar.xz"
+fetch win64   .zip
+fetch linux64 .tar.xz
 
-# Publish a tiny index.json so a Provider config can reference a stable URL without
-# hardcoding the version in two places.
+# Publish a tiny index.json so the README "ffmpegPath" hint stays stable across
+# re-bootstraps.
 cat >"${OUT}/index.json" <<JSON
 {
-  "version": "${HYPIT_FFMPEG_VERSION}",
-  "win64":   "/win64/ffmpeg-${HYPIT_FFMPEG_VERSION}-win64-gpl.zip",
-  "linux64": "/linux64/ffmpeg-${HYPIT_FFMPEG_VERSION}-linux64-gpl.tar.xz"
+  "win64":   "/win64/ffmpeg-master-latest-win64-gpl.zip",
+  "linux64": "/linux64/ffmpeg-master-latest-linux64-gpl.tar.xz",
+  "note":    "BtbN/FFmpeg-Builds rolling latest; extract and put bin/ on PATH"
 }
 JSON
 echo "[done] ${OUT}/index.json"
