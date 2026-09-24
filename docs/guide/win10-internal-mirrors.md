@@ -8,6 +8,13 @@ every dependency is served by an internal mirror on the LAN. The mirror stack it
 [`utils/` in this repo](../utils/) and is documented in `utils/README.md`. Read that first if you
 need to bring the server side up; this guide assumes the server is already running and reachable.
 
+> **Server has no docker?** If the LAN host can't run the Linux + Docker stack, the same six
+> mirrors can be installed natively on Windows 10 with the PowerShell scripts under
+> [`utils-windows/`](../utils-windows/) — same ports, same URLs, same `~/.npmrc` / `uv.toml`
+> / `browserDownloadBaseUrl` / `git clone` sequence this guide covers. The Windows scripts use
+> nginx for Windows + nssm + netsh portproxy instead of Docker, and assume the server itself
+> is the LAN mirror host (no separate Linux box).
+
 Throughout, `192.168.20.173` is the LAN IP of the mirror host. Replace it with whatever your
 server's `HYPIT_LAN_HOST` resolves to.
 

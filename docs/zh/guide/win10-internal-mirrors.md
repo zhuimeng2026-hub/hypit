@@ -7,6 +7,13 @@ description: 一段 PowerShell 命令序列，把 Win10 客户端指到 LAN 自�
 提供。镜像栈本身在仓库的 [`utils/`](../../utils/) 目录，详见 `utils/README.md`。本指南假定
 服务端已经跑起来并且 LAN 内可达。
 
+> **服务端不能跑 docker？** 如果 LAN 镜像主机没法跑 Linux + Docker，仓库的
+> [`utils-windows/`](../../utils-windows/) 用 PowerShell 脚本在 Win10 上以原生 Windows
+> 服务形式搭出同一组 6 个镜像 —— 端口、URL、`~/.npmrc` / `uv.toml` /
+> `browserDownloadBaseUrl` / `git clone` 这套客户端配置全部不变。Windows 脚本用 nginx
+> for Windows + nssm + netsh portproxy 代替 docker，假定镜像主机本身就是这台 Win10
+> （不需要单独的 Linux 机器）。
+
 下文统一使用 `192.168.20.173` 作为镜像主机 LAN IP，请替换为你服务端实际的
 `HYPIT_LAN_HOST`。
 
