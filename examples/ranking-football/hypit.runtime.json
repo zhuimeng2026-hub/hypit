@@ -7,18 +7,6 @@
     }
   },
   "endpoints": {
-    "hypihub.default": {
-      "use": "@hypit/provider-hypihub",
-      "config": {
-        "baseUrl": "https://hypit.ai",
-        "apiKey": {
-          "store": "platform",
-          "key": "hypihub.oauth"
-        },
-        "defaultConcurrency": 4,
-        "requestTimeoutMs": 120000
-      }
-    },
     "media.local": {
       "use": "@hypit/provider-media-local",
       "config": {
@@ -30,6 +18,17 @@
       "config": {
         "workers": 2,
         "quality": "standard",
+        "defaultConcurrency": 1
+      }
+    },
+    "whisperx.local": {
+      "use": "@hypit/provider-whisperx-local",
+      "config": {
+        "baseUrl": "http://127.0.0.1:8765",
+        "expectedModel": "small",
+        "expectedDevice": "cpu",
+        "expectedCompute": "int8",
+        "expectedBatchSize": 8,
         "defaultConcurrency": 1
       }
     }

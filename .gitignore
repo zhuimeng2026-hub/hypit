@@ -11,6 +11,9 @@ coverage/
 *.tmp
 *.temp
 *.lock.editing
+*.bak
+_tmp-*
+*._tmp-*
 
 # Ignore local editor state while distributing repository skill-discovery links.
 # The skill itself is a repository source at skills/hypit; what lives here is only the
@@ -33,6 +36,11 @@ coverage/
 *credentials*.json
 *service-account*.json
 
+# Per-machine runtime profile: selected Endpoints, credential-store refs,
+# worker counts, etc. Each developer's /opt/hypit gets its own configuration;
+# the example projects ship their own tracked hypit.runtime.json instead.
+/hypit.runtime.json
+
 # Local databases and test-run reports are deployment state.
 *.db
 *.db-*
@@ -45,12 +53,33 @@ docs/.vitepress/dist/
 *.tsbuildinfo
 .svml-cache/
 .hypit/
-examples/**/assets/
 examples/**/reused/*.mp4
 examples/**/build/
 examples/**/output/
 examples/**/.svml/
 examples/**/evidence/generated/
+
+# Note: seed assets under examples/**/assets/ ARE intentionally tracked
+# (audio, image seed files, etc.). New scratch media belong in
+# .hypit/, build/, output/, or evidence/generated/ — not directly under
+# assets/. The exception below un-ignores the ranking-football zero-cost
+# recipe's pre-generated PNGs so other environments can run the SVML out
+# of the box.
+!examples/**/assets/pregen/
+!examples/**/assets/pregen/**
+
+# Session-built outputs: render frames, scratch image dumps, and the final MP4s.
+# These are regenerable from the matching .svml/.svrun sources and would
+# otherwise bloat the repo on every local Build.
+examples/**/out.mp4
+examples/**/videos/
+examples/**/frames-opening.jpg
+examples/**/frames-overview.jpg
+examples/**/frames-overview.jpg/**
+
+# Local authoring scratch (Python helper scripts, one-off generators, etc.).
+# Frequently hardcode API tokens or environment-specific paths, so never tracked.
+examples/**/scripts/
 services/whisperx/.venv/
 services/whisperx/build/
 services/whisperx/**/__pycache__/
