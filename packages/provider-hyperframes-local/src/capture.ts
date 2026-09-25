@@ -169,7 +169,8 @@ export async function captureStagedVisual(input: CaptureInput, controller: Abort
             const source = sources.get(slot.src);
             return source === undefined ? [] : [{ id: slot.id, width: source.width, height: source.height }];
           }),
-        }, injector, { chromePath: config.chromePath, browserGpuMode: config.browserGpu, enableBrowserPool: false, forceScreenshot: true, useDrawElement: false });
+        }, injector, { chromePath: config.chromePath, browserGpuMode: config.browserGpu, enableBrowserPool: false, forceScreenshot: true, useDrawElement: false,
+          ...(config.protocolTimeoutMs === undefined ? {} : { protocolTimeout: config.protocolTimeoutMs }) });
         sessions.add(session);
         signal.throwIfAborted();
         const activeSession = session;

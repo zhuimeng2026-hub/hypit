@@ -16,6 +16,16 @@ export type HyperframesExecutionOptions = import("./browser.js").BrowserOptions 
   readonly processTimeoutMs?: number;
   readonly initializationTimeoutMs?: number;
   readonly frameTimeoutMs?: number;
+  /**
+   * Chrome DevTools Protocol timeout in milliseconds. Below the engine default
+   * (300_000 ms, 5 min) Puppeteer aborts slow CDP calls (notably
+   * `Runtime.callFunctionOn` for `Page.captureScreenshot`) before any per-frame
+   * timeout can fire. On hosts without a usable GPU, software-rendered frame 0
+   * alone can exceed 3 minutes. Default 600_000 in our config so the first
+   * frame gets a chance to land; can be raised further if the host is very
+   * slow (each retry still costs real work).
+   */
+  readonly protocolTimeoutMs?: number;
   readonly maxProcessOutputBytes?: number;
   readonly maxRenderedBytes?: number;
 };
