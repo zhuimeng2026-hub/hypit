@@ -36,7 +36,7 @@ echo "$BUILD_OUT" >> "$LOG"
 BUILD_ID=$(printf '%s' "$BUILD_OUT" \
   | python3 -c 'import json,sys,re
 raw=sys.stdin.read()
-m=re.search(r"bld_\d{8,}_[A-Z0-9]+", raw)
+m=re.search(r"bld_\d{8}T\d{9}Z_[A-Z0-9]+", raw)
 print(m.group(0) if m else "")')
 
 if [ -z "$BUILD_ID" ]; then
