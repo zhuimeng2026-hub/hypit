@@ -18,7 +18,11 @@
       "config": {
         "workers": 2,
         "quality": "standard",
-        "defaultConcurrency": 1
+        "defaultConcurrency": 1,
+        "browserGpu": "software",
+        "initializationTimeoutMs": 180000,
+        "frameTimeoutMs": 180000,
+        "processTimeoutMs": 600000
       }
     },
     "whisperx.local": {
