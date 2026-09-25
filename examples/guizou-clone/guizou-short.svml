@@ -1,0 +1,99 @@
+<?svml using="@hypit/markup@1"?>
+
+<svml>
+  <import from="@hypit/script@1"/>
+  <import as="sound" from="@hypit/sound@1"/>
+  <import as="text" from="@hypit/text@1"/>
+  <import as="asset" from="@hypit/media@1"/>
+  <import as="pipeline" from="@hypit/media-pipeline@1"/>
+  <import as="whisperx" from="@hypit/whisperx@1"/>
+  <import as="time" from="@hypit/timeline-author@1"/>
+  <import as="program" from="@hypit/program-space@1"/>
+  <import as="media-track" from="@hypit/media-track@1"/>
+  <import as="audio-track" from="@hypit/audio-track@1"/>
+  <import as="caption" from="@hypit/caption@1"/>
+  <import as="caption-fine" from="@hypit/caption-fine@1"/>
+  <import as="fonts" from="@hypit/fonts-open@1"/>
+  <import as="space" from="@hypit/spatial@1"/>
+  <import as="film" from="@hypit/film@1"/>
+  <import as="render" from="@hypit/render-hyperframes@1"/>
+  <import as="recipes" source="./guizou.svs"/>
+
+  <!-- ============================================================
+       Smoke-test short — only the first 3 spots from the Guizhou
+       listicle (Zhenshan / Longli / Guilan), 105 s of B-roll +
+       3 segments of empty-segment WhisperX takes + a continuous
+       English narration. Renders ~16× faster than the full 11-spot
+       build — enough to validate the render pipeline end-to-end
+       without committing days of software-GPU render time.
+
+       Keep this file in lockstep with guizou.svml; if the long form
+       gains a new track or stage, mirror it here.
+       ============================================================ -->
+
+  <program:Clock id="clock" frame-rate="10"/>
+
+  <asset:Audio id="narration" src="./assets/narration-short.mp3"/>
+  <pipeline:Normalize id="narration-media" source={narration}
+    video="none" audio="default" span-authority="audio" clock={clock}/>
+
+  <asset:Video id="broll-01-zhenshan" src="./assets/broll/spot-01-zhenshan.mp4"/>
+  <pipeline:Normalize id="broll-01-media" source={broll-01-zhenshan}
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-02-longli" src="./assets/broll/spot-02-longli.mp4"/>
+  <pipeline:Normalize id="broll-02-media" source={broll-02-longli}
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-03-guilan" src="./assets/broll/spot-03-guilan.mp4"/>
+  <pipeline:Normalize id="broll-03-media" source={broll-03-guilan}
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
+
+  <script id="story">
+    <spot-01-zhenshan><HOST>Number one: Zhenshan Village.</spot-01-zhenshan>
+    <spot-02-longli><HOST>Number two: Longli Ancient Town.</spot-02-longli>
+    <spot-03-guilan><HOST>Number three: Guilan Mountain.</spot-03-guilan>
+  </script>
+
+  <whisperx:SemanticTake language="en" id="broll-01-take" narrative={story}
+    segment={story.segment.spot-01-zhenshan} media={broll-01-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-02-take" narrative={story}
+    segment={story.segment.spot-02-longli} media={broll-02-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-03-take" narrative={story}
+    segment={story.segment.spot-03-guilan} media={broll-03-media.media}/>
+
+  <time:Timeline id="speech" clock={clock}>
+    <time:Take source={broll-01-take.take}/>
+    <time:Take source={broll-02-take.take}/>
+    <time:Take source={broll-03-take.take}/>
+  </time:Timeline>
+
+  <space:Canvas id="vertical" width="360" height="640"/>
+  <space:Frame id="full-frame" within={vertical} left="0px" top="0px" right="360px" bottom="640px"/>
+
+  <media-track:Track id="broll" canvas={vertical} timeline={speech.timeline}>
+    <media-track:Item id="broll-01-item" media={broll-01-media.media}
+      during={story.segment.spot-01-zhenshan} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-02-item" media={broll-02-media.media}
+      during={story.segment.spot-02-longli} frame={full-frame}
+      appearance={recipes.media.cover-2}/>
+    <media-track:Item id="broll-03-item" media={broll-03-media.media}
+      during={story.segment.spot-03-guilan} frame={full-frame}
+      appearance={recipes.media.cover-3}/>
+  </media-track:Track>
+
+  <audio-track:Track id="voice" timeline={speech.timeline}>
+    <audio-track:Item id="voice-item" source={narration-media.media}
+      during="program" playback="once-start" gain="1" fade-in="200ms" fade-out="500ms"/>
+  </audio-track:Track>
+
+  <film:Film id="main" appearance={recipes.film.vertical}
+    canvas={vertical} timeline={speech.timeline}>
+    <film:Track source={broll.visual}/>
+    <film:Track source={voice.audio}/>
+  </film:Film>
+
+  <render:Video id="final" composition={main.composition}
+    timeline={speech.timeline}/>
+</svml>

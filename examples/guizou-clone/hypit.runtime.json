@@ -23,7 +23,7 @@
         "initializationTimeoutMs": 180000,
         "frameTimeoutMs": 180000,
         "processTimeoutMs": 600000,
-        "protocolTimeoutMs": 900000
+        "protocolTimeoutMs": 1800000
       }
     },
     "whisperx.local": {

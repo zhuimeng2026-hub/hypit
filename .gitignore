@@ -103,6 +103,7 @@ examples/**/.svml/
 /projects/*
 .gstack/
 
-# Hypit project outputs (rebuilt by build-cpu.sh)
+# Hypit project outputs (rebuilt by build-cpu.sh or by `hypit build`)
 examples/guizou-clone/output-cpu.mp4
+examples/guizou-clone/output-short.mp4
 examples/guizou-clone/.tmp-cpu/
