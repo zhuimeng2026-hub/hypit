@@ -84,20 +84,24 @@ ffmpeg scale 720x1280 + pad → concat (Demuxer, stream copy) → mux narration 
 要做视觉重制那一层，得用 ffmpeg `drawtext` 烧英文字幕 + `overlay` 叠 presenter，
 或者回到 Hypit + 真正的 GPU。
 
+## Constraints
+
+- **只走 MiniMax 直接接口，不走 Kapon 代理或其他网关层。** `.env` 里的
+  `KAPON_VIDEO_BASE_URL` / `KAPON_VIDEO_MODEL_DEFAULT` 配置即便可用也不动；
+  任何视频/图像/语音生成请求都打 `https://api.minimaxi.com/...` 或
+  `https://api.minimax.cn/...`，Bearer `MINIMAX_API_KEY`，避免配额/路由绕道。
+
 ## Untouched resources that might unlock more
 
 - **`/opt/OpenMontage_Voicebox/.env` 里的 `MINIMAX_API_KEY`**（和 `/opt/hypit/.env` 同把）
   经实测 MiniMax `image-01` 现在确实可用（之前 1004 是瞬时问题），
   `presenter-minimax.png` 已生成。
-- **`/opt/OpenMontage_Voicebox/.env` 里 `KAPON_VIDEO_MODEL_DEFAULT=MiniMax-H3-Max`**（注释掉的
-  `KAPON_VIDEO_BASE_URL=https://models.kapon.cloud/minimaxi`）——
-  Kapon 是一个 MiniMax 网关代理，配齐后能调 MiniMax H3-Max 文生视频。
 - **MiniMax `hailuo-2.3`（你提到的 hl2.3）**—— OpenMontage 的
   `tools/video/minimax_video.py` 已经直接接好了 `hailuo-2.3-fast/pro`、
   `hailuo-2.3-fast/standard`。⚠️ 注意：`/opt/OpenMontage_Voicebox/.agents/skills/minimax/SKILL.md:123`
   提到安全层会"soften"（柔化）输出，且每次重试消耗 1 quota cycle；OpenMontage 项目里
   出现过 `hailuo-2.3-quota-2067` 事故（Token Plan 配额用尽，HTTP 2067）。
-  今天的 `MiniMax-H3-Max` 路径走 Kapon 代理，可能不受同一个 Token Plan 限制。
+  对策：先 `hailuo-2.3-fast/standard` 跑单条 smoke（~$0.08）验证当前配额还活着，再批量。
 
 ## Tomorrow's plan
 
@@ -105,7 +109,7 @@ ffmpeg scale 720x1280 + pad → concat (Demuxer, stream copy) → mux narration 
    确认 `Hypit × 浏览器渲染` 这条主线是不是还卡在 frame 0。
 2. 如果还卡：决定是
    (a) 给 `provider-hyperframes-local` 加 `protocolTimeout` 暴露（10 行代码），
-   (b) 把 `MINIMAX_API_KEY` + Kapon 视频路径接成 Hypit 端点，
-   (c) 或者把 hl2.3 文生视频作为 A-roll 替代浏览器合成。
-3. 如果 cron 跑通了：把 presenter overlay（用 `presenter-minimax.png`）和英文字幕
-   烧进 `listicle-video.py`，让它也能做视觉重制。
+   (b) 把 hl2.3 文生视频作为 A-roll 替代浏览器合成（直接打
+   `https://api.minimaxi.com/v1/video_generation`，走 `MINIMAX_API_KEY`），
+   (c) 或者把 presenter overlay（用 `presenter-minimax.png`）和英文字幕
+   烧进 `listicle-video.py`，让它也能做视觉重制（仍只调 MiniMax 直连）。
