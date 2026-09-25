@@ -1,0 +1,4 @@
+interface:
+  display_name: "URL to video"
+  short_description: "Turn a URL into a finished video via the Hypit pipeline"
+  default_prompt: "Use $url-to-video to make a video from the URL I'm about to give you."
