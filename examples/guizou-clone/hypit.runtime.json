@@ -15,10 +15,14 @@
       "use": "@hypit/provider-hyperframes-local",
       "config": {
         "workers": 2,
-        "quality": "standard",
+        "quality": "draft",
         "defaultConcurrency": 1,
         "browserDownloadBaseUrl": "http://127.0.0.1:8088/",
-        "browserVersion": "152.0.7928.2"
+        "browserVersion": "152.0.7928.2",
+        "browserGpu": "software",
+        "initializationTimeoutMs": 180000,
+        "frameTimeoutMs": 180000,
+        "processTimeoutMs": 600000
       }
     },
     "whisperx.local": {

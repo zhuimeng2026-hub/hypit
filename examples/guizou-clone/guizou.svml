@@ -35,7 +35,7 @@
        alignment is required.
        ============================================================ -->
 
-  <program:Clock id="clock" frame-rate="30"/>
+  <program:Clock id="clock" frame-rate="10"/>
 
   <!-- ----- Voiceover: one continuous mp3, 138s, edge-tts Guy. -->
   <asset:Audio id="narration" src="./assets/narration.mp3"/>
@@ -47,47 +47,47 @@
        through whisperx:SemanticTake with an empty Segment. -->
   <asset:Video id="broll-01-zhenshan" src="./assets/broll/spot-01-zhenshan.mp4"/>
   <pipeline:Normalize id="broll-01-media" source={broll-01-zhenshan}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-02-longli" src="./assets/broll/spot-02-longli.mp4"/>
   <pipeline:Normalize id="broll-02-media" source={broll-02-longli}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-03-guilan" src="./assets/broll/spot-03-guilan.mp4"/>
   <pipeline:Normalize id="broll-03-media" source={broll-03-guilan}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-04-zengchong" src="./assets/broll/spot-04-zengchong.mp4"/>
   <pipeline:Normalize id="broll-04-media" source={broll-04-zengchong}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-05-suoga-miao" src="./assets/broll/spot-05-suoga-miao.mp4"/>
   <pipeline:Normalize id="broll-05-media" source={broll-05-suoga-miao}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-06-shitouzhai" src="./assets/broll/spot-06-shitouzhai.mp4"/>
   <pipeline:Normalize id="broll-06-media" source={broll-06-shitouzhai}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-07-gaodang" src="./assets/broll/spot-07-gaodang.mp4"/>
   <pipeline:Normalize id="broll-07-media" source={broll-07-gaodang}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-08-jiacha" src="./assets/broll/spot-08-jiacha.mp4"/>
   <pipeline:Normalize id="broll-08-media" source={broll-08-jiacha}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-09-aile" src="./assets/broll/spot-09-aile.mp4"/>
   <pipeline:Normalize id="broll-09-media" source={broll-09-aile}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-10-shimenkan" src="./assets/broll/spot-10-shimenkan.mp4"/>
   <pipeline:Normalize id="broll-10-media" source={broll-10-shimenkan}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <asset:Video id="broll-outro" src="./assets/broll/outro-city.mp4"/>
   <pipeline:Normalize id="broll-outro-media" source={broll-outro}
-    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+    video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 
   <!-- ----- Script: 11 empty segments — one per B-roll slot. The
        empty-segment path needs no WhisperX alignment; the
@@ -148,10 +148,10 @@
   </time:Timeline>
 
   <!-- ----- Canvas: 720x1280 portrait. -->
-  <space:Canvas id="vertical" width="720" height="1280"/>
+  <space:Canvas id="vertical" width="360" height="640"/>
 
   <!-- ----- Full-bleed frame: cover the whole 720x1280 canvas. -->
-  <space:Frame id="full-frame" within={vertical} left="0px" top="0px" right="720px" bottom="1280px"/>
+  <space:Frame id="full-frame" within={vertical} left="0px" top="0px" right="360px" bottom="640px"/>
 
   <!-- ----- B-roll track: each clip placed full-bleed across its
        Take's window — since each Take is consecutive, the picture
