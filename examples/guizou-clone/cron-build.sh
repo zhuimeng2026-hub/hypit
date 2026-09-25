@@ -17,17 +17,31 @@ RUN_FILE="${PROJECT_DIR}/guizou.svrun"
 LOG=/tmp/guizou-cron-build.log
 INSPECT_LOG=/tmp/guizou-cron-inspect.log
 
+# Cron runs with a minimal PATH and no shell init files, so the
+# default `node` on the lookup path may resolve to whatever the OS
+# shipped (e.g. /usr/bin/node → v22.13.1) instead of the nvm-managed
+# v22.22.1 the project was developed against. Hypit's distribution-
+# resolution.ts imports node:module#registerHooks, which only exists
+# in Node 22.15+. Pin to the nvm-managed binary so we always run on a
+# compatible runtime. Override by exporting HYPIT_NODE_BIN.
+NODE_BIN="${HYPIT_NODE_BIN:-/root/.nvm/versions/node/v22.22.1/bin/node}"
+if [ ! -x "$NODE_BIN" ]; then
+  NODE_BIN="$(command -v node)"
+fi
+
+# Prepend the node bin dir to PATH so the `#!/usr/bin/env node` shebang
+# in hypit.mjs (and any subprocesses) resolve to the pinned binary too.
+export PATH="$(dirname "$NODE_BIN"):$PATH"
+
 echo "=== $(date -Iseconds) cron-build start ===" >> "$LOG"
+echo "node: $($NODE_BIN -v) at $NODE_BIN" >> "$LOG"
 cd "$PROJECT_DIR"
 
-# Make sure the runtime.json binding for whisperx.local is honored.
-# (binding is already in the file; this is just defensive.)
-
 echo "--- runtime status ---" >> "$LOG"
-/opt/hypit/bin/hypit.mjs paths >> "$LOG" 2>&1
+"$NODE_BIN" /opt/hypit/bin/hypit.mjs paths >> "$LOG" 2>&1
 
 echo "--- build start ---" >> "$LOG"
-/opt/hypit/bin/hypit.mjs build "$RUN_FILE" \
+"$NODE_BIN" /opt/hypit/bin/hypit.mjs build "$RUN_FILE" \
   --runtime "$RUNTIME_JSON" \
   >> "$LOG" 2>&1 || true
 
@@ -36,7 +50,7 @@ LATEST=$(ls -t /opt/hypit/examples/guizou-clone/.hypit/runtimes/local/work/ 2>/d
   | head -1 || true)
 if [ -n "$LATEST" ]; then
   echo "--- inspect $LATEST ---" >> "$INSPECT_LOG"
-  /opt/hypit/bin/hypit.mjs inspect "$LATEST" --workspace "$PROJECT_DIR" \
+  "$NODE_BIN" /opt/hypit/bin/hypit.mjs inspect "$LATEST" --workspace "$PROJECT_DIR" \
     >> "$INSPECT_LOG" 2>&1 || true
 fi
 
