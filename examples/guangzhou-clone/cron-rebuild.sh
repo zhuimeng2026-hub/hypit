@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild guangzhou-clone with the latest assets, export final.video.
+# Rebuild guangzhou-clone with the latest assets, export guangzhou-final.video.
 # Designed to run unattended (no TTY, no Claude): logs everything to a
 # timestamped file under .hypit/cron-logs/.
 set -u
@@ -8,13 +8,19 @@ set -o pipefail
 PROJECT="/opt/hypit/examples/guangzhou-clone"
 LOGDIR="$PROJECT/.hypit/cron-logs"
 mkdir -p "$LOGDIR"
-LOG="$LOGDIR/rebuild-$(date +%Y%m%d-%H%M%S).log"
+
+# Every cron invocation gets its own timestamp suffix used for: log file,
+# build title, and exported MP4 path. That way two runs in the same hour
+# never collide.
+TS=$(date +%Y%m%d-%H%M%S)
+LOG="$LOGDIR/rebuild-${TS}.log"
 
 {
   echo "==== hypit-guangzhou-cron ===="
   echo "started: $(date -Iseconds)"
   echo "host: $(hostname)"
   echo "project: $PROJECT"
+  echo "ts: $TS"
   echo
 } > "$LOG"
 
@@ -23,7 +29,7 @@ cd "$PROJECT"
 echo "[1/3] hypit build ..." | tee -a "$LOG"
 BUILD_OUT=$(/opt/hypit/bin/hypit.mjs build ./guangzhou.svrun \
   --runtime ./hypit.runtime.json \
-  --title "guangzhou-cron-$(date +%Y%m%d-%H%M%S)" \
+  --title "guangzhou-cron-$TS" \
   --json 2>&1)
 echo "$BUILD_OUT" >> "$LOG"
 
@@ -60,9 +66,9 @@ done
 echo "final state: $STATE" | tee -a "$LOG"
 
 # 3. export final video
-echo "[3/3] exporting final.video ..." | tee -a "$LOG"
-OUT="$LOGDIR/guangzhou-cron-$(date +%Y%m%d-%H%M%S).mp4"
-/opt/hypit/bin/hypit.mjs get "$BUILD_ID" --output final.video --to "$OUT" 2>&1 | tee -a "$LOG"
+echo "[3/3] exporting guangzhou-final.video ..." | tee -a "$LOG"
+OUT="$LOGDIR/guangzhou-cron-$TS.mp4"
+/opt/hypit/bin/hypit.mjs get "$BUILD_ID" --output guangzhou-final.video --to "$OUT" 2>&1 | tee -a "$LOG"
 ls -la "$OUT" 2>/dev/null | tee -a "$LOG"
 
 echo "ended: $(date -Iseconds)" | tee -a "$LOG"

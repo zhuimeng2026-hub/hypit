@@ -2,5 +2,9 @@
 
 <svrun version="1">
   <author source="./guangzhou.svml"/>
-  <target output="final.video"/>
+  <!-- Use a project-prefixed target name so concurrent runs (Guizhou's
+       `final.video`, Guangzhou's `guangzhou-final.video`) don't collide
+       on shared storage. Each build still produces its own copy keyed by
+       the build id; this only changes the artifact key the run exposes. -->
+  <target output="guangzhou-final.video"/>
 </svrun>

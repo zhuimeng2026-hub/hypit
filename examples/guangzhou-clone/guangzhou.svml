@@ -235,6 +235,6 @@
     <film:Track source={voice.audio}/>
   </film:Film>
 
-  <render:Video id="final" composition={main.composition}
+  <render:Video id="guangzhou-final" composition={main.composition}
     timeline={speech.timeline}/>
 </svml>
