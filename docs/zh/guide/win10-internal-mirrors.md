@@ -19,6 +19,21 @@ description: 一段 PowerShell 命令序列，把 Win10 客户端指到 LAN 自�
 
 ## 0. 前置检查 — 确认服务端六个服务都活着
 
+LAN 镜像主机上一共跑 **6 个** 服务。每个服务对应一项 Hypit 依赖，绑定在唯一固定端口上 —
+不做动态发现。下面这张表就是事实来源，下面的 curl 块只是顺手做一遍存活探测。
+
+| 端口 | 服务 | 镜像 / 二进制 | 客户端写入位置 |
+|---|---|---|---|
+| **4873** | npm / pnpm registry | `verdaccio/verdaccio:6` | `~/.npmrc` → `registry=http://<host>:4873/` |
+| **4874** | PyPI 镜像（uv 拉包） | `nginx:1.27-alpine` + `proxy_cache` | `uv.toml` → `[index] url = "http://<host>:4874/simple/"` |
+| **8088** | Chrome Headless Shell 镜像 | `nginx:1.27-alpine` | `hypit.runtime.json` → `endpoints['hyperframes.local'].config.browserDownloadBaseUrl` |
+| **8089** | ffmpeg / ffprobe 镜像 | `nginx:1.27-alpine` | `PATH`（解压到稳定目录）或 `hypit.runtime.json` → `ffmpegPath` / `ffprobePath` |
+| **18765** | WhisperX LAN 代理（socat） | `alpine/socat:1.8.0.0`，`network_mode: host` → `127.0.0.1:8765` | `hypit.runtime.json` → `endpoints['whisperx.local'].config.baseUrl` |
+| **3030** | Hypit git 镜像（只读 dumb-HTTP） | `hypit/git-mirror:1` | `git clone http://<host>:3030/hypit.git`；Skill 用 `cp -r skills/hypit ~/.claude/skills/hypit` |
+
+6 个端口的 URL 形式都是 `http://<HYPIT_LAN_HOST>:<port>/...`。在服务端本身 host 部分写成
+`127.0.0.1`；从 LAN 客户端访问时 host 就是配置的 `HYPIT_LAN_HOST`。
+
 在 LAN 内任意机器上：
 
 ```bash

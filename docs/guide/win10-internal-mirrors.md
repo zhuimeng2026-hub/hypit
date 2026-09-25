@@ -20,6 +20,22 @@ server's `HYPIT_LAN_HOST` resolves to.
 
 ## 0. Pre-flight — confirm the server side is up
 
+The LAN host runs **six** services. Each one maps to one Hypit dependency and is bound to a single
+fixed port — there is no dynamic discovery. Use the table below as the source of truth; the curl
+block after it is just the readiness probe.
+
+| Port | Service | Image / binary | Client writes to |
+|---|---|---|---|
+| **4873** | npm / pnpm registry | `verdaccio/verdaccio:6` | `~/.npmrc` → `registry=http://<host>:4873/` |
+| **4874** | PyPI mirror (uv pulls) | `nginx:1.27-alpine` + `proxy_cache` | `uv.toml` → `[index] url = "http://<host>:4874/simple/"` |
+| **8088** | Chrome Headless Shell mirror | `nginx:1.27-alpine` | `hypit.runtime.json` → `endpoints['hyperframes.local'].config.browserDownloadBaseUrl` |
+| **8089** | ffmpeg / ffprobe mirror | `nginx:1.27-alpine` | `PATH` (extract zip to a stable dir) or `hypit.runtime.json` → `ffmpegPath` / `ffprobePath` |
+| **18765** | WhisperX LAN proxy (socat) | `alpine/socat:1.8.0.0` on `network_mode: host` → `127.0.0.1:8765` | `hypit.runtime.json` → `endpoints['whisperx.local'].config.baseUrl` |
+| **3030** | Hypit git mirror (read-only dumb-HTTP) | `hypit/git-mirror:1` | `git clone http://<host>:3030/hypit.git`; Skill via `cp -r skills/hypit ~/.claude/skills/hypit` |
+
+Default URL form across all six is `http://<HYPIT_LAN_HOST>:<port>/...`. On the server itself the
+host part collapses to `127.0.0.1`; from a LAN client it is the configured `HYPIT_LAN_HOST`.
+
 Before touching the Win10 client, run these from any machine that can reach the LAN host:
 
 ```bash
