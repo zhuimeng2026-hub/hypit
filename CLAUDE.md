@@ -13,6 +13,15 @@ Real video projects live **outside** this repo as their own npm/pnpm-managed pro
 contains the SDK packages, the `hypit` CLI, official components/models/providers, Python services,
 runnable examples and the production-directing Skill.
 
+The Skill is the primary agent entry point. Install it once with:
+
+```bash
+npx skills add hypit-ai/hypit -g
+```
+
+On first use, the agent checks for the `hypit` executable and helps prepare it if needed. The Skill,
+the npm Distribution and a saved video project update independently.
+
 ## Tooling requirements
 
 - Node.js **22.15+** (see `.node-version`: 24.14.1)
@@ -28,9 +37,12 @@ pnpm install --frozen-lockfile        # workspace setup (CI command)
 
 pnpm check                            # TypeScript type-check (tsc --noEmit, all packages)
 pnpm test                             # full test suite (Node built-in node:test, not Jest/Vitest)
-pnpm test:runtime-scale               # env-gated: HYPIT_RUNTIME_SCALE_TESTS=1
-pnpm test:image-opencv                # env-gated: HYPIT_OPENCV_TESTS=1
+pnpm test:runtime-scale               # suites: node test/run.mjs runtime-scale (env HYPIT_RUNTIME_SCALE_TESTS=1)
+pnpm test:image-opencv                # suites: node test/run.mjs image-opencv (env HYPIT_OPENCV_TESTS=1)
 pnpm test:whisperx-service            # Python tests under services/whisperx
+
+# Run one test file directly (bypasses the suite gate)
+node --import tsx --test packages/<pkg>/test/<file>.test.ts
 
 pnpm pack:distribution                # builds dist/public/**/*.d.ts + writes dist/release/hypit-hypit-<v>.tgz
 pnpm check:distribution               # installs and exercises the packaged tarball outside the checkout
@@ -69,6 +81,18 @@ hypit/
 ├── pnpm-workspace.yaml        globs: packages/*, services/*, examples/*/packages/*
 └── tsconfig.json              strict ES2023/NodeNext workspace type-check
 ```
+
+### Examples
+
+`examples/*/packages/*/test/**/*.test.ts` is part of the default test suite (`test/run.mjs`), so
+project-package behavior is ordinary authoring. Two examples are canonical starters for new packages:
+
+- `examples/minimal-author-package/` — new Author Package template; see `docs/guide/author-packages.md`.
+- `examples/provider-package/` — new Provider template; see `docs/guide/providers.md`.
+
+The rest (`interview/`, `podcast/`, `ranking-football/`, `complex-explainer/`, `guangzhou-clone/`,
+`guizou-clone/`, `semantic-composition/`) are runnable reference projects with their own `.svml` /
+`.svs` / `.svrun` and `hypit.runtime.json`.
 
 ## Architecture
 
@@ -135,6 +159,8 @@ supplies the Hypit APIs; the extension supplies its own implementation.
   errors through it.
 - Branch and commit subjects share the prefix: `feat/`, `fix/`, `docs/` for branches; `feat:`,
   `fix:`, `docs:` for commits.
+- English and Chinese documentation live side by side under `docs/` and `docs/zh/`. A change to one
+  page belongs with the change to its counterpart — touch both in the same commit.
 
 ## Testing
 

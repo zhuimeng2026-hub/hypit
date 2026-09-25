@@ -23,7 +23,7 @@ const localHyperframesRuntimeAdapter = createRuntimeEndpointAdapterFacet({
     const config = runtimeConfigObject(context.config, "local HyperFrames");
     runtimeConfigExact(config, [
       "nodePath", "chromePath", "browserVersion", "browserCacheDirectory", "browserDownloadBaseUrl", "ffprobePath", "ffmpegPath", "workers", "maxWorkers", "quality", "browserGpu",
-      "defaultConcurrency", "browserCapacity", "initializationTimeoutMs", "frameTimeoutMs", "processTimeoutMs", "maxProcessOutputBytes", "maxRenderedBytes",
+      "defaultConcurrency", "browserCapacity", "initializationTimeoutMs", "frameTimeoutMs", "processTimeoutMs", "protocolTimeoutMs", "maxProcessOutputBytes", "maxRenderedBytes",
     ], "local HyperFrames");
     runtimeConfigString(config.nodePath, "HyperFrames nodePath");
     runtimeConfigString(config.ffprobePath, "HyperFrames ffprobePath");
@@ -64,6 +64,7 @@ const localHyperframesRuntimeAdapter = createRuntimeEndpointAdapterFacet({
     const initializationTimeoutMs = runtimeConfigPositiveInteger(config.initializationTimeoutMs, "HyperFrames initializationTimeoutMs");
     const frameTimeoutMs = runtimeConfigPositiveInteger(config.frameTimeoutMs, "HyperFrames frameTimeoutMs");
     const processTimeoutMs = runtimeConfigPositiveInteger(config.processTimeoutMs, "HyperFrames processTimeoutMs");
+    const protocolTimeoutMs = runtimeConfigPositiveInteger(config.protocolTimeoutMs, "HyperFrames protocolTimeoutMs");
     const maxProcessOutputBytes = runtimeConfigPositiveInteger(config.maxProcessOutputBytes, "HyperFrames maxProcessOutputBytes");
     const maxRenderedBytes = runtimeConfigPositiveInteger(config.maxRenderedBytes, "HyperFrames maxRenderedBytes");
     return {
@@ -83,6 +84,7 @@ const localHyperframesRuntimeAdapter = createRuntimeEndpointAdapterFacet({
         ...(initializationTimeoutMs === undefined ? {} : { initializationTimeoutMs }),
         ...(frameTimeoutMs === undefined ? {} : { frameTimeoutMs }),
         ...(processTimeoutMs === undefined ? {} : { processTimeoutMs }),
+        ...(protocolTimeoutMs === undefined ? {} : { protocolTimeoutMs }),
         ...(maxProcessOutputBytes === undefined ? {} : { maxProcessOutputBytes }),
         ...(maxRenderedBytes === undefined ? {} : { maxRenderedBytes }),
       }),

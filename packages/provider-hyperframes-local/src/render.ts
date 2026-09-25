@@ -59,6 +59,9 @@ export function resolveExecutionOptions(options: HyperframesExecutionOptions) {
       ? undefined
       : positiveInteger(options.frameTimeoutMs, "frameTimeoutMs"),
     processTimeoutMs: positiveInteger(options.processTimeoutMs ?? 30 * 60_000, "processTimeoutMs"),
+    protocolTimeoutMs: options.protocolTimeoutMs === undefined
+      ? undefined
+      : positiveInteger(options.protocolTimeoutMs, "protocolTimeoutMs"),
     maxProcessOutputBytes: positiveInteger(options.maxProcessOutputBytes ?? 4 * 1024 * 1024, "maxProcessOutputBytes"),
     maxRenderedBytes: positiveInteger(options.maxRenderedBytes ?? 16 * 1024 * 1024 * 1024, "maxRenderedBytes"),
   };
