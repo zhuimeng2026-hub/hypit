@@ -1,0 +1,53 @@
+<?svml using="@hypit/svs@1"?>
+
+<sheet version="1">
+  /* Full-bleed cover-fit media item — image fills the frame edge-to-edge. */
+  media.cover {
+    stack-order: 10;
+    fit: cover;
+  }
+  media.cover-2 {
+    stack-order: 11;
+    fit: cover;
+  }
+  media.cover-3 {
+    stack-order: 12;
+    fit: cover;
+  }
+  media.cover-4 {
+    stack-order: 13;
+    fit: cover;
+  }
+  media.cover-5 {
+    stack-order: 14;
+    fit: cover;
+  }
+  media.cover-6 {
+    stack-order: 15;
+    fit: cover;
+  }
+  media.cover-7 {
+    stack-order: 16;
+    fit: cover;
+  }
+  media.cover-8 {
+    stack-order: 17;
+    fit: cover;
+  }
+  media.cover-9 {
+    stack-order: 18;
+    fit: cover;
+  }
+  media.cover-10 {
+    stack-order: 19;
+    fit: cover;
+  }
+  media.cover-11 {
+    stack-order: 20;
+    fit: cover;
+  }
+
+  film.vertical {
+    background: #000000;
+  }
+</sheet>

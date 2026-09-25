@@ -102,3 +102,7 @@ examples/**/.svml/
 # Reverse-engineering scratch projects live outside the repository too
 /projects/*
 .gstack/
+
+# Hypit project outputs (rebuilt by build-cpu.sh)
+examples/guizou-clone/output-cpu.mp4
+examples/guizou-clone/.tmp-cpu/
