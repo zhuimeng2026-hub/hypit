@@ -1,0 +1,39 @@
+{
+  "format": "hypit.runtime-local@1",
+  "dataRoot": ".hypit/runtimes/local",
+  "credentials": {
+    "platform": {
+      "use": "@hypit/credential-store-platform"
+    }
+  },
+  "endpoints": {
+    "media.local": {
+      "use": "@hypit/provider-media-local",
+      "config": { "defaultConcurrency": 2 }
+    },
+    "hyperframes.local": {
+      "use": "@hypit/provider-hyperframes-local",
+      "config": {
+        "workers": 2,
+        "quality": "standard",
+        "defaultConcurrency": 1,
+        "browserDownloadBaseUrl": "http://127.0.0.1:8088/",
+        "browserVersion": "152.0.7928.2"
+      }
+    },
+    "whisperx.local": {
+      "use": "@hypit/provider-whisperx-local",
+      "config": {
+        "baseUrl": "http://127.0.0.1:8765",
+        "expectedModel": "small",
+        "expectedDevice": "cpu",
+        "expectedCompute": "int8",
+        "expectedBatchSize": 8,
+        "defaultConcurrency": 1
+      }
+    }
+  },
+  "bindings": {
+    "@hypit/whisperx@1#whisperx-alignment": "whisperx.local"
+  }
+}

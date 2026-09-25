@@ -1,0 +1,211 @@
+<?svml using="@hypit/markup@1"?>
+
+<svml>
+  <import from="@hypit/script@1"/>
+  <import as="sound" from="@hypit/sound@1"/>
+  <import as="text" from="@hypit/text@1"/>
+  <import as="asset" from="@hypit/media@1"/>
+  <import as="pipeline" from="@hypit/media-pipeline@1"/>
+  <import as="whisperx" from="@hypit/whisperx@1"/>
+  <import as="time" from="@hypit/timeline-author@1"/>
+  <import as="program" from="@hypit/program-space@1"/>
+  <import as="media-track" from="@hypit/media-track@1"/>
+  <import as="audio-track" from="@hypit/audio-track@1"/>
+  <import as="caption" from="@hypit/caption@1"/>
+  <import as="caption-fine" from="@hypit/caption-fine@1"/>
+  <import as="fonts" from="@hypit/fonts-open@1"/>
+  <import as="space" from="@hypit/spatial@1"/>
+  <import as="film" from="@hypit/film@1"/>
+  <import as="render" from="@hypit/render-hyperframes@1"/>
+  <import as="recipes" source="./guizou.svs"/>
+
+  <!-- ============================================================
+       10 Hidden Gems in Guizhou — English-language clone.
+
+       The reference is a 7-minute portrait Chinese travel listicle.
+       This project keeps the same template (location pin header +
+       bottom subtitle + B-roll per spot + ambient narration) but
+       replaces the content with English narration by Microsoft
+       Guy Neural (edge-tts) and a generated presenter.
+
+       Each spot is an empty <script> Segment with a
+       whisperx:SemanticTake — the empty-segment path maps the
+       prepared media's own start/end to the segment, so the
+       B-roll duration drives the timeline directly. No spoken
+       alignment is required.
+       ============================================================ -->
+
+  <program:Clock id="clock" frame-rate="30"/>
+
+  <!-- ----- Voiceover: one continuous mp3, 138s, edge-tts Guy. -->
+  <asset:Audio id="narration" src="./assets/narration.mp3"/>
+  <pipeline:Normalize id="narration-media" source={narration}
+    video="none" audio="default" span-authority="audio" clock={clock}/>
+
+  <!-- ----- B-roll: 10 spot clips + outro, ~35s each, sliced from
+       the reference mp4. Each B-roll becomes one Timeline Take
+       through whisperx:SemanticTake with an empty Segment. -->
+  <asset:Video id="broll-01-zhenshan" src="./assets/broll/spot-01-zhenshan.mp4"/>
+  <pipeline:Normalize id="broll-01-media" source={broll-01-zhenshan}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-02-longli" src="./assets/broll/spot-02-longli.mp4"/>
+  <pipeline:Normalize id="broll-02-media" source={broll-02-longli}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-03-guilan" src="./assets/broll/spot-03-guilan.mp4"/>
+  <pipeline:Normalize id="broll-03-media" source={broll-03-guilan}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-04-zengchong" src="./assets/broll/spot-04-zengchong.mp4"/>
+  <pipeline:Normalize id="broll-04-media" source={broll-04-zengchong}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-05-suoga-miao" src="./assets/broll/spot-05-suoga-miao.mp4"/>
+  <pipeline:Normalize id="broll-05-media" source={broll-05-suoga-miao}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-06-shitouzhai" src="./assets/broll/spot-06-shitouzhai.mp4"/>
+  <pipeline:Normalize id="broll-06-media" source={broll-06-shitouzhai}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-07-gaodang" src="./assets/broll/spot-07-gaodang.mp4"/>
+  <pipeline:Normalize id="broll-07-media" source={broll-07-gaodang}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-08-jiacha" src="./assets/broll/spot-08-jiacha.mp4"/>
+  <pipeline:Normalize id="broll-08-media" source={broll-08-jiacha}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-09-aile" src="./assets/broll/spot-09-aile.mp4"/>
+  <pipeline:Normalize id="broll-09-media" source={broll-09-aile}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-10-shimenkan" src="./assets/broll/spot-10-shimenkan.mp4"/>
+  <pipeline:Normalize id="broll-10-media" source={broll-10-shimenkan}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <asset:Video id="broll-outro" src="./assets/broll/outro-city.mp4"/>
+  <pipeline:Normalize id="broll-outro-media" source={broll-outro}
+    video="primary-moving" audio="none" span-authority="video" clock={clock}/>
+
+  <!-- ----- Script: 11 empty segments — one per B-roll slot. The
+       empty-segment path needs no WhisperX alignment; the
+       prepared-media boundaries become the segment boundaries. -->
+  <script id="story">
+    <spot-01-zhenshan><HOST>Number one: Zhenshan Village.</spot-01-zhenshan>
+    <spot-02-longli><HOST>Number two: Longli Ancient Town.</spot-02-longli>
+    <spot-03-guilan><HOST>Number three: Guilan Mountain.</spot-03-guilan>
+    <spot-04-zengchong><HOST>Number four: Zengchong Drum Tower.</spot-04-zengchong>
+    <spot-05-suoga-miao><HOST>Number five: Suoga Long-horn Miao.</spot-05-suoga-miao>
+    <spot-06-shitouzhai><HOST>Number six: Shitouzhai.</spot-06-shitouzhai>
+    <spot-07-gaodang><HOST>Number seven: Gaodang Village.</spot-07-gaodang>
+    <spot-08-jiacha><HOST>Number eight: Jiacha Waterfall.</spot-08-jiacha>
+    <spot-09-aile><HOST>Number nine: Aile Village.</spot-09-aile>
+    <spot-10-shimenkan><HOST>Number ten: Shimenkan.</spot-10-shimenkan>
+    <outro-city><HOST>Thanks for watching.</outro-city>
+  </script>
+
+  <!-- ----- Empty-segment SemanticTakes: each B-roll becomes a Take
+       whose duration equals the prepared media's own duration. -->
+  <whisperx:SemanticTake language="en" id="broll-01-take" narrative={story}
+    segment={story.segment.spot-01-zhenshan} media={broll-01-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-02-take" narrative={story}
+    segment={story.segment.spot-02-longli} media={broll-02-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-03-take" narrative={story}
+    segment={story.segment.spot-03-guilan} media={broll-03-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-04-take" narrative={story}
+    segment={story.segment.spot-04-zengchong} media={broll-04-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-05-take" narrative={story}
+    segment={story.segment.spot-05-suoga-miao} media={broll-05-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-06-take" narrative={story}
+    segment={story.segment.spot-06-shitouzhai} media={broll-06-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-07-take" narrative={story}
+    segment={story.segment.spot-07-gaodang} media={broll-07-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-08-take" narrative={story}
+    segment={story.segment.spot-08-jiacha} media={broll-08-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-09-take" narrative={story}
+    segment={story.segment.spot-09-aile} media={broll-09-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-10-take" narrative={story}
+    segment={story.segment.spot-10-shimenkan} media={broll-10-media.media}/>
+  <whisperx:SemanticTake language="en" id="broll-outro-take" narrative={story}
+    segment={story.segment.outro-city} media={broll-outro-media.media}/>
+
+  <!-- ----- Timeline: 11 Takes in performance order, end defaults to
+       the last Take's end, no extra offset. -->
+  <time:Timeline id="speech" clock={clock}>
+    <time:Take source={broll-01-take.take}/>
+    <time:Take source={broll-02-take.take}/>
+    <time:Take source={broll-03-take.take}/>
+    <time:Take source={broll-04-take.take}/>
+    <time:Take source={broll-05-take.take}/>
+    <time:Take source={broll-06-take.take}/>
+    <time:Take source={broll-07-take.take}/>
+    <time:Take source={broll-08-take.take}/>
+    <time:Take source={broll-09-take.take}/>
+    <time:Take source={broll-10-take.take}/>
+    <time:Take source={broll-outro-take.take}/>
+  </time:Timeline>
+
+  <!-- ----- Canvas: 720x1280 portrait. -->
+  <space:Canvas id="vertical" width="720" height="1280"/>
+
+  <!-- ----- Full-bleed frame: cover the whole 720x1280 canvas. -->
+  <space:Frame id="full-frame" within={vertical} left="0px" top="0px" right="720px" bottom="1280px"/>
+
+  <!-- ----- B-roll track: each clip placed full-bleed across its
+       Take's window — since each Take is consecutive, the picture
+       switches at the Take boundaries. -->
+  <media-track:Track id="broll" canvas={vertical} timeline={speech.timeline}>
+    <media-track:Item id="broll-01-item" media={broll-01-media.media}
+      during={story.segment.spot-01-zhenshan} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-02-item" media={broll-02-media.media}
+      during={story.segment.spot-02-longli} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-03-item" media={broll-03-media.media}
+      during={story.segment.spot-03-guilan} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-04-item" media={broll-04-media.media}
+      during={story.segment.spot-04-zengchong} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-05-item" media={broll-05-media.media}
+      during={story.segment.spot-05-suoga-miao} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-06-item" media={broll-06-media.media}
+      during={story.segment.spot-06-shitouzhai} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-07-item" media={broll-07-media.media}
+      during={story.segment.spot-07-gaodang} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-08-item" media={broll-08-media.media}
+      during={story.segment.spot-08-jiacha} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-09-item" media={broll-09-media.media}
+      during={story.segment.spot-09-aile} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="broll-10-item" media={broll-10-media.media}
+      during={story.segment.spot-10-shimenkan} frame={full-frame}
+      appearance={recipes.media.cover}/>
+    <media-track:Item id="outro-item" media={broll-outro-media.media}
+      during={story.segment.outro-city} frame={full-frame}
+      appearance={recipes.media.cover}/>
+  </media-track:Track>
+
+  <!-- ----- Audio track: continuous narration, once-start, plays
+       across the whole timeline (it is shorter than the video). -->
+  <audio-track:Track id="voice" timeline={speech.timeline}>
+    <audio-track:Item id="voice-item" source={narration-media.media}
+      during="program" playback="once-start" gain="1" fade-in="200ms" fade-out="500ms"/>
+  </audio-track:Track>
+
+  <!-- ----- Final film composition. -->
+  <film:Film id="main" appearance={recipes.film.vertical}
+    canvas={vertical} timeline={speech.timeline}>
+    <film:Track source={broll.visual}/>
+    <film:Track source={voice.audio}/>
+  </film:Film>
+
+  <render:Video id="final" composition={main.composition}
+    timeline={speech.timeline}/>
+</svml>
