@@ -623,8 +623,201 @@ _CJK_ENUM_RE = re.compile(
     r")、"
 )
 # Whitespace + simple punctuation runs (commas in long clauses) — used to
-# find a soft split when no hard boundary exists in the segment window.
+# find a soft split when no internal boundary exists in the segment window.
 _SOFT_SPLIT_RE = re.compile(r"\s*[,;:]\s*")
+
+
+def _split_into_breath_groups(
+    segments: list[Segment],
+    *,
+    language: str,
+    target_chars: int = 8,
+    max_chars: int = 14,
+) -> list[Segment]:
+    """Split each segment into breath-group-sized chunks.
+
+    A breath group is what a speaker would say in one breath: typically
+    5–10 CJK characters or 4–7 English words. For CJK we prefer to cut
+    at clause-level punctuation (commas 、， ;； and enumeration 一、二、)
+    so each chunk ends on a natural pause; if the segment has too few
+    punctuation marks we fall back to length-based splits at ``target_chars``.
+
+    Replaces :func:`_split_long_segments`: that function only split
+    segments longer than 8 s and spread the resulting sub-segments
+    evenly across the original window, which forced the align stage to
+    over-compress every TTS clip. Breath groups are short enough to fit
+    their slot at atempo ≤ ~1.3× in most cases, so the ``MAX_ATEMPO``
+    cap rarely bites.
+
+    Uses ``Segment.words`` (whisperx word-level timings) to compute
+    precise start/end for each sub-segment. Falls back to even
+    distribution when word timings are absent.
+    """
+    is_cjk = language.startswith(("zh", "ja", "ko"))
+    out: list[Segment] = []
+    for seg in segments:
+        if seg.end <= seg.start:
+            out.append(seg)
+            continue
+        if len(seg.text) <= max_chars:
+            out.append(seg)
+            continue
+
+        if is_cjk:
+            cuts = _find_breath_cuts(
+                seg.text, target_chars=target_chars, max_chars=max_chars
+            )
+        else:
+            cuts = _find_latin_breath_cuts(seg.text, target_words=target_chars - 2)
+        if not cuts or len(cuts) < 2:
+            out.append(seg)
+            continue
+
+        for cut_lo, cut_hi in cuts:
+            piece_text = seg.text[cut_lo:cut_hi].strip()
+            if not piece_text:
+                continue
+            sub_start, sub_end = _piece_time_window(seg, cut_lo, cut_hi)
+            piece_words = [
+                w for w in seg.words
+                if sub_start - 0.001 <= w.start <= sub_end + 0.001
+            ]
+            out.append(
+                Segment(
+                    text=piece_text,
+                    start=round(sub_start, 3),
+                    end=round(sub_end, 3),
+                    words=piece_words,
+                )
+            )
+    return out
+
+
+def _find_breath_cuts(
+    text: str,
+    *,
+    target_chars: int,
+    max_chars: int,
+) -> list[tuple[int, int]] | None:
+    """Cut CJK text into breath-group-sized pieces ending at clause
+    punctuation when possible.
+
+    Boundaries are clause punctuation (CJK: 、，；。!?！？ and ASCII , ; . ! ?)
+    plus enumeration markers 一、二、... The split algorithm walks the text
+    once, ending each piece when:
+      - it has reached ``max_chars`` characters, or
+      - it is past ``target_chars`` and the next character is a clause
+        boundary.
+    Returns character-offset ranges (lo, hi) for each piece.
+    """
+    # Build a sorted list of cut positions (offsets AFTER the boundary char)
+    cuts: list[int] = [0]
+    for i, ch in enumerate(text):
+        if ch in "、，；,;．.！!？?":
+            j = i + 1
+            while j < len(text) and text[j] in " \t":
+                j += 1
+            cuts.append(j)
+    for m in _CJK_ENUM_RE.finditer(text):
+        if m.start() > 0:
+            cuts.append(m.start())
+    cuts = sorted(set(cuts))
+    cuts.append(len(text))
+
+    pieces: list[tuple[int, int]] = []
+    cursor = cuts[0]
+    for nxt in cuts[1:]:
+        length = nxt - cursor
+        if length >= target_chars:
+            # Past target, accept this cut
+            pieces.append((cursor, nxt))
+            cursor = nxt
+        elif length >= max_chars:
+            # Force-cut even though short on punctuation
+            pieces.append((cursor, nxt))
+            cursor = nxt
+        # else: too small, keep extending
+    if cursor < len(text):
+        pieces.append((cursor, len(text)))
+    # Drop leading/trailing whitespace-only pieces
+    pieces = [(lo, hi) for lo, hi in pieces if text[lo:hi].strip()]
+    return pieces if len(pieces) >= 2 else None
+
+
+def _find_latin_breath_cuts(text: str, *, target_words: int) -> list[tuple[int, int]] | None:
+    """Cut Latin text into breath-group-sized pieces ending at clause
+    punctuation when possible."""
+    # Build cut positions at clause punctuation
+    cuts: list[int] = [0]
+    for i, ch in enumerate(text):
+        if ch in ",;:.!?":
+            j = i + 1
+            while j < len(text) and text[j] == " ":
+                j += 1
+            cuts.append(j)
+    cuts = sorted(set(cuts))
+    if cuts[-1] != len(text):
+        cuts.append(len(text))
+
+    pieces: list[tuple[int, int]] = []
+    cursor = cuts[0]
+    for nxt in cuts[1:]:
+        # Count words in this candidate piece
+        candidate = text[cursor:nxt]
+        word_count = len(candidate.split())
+        if word_count >= target_words or (nxt - cursor) >= target_chars * 4:
+            pieces.append((cursor, nxt))
+            cursor = nxt
+    if cursor < len(text):
+        pieces.append((cursor, len(text)))
+    pieces = [(lo, hi) for lo, hi in pieces if text[lo:hi].strip()]
+    return pieces if len(pieces) >= 2 else None
+
+
+def _piece_time_window(
+    seg: Segment,
+    cut_lo: int,
+    cut_hi: int,
+) -> tuple[float, float]:
+    """Map text-offset ``[cut_lo, cut_hi)`` to (start, end) seconds.
+
+    Walks ``seg.words`` accumulating character counts so each character
+    in ``seg.text`` maps to the word that contains it. The first word
+    whose range contains ``cut_lo`` defines ``sub_start``; the last word
+    whose range overlaps ``cut_hi`` defines ``sub_end``. Falls back to
+    even distribution if word timings are missing or the mapping is
+    ambiguous.
+    """
+    words = seg.words
+    if not words:
+        total = max(len(seg.text), 1)
+        frac_lo = cut_lo / total
+        frac_hi = cut_hi / total
+        return (
+            seg.start + (seg.end - seg.start) * frac_lo,
+            seg.start + (seg.end - seg.start) * frac_hi,
+        )
+
+    sub_start = seg.start
+    sub_end = seg.end
+    cum = 0
+    found_lo = False
+    found_hi = False
+    for w in words:
+        wlen = len(w.text)
+        if not found_lo and cum <= cut_lo < cum + wlen:
+            sub_start = w.start
+            found_lo = True
+        if cum < cut_hi <= cum + wlen:
+            sub_end = w.end
+            found_hi = True
+        cum += wlen
+    # Boundary cases: cut_lo == 0 → use first word; cut_hi at end → last word
+    if not found_lo and cut_lo == 0:
+        sub_start = words[0].start
+    if not found_hi or cut_hi >= cum:
+        sub_end = words[-1].end
+    return sub_start, sub_end
 
 
 def _split_long_segments(
@@ -928,15 +1121,15 @@ def _dub_video_pipeline(
     logger.info("stage=transcribe done lang=%s segments=%d dur=%.1fs",
                 detected_lang, len(segments), duration)
 
-    # Long-segment breaker: whisperx "small" often emits mega-segments that
-    # span many sentences. Mega-segments (a) overrun MiniMax chat output
-    # tokens and end up truncated, (b) produce unwatchable subtitles that
-    # stay on screen for 20+ seconds, (c) make the LLM translation lose
-    # focus. Split at Chinese sentence punctuation + enumeration markers
-    # (一二三四五六七八九十) so each emit is ~2-6s.
+    # Breath-group breaker: split every long segment into chunks a
+    # speaker would naturally say in one breath (5–10 CJK chars / 4–7
+    # English words), cutting at clause punctuation (commas 、 enumeration
+    # markers 一、二、) when possible. This makes each TTS clip short
+    # enough to fit its slot at atempo ≤ ~1.3×, so the MAX_ATEMPO cap
+    # rarely bites and the align stage never truncates English.
     detected_lang_code = (detected_lang or "en").lower()
     raw_segment_count = len(segments)
-    segments = _split_long_segments(segments, language=detected_lang_code)
+    segments = _split_into_breath_groups(segments, language=detected_lang_code)
     # Re-index word timings after splitting so each new sub-segment carries
     # only the words that fall inside its window.
     segments = _reindex_word_timings(segments)
