@@ -1,0 +1,53 @@
+[project]
+name = "hypit-dub-server"
+version = "0.1.0"
+description = "Local stdio MCP server that wraps the Hypit video dubbing pipeline (extract -> ML separate -> whisperx ASR -> MiniMax LLM translate -> MiniMax / edge-tts -> mux + ASS burn)."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Hypit maintainers" },
+]
+keywords = ["mcp", "video", "dubbing", "whisperx", "demucs", "tts", "minimax"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "mcp[cli]>=1.0",
+    "edge-tts>=7.0",
+    "requests>=2.31",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+hypit-dub = "dub_server.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dub_server"]
+
+[tool.uv]
+package = true
+managed = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+pythonpath = ["."]

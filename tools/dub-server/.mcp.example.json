@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "hypit-dub": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/opt/hypit/tools/dub-server",
+        "run",
+        "python",
+        "-m",
+        "dub_server"
+      ],
+      "env": {
+        "PATH": "${HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}

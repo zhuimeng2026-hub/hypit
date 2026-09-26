@@ -211,3 +211,52 @@ The npm Distribution, the Skill, and a saved video project update independently.
 - The Skill in `skills/hypit/` (`SKILL.md` + `references/`) is the production-directing surface for
   AI agents; skill content is shipped via `npx skills add hypit-ai/hypit -g`, separate from the
   npm Distribution update.
+
+## Sub-tooling: dub-server (`tools/dub-server/`)
+
+A local stdio MCP server that wraps the **video-dubbing pipeline** (audio extract → optional
+ML vocal separation via demucs → whisperx ASR → MiniMax chat translation → MiniMax TTS →
+edge-tts fallback → audio mux with burned-in ASS subtitles). It is **not** shipped with the
+npm Distribution; it's a sibling utility that AI agents can register via MCP for ad-hoc dub
+work on already-rendered videos (e.g. clone a published `.mp4` to a new locale).
+
+Three tools surfaced via MCP:
+
+| Tool | Purpose |
+|---|---|
+| `dub_video` | End-to-end dub a video (source path, target language, voice, mode) |
+| `transcribe_audio` | whisperx ASR only |
+| `separate_audio` | demucs stem split only |
+
+Internal dependency surface:
+
+- `whisperx` service at `http://127.0.0.1:8765` (provided by `services/whisperx/`)
+- `demucs` Python CLI on `PATH` (system package or `pip install demucs`)
+- `edge-tts` Python CLI on `PATH` (fallback TTS)
+- `ffmpeg` / `ffprobe` on `PATH`
+- MiniMax direct API at `MINIMAX_BASE_URL` (default `https://api.minimaxi.com`) — per
+  project memory we hit the official domain directly, no Kapon / gateway proxy.
+
+Install + run:
+
+```bash
+cd /opt/hypit/tools/dub-server && uv sync
+
+# As MCP stdio server (Claude Code / Codex register under mcpServers.hypit-dub):
+/opt/hypit/tools/dub-server/bin/start-mcp.sh
+
+# Or directly via CLI, no MCP client needed (cron, shell scripts, web backends):
+python3 -m dub_server dub --source foo.mp4 --target-lang zh-CN --output bar.mp4
+python3 -m dub_server transcribe --audio foo.wav
+python3 -m dub_server separate --audio foo.wav --model htdemucs_ft
+```
+
+Configuration: the server reads from `/opt/hypit/.env` via the
+`bin/start-mcp.sh` wrapper. Required: `MINIMAX_API_KEY`. See the
+`MINIMAX_TTS_*` block in `.env` for the system-voice catalog the pipeline
+maps to when callers don't pass an explicit voice id.
+
+Project-local MCP registration already wired in `/opt/hypit/.mcp.json`. After
+restarting Claude Code / Codex you'll have `mcp__hypit-dub__dub_video` etc.
+available in tool lists. The dub-server never imports Anthropic / Claude —
+it just exposes dumb tools for the agent to drive.

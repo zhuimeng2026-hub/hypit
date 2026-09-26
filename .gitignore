@@ -107,3 +107,23 @@ examples/**/.svml/
 examples/guizou-clone/output-cpu.mp4
 examples/guizou-clone/output-short.mp4
 examples/guizou-clone/.tmp-cpu/
+
+# Local dub-server working/scratch files
+tools/dub-server/_smoke/
+tools/dub-server/jobs
+
+# Debug outputs from dub-server smoke tests and short-form dub runs
+examples/**/out-zh*.mp4
+examples/**/out-*-wav2vec2*.mp4
+examples/**/out-*-chear.mp4
+examples/**/out-*-ML.mp4
+examples/**/out-*-htdemucs_ft.mp4
+examples/**/gen-*.sh
+examples/**/gen-*.py
+
+# Per-developer workspace of source videos (used by dub experiments)
+/source_video/
+
+# Additional debug-output patterns for this session
+examples/**/output-short-fresh.mp4
+services/whisperx/**/.tmp-*.wav

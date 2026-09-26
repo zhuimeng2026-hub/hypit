@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "hypit-dub": {
+      "command": "/opt/hypit/tools/dub-server/bin/start-mcp.sh",
+      "args": [],
+      "env": {},
+      "description": "Local stdio MCP for the video-dubbing pipeline. Tools: dub_video / transcribe_audio / separate_audio. See /opt/hypit/tools/dub-server/README.md."
+    }
+  }
+}
