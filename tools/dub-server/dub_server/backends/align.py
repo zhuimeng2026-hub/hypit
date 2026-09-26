@@ -18,6 +18,7 @@ produce a single ffmpeg invocation — no per-segment subprocesses.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
 import subprocess
@@ -28,6 +29,15 @@ from .ffmpeg import probe
 
 _STDERR_TAIL = 1000
 _DURATION_RE = re.compile(r"duration\s*:\s*(-?\d+\.\d+)")
+
+_log = logging.getLogger(__name__)
+
+# Cap on the atempo ratio applied when squeezing TTS audio into its source
+# slot. atempo > ~1.5 introduces audible chipmunk / breathing artifacts on
+# neural TTS output, so anything above this is left uncapped — the audio
+# simply plays at MAX_ATEMPO and the next segment's adelay keeps the slot
+# start time stable (slight overlap is preferable to a chipmunked voice).
+MAX_ATEMPO = 1.4
 
 
 @dataclass
@@ -166,8 +176,30 @@ def align_segments_to_original(
         if tts_dur <= 0:
             raise ValueError(f"segment {i} has non-positive TTS duration: {tts_dur!r}")
 
-        ratio = slot_dur / tts_dur
-        atempo_chain = _atempo_chain(ratio)
+        # atempo factor = how much faster TTS must play to fit its slot.
+        #   > 1.0 → compress (TTS longer than slot)
+        #   < 1.0 → stretch  (TTS shorter than slot)
+        # We used to pass ``slot_dur / tts_dur`` here, which inverted the
+        # direction and caused every overflowing segment to play slower,
+        # blowing past its slot and overlapping the next track.  See the
+        # 2026-09-26 gz-exbi-en-final.mp4 regression for the symptom
+        # ("two voices at different speeds").
+        desired_atempo = tts_dur / slot_dur
+        if desired_atempo > MAX_ATEMPO:
+            # Cap the speedup; the segment will overrun its slot by
+            # ``(tts_dur / MAX_ATEMPO) - slot_dur`` seconds and overlap
+            # the next track.  Acceptable trade-off vs. the chipmunk
+            # artefact that atempo > ~1.5 introduces on neural TTS.
+            _log.warning(
+                "align segment=%d atempo capped: tts_dur=%.3fs slot=%.3fs "
+                "desired=%.3fx capped=%.3fx overlap=%.3fs",
+                i, tts_dur, slot_dur, desired_atempo, MAX_ATEMPO,
+                (tts_dur / MAX_ATEMPO) - slot_dur,
+            )
+            atempo = MAX_ATEMPO
+        else:
+            atempo = desired_atempo
+        atempo_chain = _atempo_chain(atempo)
         delay_ms = int(round(seg.original_start * 1000.0))
 
         chain = (
