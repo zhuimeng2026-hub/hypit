@@ -70,13 +70,16 @@ from .schemas import (
 
 # Per-mode bed gain that matches the working dub-video pipeline values
 # (see out-zh.mp4 / -chear / -ML in /opt/hypit/examples/ranking-football/).
-# The bed in `ml-separate` is already a clean no_vocals track; voice at
-# 1.20× naturally dominates. `phase-cancel` loses ~18 dB to L-R subtraction,
-# so we restore it. `stereo-mix` ducks the original bed under the new voice.
+# `ml-separate` and `stereo-mix` both duck the bed to 0.30 so the new
+# voice at 1.20× sits ~12 dB above it — broadcast-standard BGM ducking.
+# `phase-cancel` loses ~18 dB to L-R subtraction, so it gets an 8× boost
+# instead. (ml-separate used to be 1.0; reverted to 0.30 after the
+# 2026-09-26 gz-exbi.mp4 dub showed bed-at-1.0 created audible overlap
+# between BGM and the new English voice.)
 MODE_BED_VOLUME = {
     "stereo-mix": 0.30,
     "phase-cancel": 8.0,
-    "ml-separate": 1.0,
+    "ml-separate": 0.3,
 }
 VOICE_VOLUME = 1.20
 

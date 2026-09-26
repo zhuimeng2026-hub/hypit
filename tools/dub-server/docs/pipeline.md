@@ -113,7 +113,7 @@ Three modes, picked by `DubRequest.mode`:
 
 - **`stereo-mix`** (cheap, lowest quality): bed = the original WAV, voice ducks under it at 0.30×
 - **`phase-cancel`** (cheap, OK quality): `pan=stereo|c0=c0-c1|c1=c1-c0` cancels center-panned vocals, `volume=8.0` restores lost energy; bed volume 8.0×
-- **`ml-separate`** (expensive, best quality): demucs splits vocals/no_vocals; bed = no_vocals (already clean), voice at 1.20× naturally dominates
+- **`ml-separate`** (expensive, best quality): demucs splits vocals/no_vocals; bed = no_vocals (already clean). Bed is **ducked to 0.30×** so the new voice at 1.20× sits ~12 dB above it. (Used to be 1.0×, which left the BGM competing with the new voice; reverted after the 2026-09-26 gz-exbi.mp4 dub showed audible overlap.)
 
 `MODE_BED_VOLUME` (lines 75–79) and `VOICE_VOLUME = 1.20` (line 80) are tuned
 against the working dub-video pipeline (see `examples/ranking-football/`'s
