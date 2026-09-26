@@ -21,6 +21,16 @@ CRITICAL RULES — without these the output gets truncated and unusable:
 - Each numbered input, even if very long, must translate to a complete
   readable sentence in {target_language}. Preserve commas / periods /
   paragraphs but ensure no input is cut short.
+
+PACING CONSTRAINT — the translation will be synthesised by TTS into a fixed
+slot whose length in seconds is given per line below (e.g. "slot 2.30s,
+budget 27 chars"). English speakers naturally take about 12 characters per
+second for casual narration, so translations longer than the budget must be
+shortened (drop adjectives, prefer shorter synonyms, split long clauses).
+If the source text is short, you may use the full budget; if it is long,
+hit the budget exactly. A translation that exceeds its budget gets its tail
+trimmed and sounds unnatural — that is worse than a slightly compressed
+paraphrase.
 """
 
 
@@ -37,9 +47,22 @@ def build_user_message(segments: list) -> str:
 
     Accepts any iterable of objects with a `.text` attribute (duck-typed to
     avoid an import cycle with `dub_server.schemas`).
+
+    When segments carry ``start``/``end`` attributes, each numbered input is
+    prefixed with the slot duration and the per-line English char budget so
+    the model can pace its output. 12 chars/sec is the calibration used by
+    ``align.py``'s MAX_ATEMPO path; the budget leaves a small safety margin
+    for natural pauses.
     """
-    lines = "\n".join(f"{i + 1}. {seg.text}" for i, seg in enumerate(segments))
-    return USER_PROMPT_TEMPLATE.format(lines=lines)
+    lines = []
+    for i, seg in enumerate(segments):
+        slot = getattr(seg, "end", 0) - getattr(seg, "start", 0)
+        if slot > 0:
+            budget = max(int(slot * 12), 5)
+            lines.append(f"{i + 1}. [slot {slot:.2f}s, ≤{budget} chars target] {seg.text}")
+        else:
+            lines.append(f"{i + 1}. {seg.text}")
+    return USER_PROMPT_TEMPLATE.format(lines="\n".join(lines))
 
 
 def build_system_message(target_language: str) -> str:

@@ -494,6 +494,156 @@ def _is_incomplete_translation(seg: Segment) -> tuple[bool, str]:
     return False, ""
 
 
+# Conservative English TTS rate (chars/sec) for slot-based pacing budgets.
+# align.py caps atempo at 1.4× to avoid chipmunk artefacts, so a translation
+# whose natural TTS duration exceeds ``slot * 1/1.4`` will be trimmed — that
+# is the soft cap. We pass the model the budget for ``slot * 1.0`` so it has
+# a clear target and can keep the audio intact.
+_ENGLISH_CHARS_PER_SEC = 12.0
+
+
+def _english_char_budget(slot_seconds: float) -> int:
+    """Return the recommended max English characters for a slot of
+    ``slot_seconds``. Calibrated against English_CalmWoman @ speed=1.1
+    (≈14 chars/sec natural; we use 12 to leave a small safety margin for
+    pauses and slower syllables).
+    """
+    return max(int(slot_seconds * _ENGLISH_CHARS_PER_SEC), 5)
+
+
+def _is_too_long_translation(seg: Segment) -> tuple[bool, int, int]:
+    """Check whether ``seg.translation`` exceeds the slot-based char budget.
+
+    Returns ``(is_too_long, actual_len, budget)``. The budget is derived from
+    ``seg.end - seg.start`` at the conservative 12 chars/sec rate.
+    """
+    trans = (seg.translation or "").rstrip()
+    slot = max(seg.end - seg.start, 0.0)
+    budget = _english_char_budget(slot)
+    return len(trans) > budget, len(trans), budget
+
+
+def _retry_too_long_translations(
+    segments: list[Segment],
+    *,
+    config: "Config",
+    target_lang_code: str,
+    logger: logging.Logger,
+    max_attempts: int = 2,
+    chars_per_sec: float = _ENGLISH_CHARS_PER_SEC,
+) -> tuple[list[Segment], list[tuple[int, str, int, int]]]:
+    """Iteratively ask the LLM to shorten translations whose natural TTS
+    duration would exceed the slot.
+
+    The retry system prompt tells the model "compress this translation to
+    ≤N characters while preserving the meaning" and passes each oversize
+    segment's current translation + slot budget. Up to ``max_attempts``
+    rounds; segments that stay over budget after that keep their best
+    translation (the align stage will trim the tail — not ideal but the
+    audio is still intelligible).
+
+    Returns the updated segments and a list of unresolved failures of the
+    form ``(idx, current_translation, length, budget)`` for the caller to
+    surface on ``result.warnings``.
+    """
+    failures = []
+    for i, s in enumerate(segments):
+        is_long, length, budget = _is_too_long_translation(s)
+        if is_long:
+            failures.append((i, s.translation or "", length, budget))
+    if not failures:
+        return segments, []
+
+    logger.info(
+        "translation pacing pass: %d segments exceed budget: %s",
+        len(failures),
+        "; ".join(f"#{i}({l}>{b})" for i, _, l, b in failures[:6]),
+    )
+
+    BASE_SHORTEN_SYSTEM = (
+        "You are a translator for video dubbing. The previous translation "
+        "was too long for the available speech slot. Produce a NEW, SHORTER "
+        "translation of the source into {tl}. The slot is fixed; an "
+        "over-length translation gets its tail cut off and sounds broken, "
+        "which is worse than a slightly compressed rewrite. Drop filler "
+        "words, prefer shorter synonyms, merge clauses where possible. "
+        "Keep the meaning. End with terminal punctuation (. ! ?). Output "
+        "exactly one numbered line per input in the same format as before. "
+        "{jitter}"
+    )
+    JITTER_PHRASES = [
+        "Aim for the smallest character count that preserves meaning.",
+        "Treat every word as costing you a frame of audio.",
+        "Compress aggressively but do not change facts.",
+        "Prefer telegraphic style over idiomatic filler.",
+    ]
+
+    for attempt in range(1, max_attempts + 1):
+        pending = []
+        jitter = JITTER_PHRASES[(attempt - 1) % len(JITTER_PHRASES)]
+        shorten_msg = (
+            BASE_SHORTEN_SYSTEM.replace("{jitter}", jitter).replace("{tl}", target_lang_code)
+        )
+        for i, prev_trans, length, budget in failures:
+            seg = segments[i]
+            slot = seg.end - seg.start
+            new_text = (
+                f"Source: {seg.text}\n"
+                f"Previous translation: {prev_trans}\n"
+                f"Slot: {slot:.2f}s, target ≤{budget} chars "
+                f"(previous length: {length})."
+            )
+            try:
+                out = translate_segments(
+                    [type("ShrinkInput", (), {"text": new_text})()],
+                    target_lang_code,
+                    base_url=config.minimax_base_url,
+                    api_key=config.minimax_api_key,
+                    model=config.minimax_chat_model,
+                    timeout=config.minimax_timeout_seconds,
+                    source_language="zh",
+                    system_prompt=shorten_msg,
+                )
+                new_trans = (out[0].translation or "").strip() if out else None
+                if new_trans:
+                    # Strip leading numbering like "1. ..." if present
+                    new_trans = re.sub(r"^\d+\.\s*", "", new_trans).strip()
+                    trial = seg.model_copy(update={"translation": new_trans})
+                    still_long, new_len, new_budget = _is_too_long_translation(trial)
+                    if not still_long:
+                        segments[i] = trial
+                        logger.info(
+                            "shorten[%d]: segment %d %d→%d chars (budget %d)",
+                            attempt, i, length, new_len, new_budget,
+                        )
+                        continue
+                    pending.append((i, new_trans, new_len, new_budget))
+                else:
+                    pending.append((i, prev_trans, length, budget))
+            except MiniMaxChatError as error:
+                logger.warning("shorten[%d]: segment %d failed: %s", attempt, i, error)
+                pending.append((i, prev_trans, length, budget))
+        if not pending:
+            failures = []
+            break
+        failures = pending
+
+    final_failed = [
+        (i, _is_too_long_translation(s)[0] and (
+            (s.translation or ""), _is_too_long_translation(s)[1], _is_too_long_translation(s)[2]
+        ))
+        for i, s in enumerate(segments) if _is_too_long_translation(s)[0]
+    ]
+    final_failed = [(i, t, l, b) for i, (flag, (t, l, b)) in enumerate(final_failed) if flag]
+    if final_failed:
+        logger.warning(
+            "translation still over budget after %d retries: %s",
+            max_attempts,
+            "; ".join(f"#{i}({l}>{b})" for i, _, l, b in final_failed[:6]),
+        )
+    return segments, final_failed
+
+
 def _retry_incomplete_translations(
     segments: list[Segment],
     *,
@@ -1205,6 +1355,24 @@ def _dub_video_pipeline(
             f"segment {i} translation stayed incomplete after retries ({reason})"
             for i, reason in retry_warnings
         )
+        # Pacing pass: ask the LLM to shorten any translations whose natural
+        # TTS duration would exceed the source slot. Without this, the align
+        # stage's 1.4× atempo cap + atrim chops the tail of every long
+        # English line. The model sees per-line budgets in the user prompt
+        # (set up by build_user_message) and usually complies on first pass;
+        # this loop only kicks in when a segment still exceeds its budget
+        # after the initial translation + completeness retries.
+        segments, pacing_warnings = _retry_too_long_translations(
+            segments,
+            config=config,
+            target_lang_code=target_lang_code,
+            logger=logger,
+        )
+        for i, prev, length, budget in pacing_warnings:
+            warnings.append(
+                f"segment {i} translation stayed over budget after retries "
+                f"({length}>{budget} chars)"
+            )
         use_translation = True
     else:
         logger.info("stage=translate skipped (source==target)")
