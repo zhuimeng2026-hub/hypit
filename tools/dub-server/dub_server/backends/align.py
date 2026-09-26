@@ -186,26 +186,32 @@ def align_segments_to_original(
         # ("two voices at different speeds").
         desired_atempo = tts_dur / slot_dur
         if desired_atempo > MAX_ATEMPO:
-            # Cap the speedup; the segment will overrun its slot by
-            # ``(tts_dur / MAX_ATEMPO) - slot_dur`` seconds and overlap
-            # the next track.  Acceptable trade-off vs. the chipmunk
-            # artefact that atempo > ~1.5 introduces on neural TTS.
+            # Cap the speedup. The TTS plays at MAX_ATEMPO for the slot's
+            # full duration; any audio that would extend past the slot
+            # end is trimmed with ``atrim=end=slot_dur`` so it does not
+            # overlap the next segment. Without this, the cap only
+            # removes the chipmunk artefact — capped segments still ran
+            # past their slot and bled into the next track (e.g. the
+            # 30-35s overlap on 2026-09-26 gz-exbi-en-final.mp4).
             _log.warning(
                 "align segment=%d atempo capped: tts_dur=%.3fs slot=%.3fs "
-                "desired=%.3fx capped=%.3fx overlap=%.3fs",
+                "desired=%.3fx capped=%.3fx trimmed=%.3fs",
                 i, tts_dur, slot_dur, desired_atempo, MAX_ATEMPO,
                 (tts_dur / MAX_ATEMPO) - slot_dur,
             )
             atempo = MAX_ATEMPO
+            trim = f"atrim=end={slot_dur:.4f},asetpts=PTS-STARTPTS,"
         else:
             atempo = desired_atempo
+            trim = ""
         atempo_chain = _atempo_chain(atempo)
         delay_ms = int(round(seg.original_start * 1000.0))
 
         chain = (
             f"[{i}:a]aresample=48000,aformat=channel_layouts=stereo,"
             + ",".join(atempo_chain)
-            + f",adelay={delay_ms}|{delay_ms}:all=1,volume={volume}[v{i}]"
+            + f",{trim}"
+            + f"adelay={delay_ms}|{delay_ms}:all=1,volume={volume}[v{i}]"
         )
         filter_lines.append(chain)
         inputs.extend(["-i", str(seg.audio_path)])
