@@ -703,42 +703,54 @@ def _find_breath_cuts(
     punctuation when possible.
 
     Boundaries are clause punctuation (CJK: 、，；。!?！？ and ASCII , ; . ! ?)
-    plus enumeration markers 一、二、... The split algorithm walks the text
-    once, ending each piece when:
-      - it has reached ``max_chars`` characters, or
-      - it is past ``target_chars`` and the next character is a clause
-        boundary.
-    Returns character-offset ranges (lo, hi) for each piece.
+    plus enumeration markers 一、二、...
+
+    The split algorithm picks, for each cut, the **latest** punctuation
+    position that lies in ``[cursor+min_chars, cursor+max_chars]``, where
+    ``min_chars = max(target_chars // 2, 3)``. If no punctuation lands in
+    that window it force-cuts at ``cursor+max_chars`` so a piece can never
+    exceed the cap.
+
+    Earliest revisions of this helper always took the *first* punctuation
+    past ``target_chars``; sparse-punctuation segments slipped out at
+    20+ characters and the breath-group TTS blew past its slot, forcing
+    the align cap and atrim to chop the last ~1 s of English speech.
+    Taking the latest in-window punctuation produces natural-feeling
+    pieces while still respecting the cap.
     """
     # Build a sorted list of cut positions (offsets AFTER the boundary char)
-    cuts: list[int] = [0]
+    cuts: set[int] = {0}
     for i, ch in enumerate(text):
         if ch in "、，；,;．.！!？?":
             j = i + 1
             while j < len(text) and text[j] in " \t":
                 j += 1
-            cuts.append(j)
+            cuts.add(j)
     for m in _CJK_ENUM_RE.finditer(text):
         if m.start() > 0:
-            cuts.append(m.start())
-    cuts = sorted(set(cuts))
-    cuts.append(len(text))
+            cuts.add(m.start())
+    cuts.add(len(text))
+    cuts_sorted = sorted(cuts)
 
+    min_chars = max(target_chars // 2, 3)
     pieces: list[tuple[int, int]] = []
-    cursor = cuts[0]
-    for nxt in cuts[1:]:
-        length = nxt - cursor
-        if length >= target_chars:
-            # Past target, accept this cut
-            pieces.append((cursor, nxt))
-            cursor = nxt
-        elif length >= max_chars:
-            # Force-cut even though short on punctuation
-            pieces.append((cursor, nxt))
-            cursor = nxt
-        # else: too small, keep extending
-    if cursor < len(text):
-        pieces.append((cursor, len(text)))
+    cursor = 0
+    while cursor < len(text):
+        best: int | None = None
+        for c in cuts_sorted:
+            if c <= cursor:
+                continue
+            length = c - cursor
+            if length > max_chars:
+                break  # cuts_sorted is sorted; nothing closer fits
+            if length >= min_chars:
+                best = c  # keep updating to the latest in-window punctuation
+        if best is None:
+            # No punctuation in [min_chars, max_chars] window: force-cut
+            # at max_chars (or end of text) so we never exceed the cap.
+            best = min(cursor + max_chars, len(text))
+        pieces.append((cursor, best))
+        cursor = best
     # Drop leading/trailing whitespace-only pieces
     pieces = [(lo, hi) for lo, hi in pieces if text[lo:hi].strip()]
     return pieces if len(pieces) >= 2 else None
