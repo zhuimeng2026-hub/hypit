@@ -67,7 +67,7 @@ timings land in `timings_ms`:
 | **5** | **TTS** | 863–929 | `resolve_voice` maps `"auto"` / `"zh-male"` / `male_zh_3` → MiniMax voice_id + edge fallback. MiniMax fails or key missing → edge-tts. Fallback is logged into `warnings` | `backends.minimax_tts_synthesize` / `backends.edge_tts_synthesize_sync` |
 | **6** | **align** | 940–947 | Time-stretch each TTS clip to its original slot and place it on the timeline as `voice-aligned.wav` | `backends.align_segments_to_original` |
 | **7** | **mix** | 950–957 | `_mix_bed_and_voice`: bed volume per mode (0.30 / 8.0 / 1.0), voice fixed 1.20×. `amix` + `alimiter` + 48 kHz resample | `_mix_bed_and_voice` |
-| **8** | **ASS write + mux** | 961–976 | `write_ass` writes CJK-friendly subtitles (`_wrap_for_ass` hard-breaks CJK, lets libass word-wrap Latin), then `mux_with_ass` (burn) or `_mux_simple` (no burn) | `write_ass` / `backends.mux_with_ass` / `_mux_simple` |
+| **8** | **ASS write + mux** | 961–976 | `write_ass` writes CJK + Latin subtitles (`_wrap_for_ass` hard-breaks both, with separate per-script char budgets: 14 CJK / 40 Latin), then `mux_with_ass` (burn) or `_mux_simple` (no burn) | `write_ass` / `backends.mux_with_ass` / `_mux_simple` |
 | **9** | **loudness profile** | 979–985 | Per-second RMS → dB in `DubResult.loudness_per_sec_db`. Plus `compute_bed_minus_voice_db` to estimate bed isolation (ml-separate only) | `backends.compute_per_second_rms` / `compute_bed_minus_voice_db` |
 
 `DubResult` packages everything:
@@ -155,14 +155,21 @@ Style: Default,Noto Sans CJK SC,32,&H00FFFFFF,&H000000FF,
 Dialogue lines prefer `segment.translation` if `use_translation=True`, else
 `segment.text`. Time stamps formatted as `H:MM:SS.cc` via `_format_ass_time`.
 
-`_wrap_for_ass(text, max_chars=14)`:
+`_wrap_for_ass(text, *, max_chars)` is called with a per-script `max_chars`:
 
-- **Latin text**: emit no hard `\N` — libass wraps on spaces naturally
-- **CJK text**: hard-wrap at 14 chars; if a CJK punctuation is near the
-  midpoint, split there (`_has_cjk` heuristic counts CJK code points)
+- **CJK text** (`max_chars=14`): hard-wrap at 14 chars; if a CJK
+  punctuation is near the midpoint, split there. `_has_cjk` heuristic
+  counts CJK code points to pick the script.
+- **Latin text** (`max_chars=40`): word-wrap on spaces, capping each
+  line at 40 chars (`_wrap_latin_on_word`). ffmpeg 6.x's `ass=` filter
+  does not respect `WrapStyle: 2` reliably, so deferring to libass
+  produces lines that spill off the right edge of a 720×1280 burn area
+  (regression observed on the 2026-09-26 gz-exbi.mp4 dub — fixed by
+  hard-wrapping in the pipeline instead of trusting libass).
 
-Lines that exceed ~14 CJK chars wrap with `\N` so the bottom margin layout
-doesn't truncate them.
+Lines that exceed the per-script budget wrap with `\N` so the bottom
+margin layout doesn't truncate them. Both branches recurse, so a
+multi-line English sentence gets split into 2-4 hard-broken lines.
 
 ---
 

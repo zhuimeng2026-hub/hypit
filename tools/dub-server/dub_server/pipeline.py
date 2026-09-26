@@ -350,9 +350,13 @@ def write_ass(
             continue
         start = _format_ass_time(seg.start)
         end = _format_ass_time(seg.end)
-        # Wrap long lines: split at the midpoint on a word boundary if present,
-        # else insert a hard break at ~14 CJK chars.
-        wrapped = _wrap_for_ass(text, max_chars=14)
+        # Pick wrap limit by script: CJK glyphs are ~2× wider than Latin at
+        # the same font size, so the per-line char budget differs. ffmpeg
+        # 6.x's ``ass=`` filter does not respect ``WrapStyle: 2`` reliably,
+        # so both branches emit hard ``\\N`` rather than trusting libass
+        # to word-wrap a too-wide line.
+        max_chars = 14 if _has_cjk(text) else 40
+        wrapped = _wrap_for_ass(text, max_chars=max_chars)
         lines.append(
             f"Dialogue: 0,{start},{end},Default,,0,0,0,,{wrapped}"
         )
@@ -370,22 +374,23 @@ def _has_cjk(text: str) -> bool:
 def _wrap_for_ass(text: str, *, max_chars: int) -> str:
     """Wrap subtitle text into ASS-friendly line breaks.
 
-    - For ASCII / Latin text we rely on ASS' built-in word-wrap by emitting
-      **no** hard ``\\N`` (the rendering engine wraps on spaces). This lets
-      long English lines flow naturally instead of being chopped at every
-      ``max_chars`` boundary. Caller should still cap input length so
-      subtitles don't stay on screen too long; this function does not
-      enforce that.
+    Both scripts emit hard ``\\N`` breaks. ffmpeg 6.x's ``ass=`` filter
+    does not respect ASS ``WrapStyle: 2`` reliably, so deferring to
+    libass produces lines wider than the burn area that spill off the
+    right edge (regression observed on the 2026-09-26 gz-exbi.mp4 dub
+    at frames 6.0s, 35.0s — see ``tools/dub-server/docs/``).
 
-    - For CJK text we hard-wrap at ``max_chars`` (CJK glyphs are wide and
-      ``SpaceWrapStyle: 2`` does not help us when there are no spaces).
-    ``max_chars=14`` works well at FontSize=32 in a 720×1280 burn area.
+    - For ASCII / Latin text we word-wrap on spaces, capping each line
+      at ``max_chars`` (caller passes 40 at FontSize=32 in 720×1280).
+    - For CJK text we hard-wrap at ``max_chars`` (caller passes 14 —
+      CJK glyphs are wide and ``SpaceWrapStyle: 2`` does not help us
+      when there are no spaces).
     """
     if len(text) <= max_chars:
         return text.replace("\n", "\\N")
     if not _has_cjk(text):
-        # Latin: let libass handle word-wrap; no hard break.
-        return text.replace("\n", "\\N")
+        # Latin: word-wrap on spaces, cap each line at max_chars.
+        return _wrap_latin_on_word(text, max_chars=max_chars)
     # CJK: split at CJK punctuation if a natural break is nearby, else hard split.
     midpoint = len(text) // 2
     for offset in range(min(midpoint, 4)):
@@ -395,6 +400,34 @@ def _wrap_for_ass(text: str, *, max_chars: int) -> str:
                 tail = text[delta:].lstrip()
                 return (head + "\\N" + _wrap_for_ass(tail, max_chars=max_chars)).replace("\n", "\\N")
     return text[:max_chars] + "\\N" + _wrap_for_ass(text[max_chars:], max_chars=max_chars)
+
+
+def _wrap_latin_on_word(text: str, *, max_chars: int) -> str:
+    """Word-wrap Latin / ASCII text so each line fits within ``max_chars``.
+
+    Splits on whitespace; lines are joined by ASS hard-break ``\\N``.
+    Words longer than ``max_chars`` are emitted on their own line (we
+    never break inside a word) — at typical translation lengths this
+    shouldn't happen, but if a single word is wider than the burn area
+    we let libass handle it as best it can.
+    """
+    words = text.split()
+    lines: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for word in words:
+        # +1 for the joining space (no space if first word on a line)
+        added = len(word) + (1 if current else 0)
+        if current and current_len + added > max_chars:
+            lines.append(" ".join(current))
+            current = [word]
+            current_len = len(word)
+        else:
+            current.append(word)
+            current_len += added
+    if current:
+        lines.append(" ".join(current))
+    return "\\N".join(lines)
 
 
 # ---------------------------------------------------------------------------
