@@ -70,16 +70,18 @@ from .schemas import (
 
 # Per-mode bed gain that matches the working dub-video pipeline values
 # (see out-zh.mp4 / -chear / -ML in /opt/hypit/examples/ranking-football/).
-# `ml-separate` and `stereo-mix` both duck the bed to 0.30 so the new
-# voice at 1.20× sits ~12 dB above it — broadcast-standard BGM ducking.
-# `phase-cancel` loses ~18 dB to L-R subtraction, so it gets an 8× boost
-# instead. (ml-separate used to be 1.0; reverted to 0.30 after the
-# 2026-09-26 gz-exbi.mp4 dub showed bed-at-1.0 created audible overlap
-# between BGM and the new English voice.)
+# `ml-separate` mutes the bed to 0.0 — the demucs-split no_vocals stem
+# often still carries vocoder artifacts of the original voice, and the
+# BGM at any non-trivial level competes with the new voice, producing
+# the "sound overlap" complaint observed on the 2026-09-26 gz-exbi.mp4
+# dub. Users who want BGM retained should switch to stereo-mix (which
+# ducks the original bed to 0.30 and keeps both voice and music) or set
+# MINIMAX_TTS_VOICE_/bed_vol in their fork. `phase-cancel` keeps its 8×
+# boost to recover the ~18 dB L-R subtraction loss.
 MODE_BED_VOLUME = {
     "stereo-mix": 0.30,
     "phase-cancel": 8.0,
-    "ml-separate": 0.3,
+    "ml-separate": 0.0,
 }
 VOICE_VOLUME = 1.20
 
