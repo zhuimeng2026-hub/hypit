@@ -10,7 +10,8 @@ import { join } from "node:path";
 import test from "node:test";
 import type { ViteDevServer } from "vite";
 import { studioFeedbackPlugin } from "../src/feedback-server.js";
-import { allowsStudioMutation } from "../src/mutation-origin.js";
+import { allowsStudioMutation, allowsStudioMutationWithToken } from "../src/mutation-origin.js";
+import { SseHub } from "../src/sse.js";
 
 test("Studio mutations accept the actual local page and local non-browser clients", () => {
   assert.equal(allowsStudioMutation({ host: "localhost:5173", origin: "http://localhost:5173", "sec-fetch-site": "same-origin" }), true);
@@ -34,7 +35,14 @@ test("the feedback write endpoint rejects a foreign page before reading its muta
     assert.ok(middleware);
     middleware(request, response, () => { response.statusCode = 404; response.end(); });
   });
-  const plugin = studioFeedbackPlugin(root, join(root, "runs", "main.svrun"));
+  const workspaceId = "ws_test";
+  const plugin = studioFeedbackPlugin({
+    workspaces: new Map([[workspaceId, { workspaceRoot: root, runPath: join(root, "runs", "main.svrun") }]]),
+    defaultWorkspaceId: workspaceId,
+    corsConfig: { mode: "none" },
+    authToken: undefined,
+    sseHub: new SseHub(),
+  });
   (plugin.configureServer as (server: ViteDevServer) => void)({
     httpServer: server,
     ws: { send() {} },
@@ -54,4 +62,26 @@ test("the feedback write endpoint rejects a foreign page before reading its muta
     await new Promise<void>((resolve) => server.close(() => resolve()));
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("token-asserted writes still accept the local page without a token", () => {
+  const headers = { host: "localhost:5179", origin: "http://localhost:5179", "sec-fetch-site": "same-origin" };
+  // Token not configured: loopback is the only path.
+  assert.equal(allowsStudioMutationWithToken(headers, undefined), true);
+  // Token configured but not presented: loopback still passes.
+  assert.equal(allowsStudioMutationWithToken(headers, "s3cret"), true);
+  // Empty token is treated as "not configured".
+  assert.equal(allowsStudioMutationWithToken(headers, ""), true);
+});
+
+test("token-asserted writes accept any origin with the right Bearer token", () => {
+  const headers = { host: "studio.example.com", origin: "https://myapp.test", authorization: "Bearer s3cret" };
+  assert.equal(allowsStudioMutationWithToken(headers, "s3cret"), true);
+});
+
+test("token-asserted writes reject a wrong or missing token", () => {
+  const foreign = { host: "studio.example.com", origin: "https://myapp.test" };
+  assert.equal(allowsStudioMutationWithToken(foreign, "s3cret"), false);
+  assert.equal(allowsStudioMutationWithToken({ ...foreign, authorization: "Bearer wrong" }, "s3cret"), false);
+  assert.equal(allowsStudioMutationWithToken({ ...foreign, authorization: "bearer s3cret" }, "s3cret"), false);
 });
