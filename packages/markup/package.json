@@ -5,12 +5,20 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./run": "./src/run/index.ts"
+  },
+  "hypit": {
+    "activation": "./src/run/activation.ts"
   },
   "dependencies": {
-    "@hypit/core": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/host": "workspace:*",
-    "@hypit/protocol": "workspace:*"
+    "@hypit/source": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/facet": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/run": "workspace:*"
+  },
+  "devDependencies": {
+    "@hypit/kernel": "workspace:*"
   }
 }

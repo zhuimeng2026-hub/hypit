@@ -1,12 +1,12 @@
-import { timelineTypes } from "@hypit/timeline";
+import { timelineTypes } from "@hypit/hypit/timeline";
 
-import { compositionTypes } from "@hypit/composition";
-import { sealGraphFragment } from "@hypit/elaborator";
-import type { FragmentOperation, GraphFragment } from "@hypit/elaborator";
-import { mediaTypes } from "@hypit/media";
-import { spatialTypes } from "@hypit/spatial";
-import { textTypes } from "@hypit/text";
-import { temporalTypes } from "@hypit/temporal";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation, GraphFragment } from "@hypit/hypit/author";
+import { mediaTypes } from "@hypit/hypit/media";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { textTypes } from "@hypit/hypit/text";
+import { temporalTypes } from "@hypit/hypit/temporal";
 
 import { rankingProducers, rankingTypes } from "./manifest.js";
 import type { RankingVariant } from "./types.js";
@@ -57,12 +57,12 @@ export function createRankingFragment(
   const selected = definition(variant);
   const inputs: Array<GraphFragment["inputs"][number]> = [
     { name: "header", type: rankingTypes.header },
-    { name: "timeline", type: timelineTypes.track },
+    { name: "timeline", type: timelineTypes.timeline },
     { name: "outer", type: temporalTypes.window },
     ...(variant === "top-three" ? [
       { name: "terminal", type: temporalTypes.instant },
     ] : []),
-    ...(variant === "column" || variant === "tier-board" ? [{ name: "canvas", type: spatialTypes.canvas }] : []),
+    ...(variant === "column" || variant === "tier-board" ? [{ name: "within", type: spatialTypes.frame }] : []),
     { name: "frame", type: spatialTypes.frame },
     { name: "style", type: selected.style },
   ];
@@ -93,14 +93,14 @@ export function createRankingFragment(
       result: { kind: "output", name: "spec" },
     });
     const resolvedSpec = item.contentName === undefined ? input(item.specName) : operation(materializedId);
-    const semanticId = `spec-${item.suffix}`;
+    const specOperationId = `spec-${item.suffix}`;
     operations.push({
-      id: semanticId,
+      id: specOperationId,
       producer: rankingProducers.appendSpec,
       inputs: { set: specs, spec: resolvedSpec },
       result: { kind: "output", name: "set" },
     });
-    specs = operation(semanticId);
+    specs = operation(specOperationId);
     const visualId = `item-${item.suffix}`;
     operations.push({
       id: visualId,
@@ -153,7 +153,7 @@ export function createRankingFragment(
     producer: selected.build,
     inputs: {
       header: input("header"),
-      ...(variant === "column" || variant === "tier-board" ? { canvas: input("canvas") } : {}),
+      ...(variant === "column" || variant === "tier-board" ? { within: input("within") } : {}),
       frame: input("frame"), schedule: operation("schedule"), style: input("style"), set: resolved,
     },
     result: { kind: "output", name: "program" },

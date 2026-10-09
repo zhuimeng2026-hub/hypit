@@ -1,4 +1,4 @@
-import { sealGraphFragment } from "@hypit/elaborator";
+import { sealGraphFragment } from "@hypit/author";
 
 import { textProducers, textTypes } from "./manifest.js";
 
@@ -20,7 +20,7 @@ export function createTextRenderFragment(entries: readonly TextFragmentBinding[]
     { name: "template", type: textTypes.template },
     { name: "bindings", type: textTypes.bindings },
   ];
-  const operations: Array<import("@hypit/elaborator").FragmentOperation> = [];
+  const operations: Array<import("@hypit/author").FragmentOperation> = [];
   let bindings = input("bindings") as ReturnType<typeof input> | ReturnType<typeof operation>;
   entries.forEach((entry, index) => {
     const prefix = `binding:${entry.name}`;

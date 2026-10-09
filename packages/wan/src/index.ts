@@ -1,9 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const wanModuleRef = { name: "@hypit/wan", version: "1" } as const;
 export const wanModels = ["wan-2.7-image", "wan-2.7-image-pro"] as const;
@@ -95,7 +95,7 @@ const wanChildren: readonly SurfaceChildVocabulary[] = [
   { tag: "Reference", cardinality: "many",
     summary: "Attaches one image Artifact the model edits or draws on.",
     attributes: [
-      { name: "image", kind: "reference", required: true, accepts: [artifactTypes.blob],
+      { name: "image", kind: "reference", required: true, accepts: [blobTypes.blob],
         summary: "Selects the image Artifact this reference contributes." },
     ] },
 ];
@@ -118,7 +118,7 @@ const surface = (
     children: wanChildren,
     ports: [{
       name: "image",
-      type: artifactTypes.blob,
+      type: blobTypes.blob,
       summary: "The primary generated image, addressed as `<id>.image`.",
     }],
     example,

@@ -1,4 +1,4 @@
-import { fileReferenceIdentity } from "@hypit/build-result";
+import { fileReferenceIdentity } from "@hypit/result/node";
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -7,7 +7,7 @@ import type {
   BuildResultFileRef,
   BuildResultRepository,
   RepositoryBuildResultOutput,
-} from "@hypit/build-result";
+} from "@hypit/result/node";
 
 export type BuildResultExport = {
   readonly build: string;

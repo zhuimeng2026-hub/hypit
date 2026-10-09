@@ -1,15 +1,11 @@
-import { resolveTemporalContext } from "@hypit/temporal-markup";
-import {
-  assertAttributes, assertEmptyElement, optionalTextAttribute, textAttribute, type MarkupAttributeValue, type StructuredSurfaceHandler,
-  type SurfaceComponentDraft, type SurfaceRecordDraft, type SurfaceResolvedReference,
-} from "@hypit/markup";
-import { artifactTypes } from "@hypit/artifact";
-import { narrativeTypes } from "@hypit/narrative";
-import { sameType, type CanonicalValue, type TypeRef } from "@hypit/protocol";
-import { spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
-import type { SvsRecipe } from "@hypit/svs";
-import { createTemporalInstantProjection, createTemporalWindowProjection, temporalWindowAttributeNames } from "@hypit/temporal-markup";
+import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { assertAttributes, assertEmptyElement, optionalTextAttribute, textAttribute, type MarkupAttributeValue, type StructuredSurfaceHandler, type SurfaceComponentDraft, type SurfaceRecordDraft, type SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sameType, type CanonicalValue, type TypeRef } from "@hypit/hypit/protocol";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
+import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/hypit/temporal/markup";
 
 import { createEmojiRevealFragment } from "./fragment.js";
 import { emojiRevealTypes } from "./manifest.js";
@@ -42,29 +38,27 @@ function boolean(element: Parameters<StructuredSurfaceHandler>[0]["element"], na
 export const decodeEmojiRevealStyleSurface: StructuredSurfaceHandler = ({ element, resolveReference }) => {
   assertAttributes(element, ["id", "recipe"]); assertEmptyElement(element);
   const id = textAttribute(element, "id");
-  const recipe = reference(element.attributes.recipe, `${element.name}.recipe`, svsRecipeType, resolveReference);
-  const style = decodeEmojiRevealStyle(id, inline<SvsRecipe>(recipe, `${element.name}.recipe`));
+  const recipe = reference(element.attributes.recipe, `${element.name}.recipe`, recipeType, resolveReference);
+  const style = decodeEmojiRevealStyle(id, inline<Recipe>(recipe, `${element.name}.recipe`));
   return { records: [{ id, type: emojiRevealTypes.style, value: { kind: "inline", value: style as unknown as CanonicalValue }, range: element.range }], components: [], fragments: [] };
 };
 
 export const decodeEmojiRevealTrackSurface: StructuredSurfaceHandler = ({ element, resolveReference }) => {
-  assertAttributes(element, ["id", "timeline", "canvas", "style", "placeholder", ...temporalWindowAttributeNames]);
+  assertAttributes(element, ["id", "timeline", "within", "style", "placeholder", ...temporalWindowAttributeNames]);
   const id = textAttribute(element, "id");
   const context = resolveTemporalContext({ element, resolveReference });
-  const canvas = reference(element.attributes.canvas, `${element.name}.canvas`, spatialTypes.canvas, resolveReference);
+  const within = reference(element.attributes.within, `${element.name}.within`, spatialTypes.frame, resolveReference);
   const style = reference(element.attributes.style, `${element.name}.style`, emojiRevealTypes.style, resolveReference);
-  const placeholder = reference(element.attributes.placeholder, `${element.name}.placeholder`, artifactTypes.blob, resolveReference);
-  const outer = createTemporalWindowProjection({ id, subjectId: id, element, ...context, resolveReference });
+  const placeholder = reference(element.attributes.placeholder, `${element.name}.placeholder`, blobTypes.blob, resolveReference);
+  const outer = resolveTemporalWindowReference({ element, resolveReference });
   const headerId = `${id}.header`;
-  const records: SurfaceRecordDraft[] = [...outer.records, {
+  const records: SurfaceRecordDraft[] = [{
     id: headerId, type: emojiRevealTypes.header,
     value: { kind: "inline", value: sealEmojiRevealHeader({ id }) as unknown as CanonicalValue }, range: element.range,
   }];
-  const temporalComponents: SurfaceComponentDraft[] = [...outer.components];
-  const temporalFragments = [...outer.fragments];
   const items: { specName: string; iconName: string; activationName?: string }[] = [];
   const inputs: Record<string, typeof context.timeline.ref> = {
-    header: { kind: "record", id: headerId }, timeline: context.timeline.ref, canvas: canvas.ref, style: style.ref,
+    header: { kind: "record", id: headerId }, timeline: context.timeline.ref, within: within.ref, style: style.ref,
     placeholder: placeholder.ref, outer: outer.ref,
   };
   const ids = new Set<string>();
@@ -80,7 +74,7 @@ export const decodeEmojiRevealTrackSurface: StructuredSurfaceHandler = ({ elemen
     const timed = child.attributes.at !== undefined;
     if (preset && timed) throw new Error(`${child.name} cannot combine preset=true with at.`);
     if (!preset && !timed) throw new Error(`${child.name} requires at unless preset=true.`);
-    const icon = reference(child.attributes.icon, `${child.name}.icon`, artifactTypes.blob, resolveReference);
+    const icon = reference(child.attributes.icon, `${child.name}.icon`, blobTypes.blob, resolveReference);
     const spec = sealEmojiRevealItemSpec({ id: itemId, preset });
     const suffix = String(index).padStart(4, "0");
     const specId = `${id}.item.${suffix}.spec`; const specName = `item-${suffix}-spec`;
@@ -89,11 +83,7 @@ export const decodeEmojiRevealTrackSurface: StructuredSurfaceHandler = ({ elemen
     inputs[specName] = { kind: "record", id: specId }; inputs[iconName] = icon.ref;
     if (preset) items.push({ specName, iconName });
     else {
-      const activation = createTemporalInstantProjection({
-        id: `${id}.item.${suffix}.activation`, subjectId: itemId,
-        element: child, ...context, resolveReference, semanticAttribute: "at", projectedAttribute: false,
-      });
-      records.push(...activation.records); temporalComponents.push(...activation.components); temporalFragments.push(...activation.fragments);
+      const activation = resolveTemporalInstantReference({ element: child, resolveReference });
       const activationName = `item-${suffix}-activation`;
       inputs[activationName] = activation.ref;
       items.push({ specName, iconName, activationName });
@@ -103,7 +93,7 @@ export const decodeEmojiRevealTrackSurface: StructuredSurfaceHandler = ({ elemen
   const fragment = createEmojiRevealFragment(items);
   return {
     records,
-    components: [...temporalComponents, { id, fragment: fragment.id, inputs, outputs: { program: `${id}.program`, track: `${id}.track` }, range: element.range }],
-    fragments: [...temporalFragments, fragment], exports: [`${id}.program`, `${id}.track`],
+    components: [{ id, fragment: fragment.id, inputs, outputs: { program: `${id}.program`, visual: `${id}.visual` }, range: element.range }],
+    fragments: [fragment], exports: [`${id}.program`, `${id}.visual`],
   };
 };

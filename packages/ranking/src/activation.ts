@@ -1,4 +1,7 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 
 import {
   decodeColumnStyleSurface,
@@ -12,6 +15,7 @@ import {
   rankingMarkupSurfaces,
   rankingModuleRef,
 } from "./index.js";
+import { rankingStudioTrackCompanions } from "./studio.js";
 
 const facets = [
   ["tier-style", decodeTierBoardStyleSurface],
@@ -23,16 +27,19 @@ const facets = [
 ] as const;
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{
     manifest: rankingManifest,
   }],
-  components: [rankingComponent],
-  hostFacets: facets.map(([surface, handler]) => createMarkupSurfaceHostFacet({
-    module: rankingModuleRef,
-    declaration: rankingMarkupSurfaces.find((item) => item.name === surface)!,
-    handler,
-  })),
+  facets: [
+    ...[rankingComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    ...facets.map(([surface, handler]) => createMarkupSurfaceFacet({
+      module: rankingModuleRef,
+      declaration: rankingMarkupSurfaces.find((item) => item.name === surface)!,
+      handler,
+    })),
+    createStudioTrackCompanionFacet(rankingStudioTrackCompanions),
+  ],
 };
 
 export default hypitPackage;

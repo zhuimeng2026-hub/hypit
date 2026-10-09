@@ -11,12 +11,8 @@
     "activation": "./src/activation.ts"
   },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/composition": "workspace:*",
-    "@hypit/media": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/program-space": "workspace:*",
+    "@hypit/producer": "workspace:*",
     "@hypit/protocol": "workspace:*",
-    "@hypit/speech": "workspace:*"
+    "@hypit/admission": "workspace:*"
   }
 }

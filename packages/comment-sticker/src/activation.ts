@@ -1,4 +1,7 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 
 import {
   commentStickerComponent,
@@ -8,24 +11,26 @@ import {
   decodeCommentStickerTrackSurface,
   commentStickerMarkupSurfaces,
 } from "./index.js";
+import { commentStickerStudioTrackCompanions } from "./studio.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{
     manifest: commentStickerManifest,
   }],
-  components: [commentStickerComponent],
-  hostFacets: [
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[commentStickerComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    createMarkupSurfaceFacet({
       module: commentStickerModuleRef,
     declaration: commentStickerMarkupSurfaces.find((item) => item.name === "style")!,
       handler: decodeCommentStickerStyleSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: commentStickerModuleRef,
     declaration: commentStickerMarkupSurfaces.find((item) => item.name === "track")!,
       handler: decodeCommentStickerTrackSurface,
     }),
+    createStudioTrackCompanionFacet(commentStickerStudioTrackCompanions),
   ],
 };
 

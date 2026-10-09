@@ -1,5 +1,5 @@
-import type { ModuleRef } from "@hypit/protocol";
-import type { GenerationWireMapping } from "@hypit/generation";
+import type { ModuleRef } from "@hypit/hypit/protocol";
+import type { GenerationWireMapping } from "@hypit/hypit/generation";
 
 const SEEDANCE: ModuleRef = { name: "@hypit/seedance", version: "1" };
 const SEEDREAM: ModuleRef = { name: "@hypit/seedream", version: "1" };

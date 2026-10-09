@@ -1,9 +1,9 @@
 import { compositionTypes } from "@hypit/hypit/composition";
 import {
-  createStudioCompanionHostFacet,
+  createStudioCompanionFacet,
   textLayer,
   temporalLineageFor,
-} from "@hypit/hypit/studio-adapter";
+} from "@hypit/studio-companion";
 import { module, defaults } from "./definition.js";
 
 const section = (id, label) => ({ id, label });
@@ -254,7 +254,7 @@ const parameters = [
     ...frames(["from", "to"]),
   },
 ];
-export const studioFacet = createStudioCompanionHostFacet({
+export const studioFacet = createStudioCompanionFacet({
   tracks,
   parameters,
 });

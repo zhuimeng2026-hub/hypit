@@ -1,7 +1,7 @@
 import type {
   CompiledSourceClosure,
   GraphFragment,
-} from "@hypit/elaborator";
+} from "@hypit/author";
 import type {
   Candidate,
   CanonicalValue,
@@ -11,13 +11,11 @@ import type {
   TypeRef,
 } from "@hypit/protocol";
 export type { RunGraph } from "@hypit/protocol";
-import type { SourceHeader, SourceUnit } from "@hypit/source";
+import type { SourceUnit } from "@hypit/source";
 
 export type RunSourceUnit = SourceUnit;
 
-export type RunFrontendSourceUnit = RunSourceUnit & {
-  readonly header: SourceHeader;
-};
+export type RunFrontendSourceUnit = RunSourceUnit;
 
 export type RunAuthorSourceRequest = {
   readonly source: string;

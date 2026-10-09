@@ -1,20 +1,16 @@
 import { renderComponentWorkshop } from "./scenes/components/index.js";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
 import { renderSemanticWorkshop } from "./scenes/semantic-time/index.js";
 import { renderDeliveryWorkshop } from "./scenes/delivery/index.js";
 import { renderCodeJourney } from "./scenes/code-route/index.js";
 import { renderOutro } from "./scenes/outro/index.js";
 import { sceneCompanions } from "./studio.js";
-import { createStudioTrackCompanionHostFacet } from "@hypit/hypit/studio-adapter";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 import { renderRoad } from "./scenes/editor-route/index.js";
-import {
-  assertAttributes,
-  assertEmptyElement,
-  textAttribute,
-  canonicalize,
-  sameType,
-  sealGraphFragment,
-  createMarkupSurfaceHostFacet,
-} from "@hypit/hypit/author-kit";
+import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { canonicalize, sameType } from "@hypit/hypit/protocol";
+import { sealGraphFragment } from "@hypit/hypit/author";
 import { compositionTypes } from "@hypit/hypit/composition";
 import { mediaTypes } from "@hypit/hypit/media";
 import { timelineTypes } from "@hypit/hypit/timeline";
@@ -22,14 +18,14 @@ import { spatialTypes } from "@hypit/hypit/spatial";
 import { temporalTypes, assertTemporalInstantFor } from "@hypit/hypit/temporal";
 import {
   resolveTemporalContext,
-  createTemporalWindowProjection,
-  createTemporalInstantProjection,
+  resolveTemporalWindowReference,
+  resolveTemporalInstantReference,
   temporalWindowAttributeNames,
   temporalWindowAttributeVocabulary,
   temporalContextAttributeVocabulary,
   temporalInstantAttributeNames,
   temporalInstantAttributeVocabulary,
-} from "@hypit/hypit/temporal-markup";
+} from "@hypit/hypit/temporal/markup";
 import { renderIntro, renderComparison } from "./render.js";
 const module = { name: "@explainer/web-scenes", version: "1" },
   type = (name) => ({ module, name }),
@@ -38,8 +34,8 @@ const module = { name: "@explainer/web-scenes", version: "1" },
 const options = type("Options"),
   events = type("Events");
 const common = [
-  port("timeline", timelineTypes.track),
-  port("canvas", spatialTypes.canvas),
+  port("timeline", timelineTypes.timeline),
+  port("within", spatialTypes.frame),
   port("window", temporalTypes.window),
   port("font", mediaTypes.fontArtifact),
   port("options", options),
@@ -186,10 +182,11 @@ export const manifest = {
         mediaTypes.blobArtifact,
         mediaTypes.fontArtifact,
         mediaTypes.synchronized,
-        timelineTypes.track,
-        spatialTypes.canvas,
+        timelineTypes.timeline,
+        spatialTypes.frame,
         temporalTypes.window,
         temporalTypes.instant,
+        temporalTypes.duration, temporalTypes.extent, temporalTypes.shiftSpec,
       ].map((t) => [t.module.name, { module: t.module }]),
     ).values(),
   ],
@@ -200,7 +197,7 @@ export const manifest = {
     {
       name: "append",
       inputs: [
-        port("timeline", timelineTypes.track),
+        port("timeline", timelineTypes.timeline),
         port("events", events),
         port("options", options),
         port("at", temporalTypes.instant),
@@ -246,7 +243,7 @@ const component = {
           "track",
           tags[tag].render(
             inline(i.timeline),
-            inline(i.canvas),
+            inline(i.within),
             inline(i.window),
             inline(i.font),
             inline(i.options),
@@ -265,7 +262,7 @@ function decode(tag) {
     assertAttributes(element, [
       "id",
       "timeline",
-      "canvas",
+      "within",
       "font",
       ...spec.assets,
       ...Object.keys(spec.defaults),
@@ -273,13 +270,7 @@ function decode(tag) {
     ]);
     const id = textAttribute(element, "id"),
       context = resolveTemporalContext({ element, resolveReference }),
-      window = createTemporalWindowProjection({
-        id: id + ".window",
-        subjectId: id,
-        element,
-        ...context,
-        resolveReference,
-      });
+      window = resolveTemporalWindowReference({ element, resolveReference });
     const ref = (el, n, t) => {
       const raw = el.attributes[n];
       if (typeof raw !== "object" || raw.kind !== "reference")
@@ -296,20 +287,17 @@ function decode(tag) {
     }
     if (!Number.isSafeInteger(opts.z)) throw Error("z must be integer");
     const records = [
-        ...window.records,
         {
           id: id + ".options",
           type: options,
           value: value(opts),
           range: element.range,
         },
-      ],
-      components = [...window.components],
-      fragments = [...window.fragments];
+      ];
     const inputs = ins(tag).filter((p) => p.name !== "events"),
       bindings = {
         timeline: context.timeline.ref,
-        canvas: ref(element, "canvas", spatialTypes.canvas),
+        within: ref(element, "within", spatialTypes.frame),
         window: window.ref,
         font: ref(element, "font", mediaTypes.fontArtifact),
         options: { kind: "record", id: id + ".options" },
@@ -338,21 +326,13 @@ function decode(tag) {
       const name = textAttribute(ch, "name"),
         key = "beat" + ++count,
         eid = id + "." + key,
-        at = createTemporalInstantProjection({
-          id: eid,
-          subjectId: eid,
-          element: ch,
-          ...context,
-          resolveReference,
-        });
-      records.push(...at.records, {
+        at = resolveTemporalInstantReference({ element: ch, resolveReference });
+      records.push({
         id: eid + ".options",
         type: options,
         value: value({ id: eid, name }),
         range: ch.range,
       });
-      components.push(...at.components);
-      fragments.push(...at.fragments);
       inputs.push(port(key, options), port(key + "-at", temporalTypes.instant));
       bindings[key] = { kind: "record", id: eid + ".options" };
       bindings[key + "-at"] = at.ref;
@@ -387,7 +367,7 @@ function decode(tag) {
       operations,
       exports: [
         {
-          name: "track",
+          name: "visual",
           type: compositionTypes.visualTrack,
           root: op("render"),
         },
@@ -395,29 +375,29 @@ function decode(tag) {
     });
     return {
       records,
-      fragments: [...fragments, fragment],
+      fragments: [fragment],
       components: [
-        ...components,
         {
           id,
           fragment: fragment.id,
           inputs: bindings,
-          outputs: { track: id + ".track" },
+          outputs: { visual: id + ".visual" },
           range: element.range,
         },
       ],
-      exports: [id + ".track"],
+      exports: [id + ".visual"],
     };
   };
 }
 export const hypitPackage = {
-  format: "hypit.node-package@1",
+  format: "hypit.package@1",
   modules: [{ manifest }],
-  components: [component],
-  hostFacets: [
-    createStudioTrackCompanionHostFacet(sceneCompanions(module, tags)),
+  facets: [
+    createProducerPackageFacet(component),
+    createAdmissionPackageFacet(component),
+    createStudioTrackCompanionFacet(sceneCompanions(module, tags)),
     ...Object.keys(tags).map((tag) =>
-      createMarkupSurfaceHostFacet({
+      createMarkupSurfaceFacet({
         module,
         declaration: {
           name: tags[tag].name,
@@ -427,17 +407,13 @@ export const hypitPackage = {
             options,
             events,
             compositionTypes.visualTrack,
-            temporalTypes.window,
-            temporalTypes.instant,
-            temporalTypes.windowSpec,
-            temporalTypes.instantSpec,
           ],
           vocabulary: {
             summary: "Project launch scene with phrase-driven visual beats.",
             attributes: [
               ...temporalContextAttributeVocabulary,
               ...temporalWindowAttributeVocabulary,
-              ...["id", "canvas", "font", ...tags[tag].assets].map((name) => ({
+              ...["id", "within", "font", ...tags[tag].assets].map((name) => ({
                 name,
                 kind: "expression",
                 required: true,
@@ -454,7 +430,7 @@ export const hypitPackage = {
               {
                 tag: "Beat",
                 cardinality: "many",
-                summary: "Named event in the scene, projected from a Moment or authored time.",
+                summary: "Named absolute event in the scene, produced upstream by semantic or direct time authoring.",
                 attributes: [
                   {
                     name: "name",
@@ -468,7 +444,7 @@ export const hypitPackage = {
             ],
             ports: [
               {
-                name: "track",
+                name: "visual",
                 type: compositionTypes.visualTrack,
                 summary: "Visual contribution",
               },

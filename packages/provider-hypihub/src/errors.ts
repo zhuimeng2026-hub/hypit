@@ -1,4 +1,5 @@
-import { EndpointHttpError, EndpointServiceError, retryAfterMs } from "@hypit/endpoint-kit";
+import { EndpointServiceError } from "@hypit/hypit/endpoint";
+import { EndpointHttpError, retryAfterMs } from "@hypit/hypit/endpoint/http";
 
 /** HypiHub's public error envelope, kept at the service boundary. */
 function record(value: unknown): Record<string, unknown> | undefined {

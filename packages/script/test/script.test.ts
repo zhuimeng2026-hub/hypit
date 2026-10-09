@@ -6,6 +6,7 @@ import {
   adjustScriptMoment,
   adjustScriptSelection,
   captionDocument,
+  narrativeCaptionBinding,
   narrativeValue,
   parseScript,
   serializeCaption,
@@ -13,7 +14,7 @@ import {
   serializeSpeech,
 } from "@hypit/script";
 
-test("Selection source edits relocate markers by 2M + 2N + 2 Anchor identity", () => {
+test("Selection source edits relocate markers by 2M + 2N Anchor identity", () => {
   const source = "<one><HOST>@{focus} alpha beta @{/focus} gamma</one>\r\n<two><HOST>delta epsilon</two>";
   const parsed = parseScript("selection-adjust.svml", source);
   const movedWords = adjustScriptSelection({
@@ -48,30 +49,13 @@ test("Selection source edits relocate markers by 2M + 2N + 2 Anchor identity", (
   ]);
 });
 
-test("Program boundaries are distinct writable semantic Anchors", () => {
-  const source = "<one>alpha</one>\n<two>beta</two>";
-  const withSelection = adjustScriptSelection({
-    sourceName: "program-boundaries.svml",
-    source: "@{focus} <one>alpha</one>\n<two>beta @{/focus}</two>",
-    parsed: parseScript("program-boundaries.svml", "@{focus} <one>alpha</one>\n<two>beta @{/focus}</two>"),
-    adjustment: { id: "focus", startAnchorId: "program:start", endAnchorId: "program:end" },
-  });
-  const selection = parseScript("program-boundaries.svml", withSelection).selections[0]!;
-  assert.deepEqual([selection.startAnchorId, selection.endAnchorId], ["program:start", "program:end"]);
-  assert.match(withSelection, /^@\{~focus\}(?=[ <])/u);
-  assert.match(withSelection, /@\{\/focus~\}$/u);
-
-  const withMoment = adjustScriptMoment({
-    sourceName: "program-boundaries.svml",
-    source: `${source.slice(0, source.indexOf("beta"))}@{cue!} ${source.slice(source.indexOf("beta"))}`,
-    parsed: parseScript(
-      "program-boundaries.svml",
-      `${source.slice(0, source.indexOf("beta"))}@{cue!} ${source.slice(source.indexOf("beta"))}`,
-    ),
-    adjustment: { id: "cue", anchorId: "program:end" },
-  });
-  assert.equal(parseScript("program-boundaries.svml", withMoment).moments[0]!.anchorId, "program:end");
-  assert.match(withMoment, /@\{cue!\}$/u);
+test("Script outer cuts are the first and last Segment boundaries", () => {
+  const source = "@{focus} <one>alpha</one>\n<two>beta</two> @{/focus}";
+  const parsed = parseScript("outer-cuts.svml", source);
+  const selection = parsed.selections[0]!;
+  assert.deepEqual([selection.startAnchorId, selection.endAnchorId], ["segment:one:start", "segment:two:end"]);
+  assert.equal(parsed.anchors.length, 2 * parsed.tokens.length + 2 * parsed.segments.length);
+  assert.equal(parsed.anchors.some((anchor) => anchor.id.startsWith("program:")), false);
 });
 
 test("Moment source edits relocate one marker to an exact semantic Anchor", () => {
@@ -95,17 +79,42 @@ test("Script keeps speech, dialogue and CaptionDocument as separate projections"
   const document = captionDocument(parsed, "story.caption", "story");
   assert.equal(document.units.length, 3);
   assert.equal(document.units[1]!.wordIds.length, 1);
-  assert.equal(document.units[1]!.sourceTokenIds.length, 4);
-  assert.deepEqual(document.cueBreaks, []);
-  assert.equal((narrativeValue(parsed, "story") as { semanticIndex: { anchors: unknown[] } }).semanticIndex.anchors.length,
-    2 * parsed.tokens.length + 2 * parsed.segments.length + 2);
+  assert.equal(narrativeCaptionBinding(parsed, "story.caption", "story").units[1]!.sourceTokenIds.length, 4);
+  assert.equal(document.cues.length, 1);
+  assert.deepEqual(document.cues[0]!.unitIds, document.units.map((unit) => unit.id));
+  assert.equal((narrativeValue(parsed, "story") as { anchors: unknown[] }).anchors.length,
+    2 * parsed.tokens.length + 2 * parsed.segments.length);
 });
 
-test("Cue breaks are authored between complete units", () => {
+test("Dual Text binds several display Words through one Unit to several Narrative Tokens", () => {
+  const parsed = parseScript("dual-n-m.svml", "<line><test1 test2 | test3 test4 test5></line>");
+  const document = captionDocument(parsed, "story.caption", "story");
+  const binding = narrativeCaptionBinding(parsed, document.id, "story");
+  assert.deepEqual(document.words.map((word) => word.text), ["test1", "test2"]);
+  assert.equal(document.units.length, 1);
+  assert.deepEqual(document.units[0]!.wordIds, document.words.map((word) => word.id));
+  assert.deepEqual(parsed.tokens.map((token) => token.text), ["test3", "test4", "test5"]);
+  assert.deepEqual(binding.units[0]!.sourceTokenIds, parsed.tokens.map((token) => token.id));
+  assert.deepEqual(document.cues[0]!.unitIds, [document.units[0]!.id]);
+});
+
+test("Role turns and Segments author Cue boundaries without leaking Narrative groups into Units", () => {
+  const parsed = parseScript("cue-structure.svml", "<one><A>first <B>second</one><two>third</two>");
+  const document = captionDocument(parsed, "story.caption", "story");
+  assert.deepEqual(document.cues.map((cue) => cue.role), ["A", "B", undefined]);
+  assert.equal(document.cues.length, 3);
+  assert.deepEqual(document.cues.flatMap((cue) => cue.unitIds), document.units.map((unit) => unit.id));
+  assert.equal(document.units.some((unit) => "groupId" in unit || "role" in unit), false);
+});
+
+test("Cues partition complete units at authored breaks", () => {
   const parsed = parseScript("break.svml", "<line>one two || three four</line>");
   const document = captionDocument(parsed, "story.caption", "story");
-  assert.equal(document.cueBreaks.length, 1);
-  assert.equal(document.cueBreaks[0]!.afterUnitId, document.units[1]!.id);
+  assert.equal(document.cues.length, 2);
+  assert.deepEqual(document.cues.map((cue) => cue.unitIds), [
+    document.units.slice(0, 2).map((unit) => unit.id),
+    document.units.slice(2).map((unit) => unit.id),
+  ]);
 });
 
 test("Caption punctuation is display-only and CJK uses lexical character units", () => {
@@ -139,7 +148,7 @@ test("Mixed-script brand names preserve following character units and authored C
   assert.deepEqual(document.words.slice(0, 6).map((word) => word.text), [
     "用", "Hypit", "生", "成", "视", "频，",
   ]);
-  assert.equal(document.cueBreaks[0]?.afterUnitId, document.units[5]?.id);
+  assert.deepEqual(document.cues[0]?.unitIds, document.units.slice(0, 6).map((unit) => unit.id));
 });
 
 test("Script keeps ordinary compounds and formatted numbers lexical", () => {
@@ -159,7 +168,7 @@ test("Script keeps ordinary compounds and formatted numbers lexical", () => {
 test("A single pipe is literal and a double pipe is an authored Cue Break", () => {
   const parsed = parseScript("pipes.svml", "<line>one | two || three \\|\\| four</line>");
   const document = captionDocument(parsed, "story.caption", "story");
-  assert.equal(document.cueBreaks.length, 1);
+  assert.equal(document.cues.length, 2);
   assert.equal(serializeCaption(parsed), "one | two three || four");
   assert.deepEqual(document.words.map((word) => word.text), ["one |", "two", "three ||", "four"]);
 });
@@ -190,7 +199,7 @@ test("Script projects flat token attributes onto display words without changing 
     ["hypit", [{ name: "brand", value: true }]],
     ["now.", []],
   ]);
-  assert.equal(document.units[3]!.sourceTokenIds.length, 2);
+  assert.equal(narrativeCaptionBinding(parsed, "story.caption", "story").units[3]!.sourceTokenIds.length, 2);
 });
 
 test("Token attributes are flat and must follow a complete display token", () => {

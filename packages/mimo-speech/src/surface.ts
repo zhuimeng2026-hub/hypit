@@ -1,16 +1,11 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding } from "@hypit/generation";
-import type { GenerationMediaPort, GenerationPortValue } from "@hypit/generation";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/model-kit";
-import type { CanonicalValue } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding } from "@hypit/hypit/generation";
+import type { GenerationMediaPort, GenerationPortValue } from "@hypit/hypit/generation";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
+import { textTypes, verifyText } from "@hypit/hypit/text";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
 
 import { createMimoSpeechAudioFragment } from "./fragment.js";
 import { mimoSpeechEndpoints, sealMimoSpeechRequestDraft } from "./index.js";
@@ -65,7 +60,7 @@ function speechText(reference: SurfaceResolvedReference, subject: string): Surfa
 }
 
 function voiceReference(reference: SurfaceResolvedReference, subject: string): SurfaceResolvedReference {
-  if (!sameType(reference.type, artifactTypes.blob)) throw new Error(`${subject} must reference an audio Resource`);
+  if (!sameType(reference.type, blobTypes.blob)) throw new Error(`${subject} must reference an audio Resource`);
   const value = reference.record?.value;
   if (value !== undefined && (value.kind !== "blob" || !value.mediaType.startsWith("audio/"))) {
     throw new Error(`${subject} must reference audio media`);

@@ -5,5 +5,10 @@
   "type": "module",
   "hypit": {
     "activation": "./src/activation.js"
+  },
+  "dependencies": {
+    "@hypit/caption-fine": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*"
   }
 }

@@ -1,4 +1,5 @@
-import type { ComponentPackage } from "@hypit/component-kit";
+import type { AdmissionPackage } from "@hypit/admission";
+import type { ProducerPackage } from "@hypit/producer";
 
 import {
   verifyGeneratedAudioSet,
@@ -74,4 +75,4 @@ export const generationComponent = {
       },
     },
   ],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

@@ -1,19 +1,17 @@
-import { timelineTypes } from "@hypit/timeline";
-import { temporalContextAttributeVocabulary } from "@hypit/temporal-markup";
+import { timelineTypes, timelineDependency } from "@hypit/hypit/timeline";
+import { temporalContextAttributeVocabulary } from "@hypit/hypit/temporal/markup";
 import { readFile } from "node:fs/promises";
 
-import { artifactDependency } from "@hypit/artifact";
-import { compositionDependency, compositionTypes } from "@hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/media";
-import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
+import { blobDependency } from "@hypit/hypit/blob";
+import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
+import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
 
-import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
-import { timelineDependency } from "@hypit/timeline";
-import { spatialDependency, spatialFrameSchema, spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
-import { temporalDependency, temporalInstantSchema, temporalTypes, temporalWindowSchema } from "@hypit/temporal";
-import { temporalInstantAttributeVocabulary } from "@hypit/temporal-markup";
-import { textDependency, textTypes } from "@hypit/text";
+import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
+import { spatialDependency, spatialFrameSchema, spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
+import { temporalDependency, temporalInstantSchema, temporalTypes, temporalWindowSchema } from "@hypit/hypit/temporal";
+import { temporalInstantAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { textDependency, textTypes } from "@hypit/hypit/text";
 
 const previewImage = (file: string, mediaType = "image/png") => ({
   mediaType,
@@ -144,7 +142,7 @@ function typedRecipeProperties<const T extends readonly {
   readonly required: boolean;
   readonly summary: string;
   readonly values?: readonly string[];
-  readonly fallback?: import("@hypit/protocol").CanonicalValue;
+  readonly fallback?: import("@hypit/hypit/protocol").CanonicalValue;
 }[]>(properties: T) {
   return properties.map((property) => {
     const schema = rankingRecipeSchemas[property.name as keyof typeof rankingRecipeSchemas];
@@ -253,7 +251,7 @@ const allRankingMarkupSurfaces = [
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names this Style so a TierBoard can reference it." },
-          { name: "recipe", kind: "reference", required: true, accepts: [svsRecipeType],
+          { name: "recipe", kind: "reference", required: true, accepts: [recipeType],
             summary: "Chooses the Recipe carrying the tier rows, board Paint, row and cell geometry, icon treatment and entrance motion.",
             recipe: typedRecipeProperties([
               { name: "rows", required: false, fallback: [
@@ -278,11 +276,11 @@ const allRankingMarkupSurfaces = [
               { name: "label-width", required: false,
                 summary: "Overrides the label column width as a fraction of the board Frame width; when absent it is derived from row height." },
               { name: "stage-x", required: false, fallback: "0.2",
-                summary: "Places the independent explanation stage horizontally as a fraction of the Canvas width." },
+                summary: "Places the independent explanation stage horizontally as a fraction of the placement Frame width." },
               { name: "stage-y", required: false, fallback: "0.3",
-                summary: "Places the independent explanation stage vertically as a fraction of the Canvas height." },
+                summary: "Places the independent explanation stage vertically as a fraction of the placement Frame height." },
               { name: "stage-size", required: false, fallback: "168",
-                summary: "Sets the staged Item size in Canvas pixels independently from its settled tier cell." },
+                summary: "Sets the staged Item size in picture-plane pixels independently from its settled tier cell." },
               { name: "icon-radius-ratio", required: false, fallback: "0.12",
                 summary: "Sets icon corner radius as a fraction of one tier row's height." },
               { name: "icon-fit", required: false, fallback: "cover",
@@ -329,7 +327,7 @@ const allRankingMarkupSurfaces = [
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names this Style so a Column can reference it." },
-          { name: "recipe", kind: "reference", required: true, accepts: [svsRecipeType],
+          { name: "recipe", kind: "reference", required: true, accepts: [recipeType],
             summary: "Chooses the Recipe carrying the rank colors, board Paint, row geometry, icon treatment, staging pose and motion.",
             recipe: typedRecipeProperties([
               { name: "rank-colors", required: false, fallback: ["#facc15", "#d1d5db", "#fb923c", "#60a5fa", "#a78bfa"],
@@ -422,7 +420,7 @@ const allRankingMarkupSurfaces = [
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names this Style so a TopThree can reference it." },
-          { name: "recipe", kind: "reference", required: true, accepts: [svsRecipeType],
+          { name: "recipe", kind: "reference", required: true, accepts: [recipeType],
             summary: "Chooses the Recipe carrying the slot colors, podium geometry, ring and label spacing, board Paint and motion.",
             recipe: typedRecipeProperties([
               { name: "slot-colors", required: false, fallback: ["#facc15", "#d1d5db", "#fb923c"],
@@ -488,21 +486,21 @@ const allRankingMarkupSurfaces = [
           "Every other property is refused by name.",
         ],
       } },
-    { name: "tier", tag: "TierBoard", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, temporalTypes.instantSpec, temporalTypes.windowSpec, temporalTypes.instant, temporalTypes.window, rankingTypes.schedule, rankingTypes.tierProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
+    { name: "tier", tag: "TierBoard", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, rankingTypes.schedule, rankingTypes.tierProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
       vocabulary: {
         summary: "Places Items into tier rows from preset state or explicit reveal Selections, and publishes the board and the Tracks it renders to.",
         appearance:
-          "The board occupies only its Frame: one continuous tier table with colored label cells, a dark content field and dark grid lines. An independent explanation stage is positioned in Canvas space. Preset tiles occupy the innermost cells from the first frame. Every other tile takes one explicit Segment or Selection window; sorting those disjoint windows gives the strict reveal order and fills each tier from inside to outside. Both entry modes appear in place with a quick overshoot and soft settle. A direct tile appears in its final cell. A drop tile appears on the stage, remains still while that Item is discussed, then follows an eased curved glide into its final cell during the window's last move interval. Every placed tile remains settled while later ones arrive.",
+          "The board occupies only its Frame: one continuous tier table with colored label cells, a dark content field and dark grid lines. An independent explanation stage is positioned in a separate placement Frame. Preset tiles occupy the innermost cells from the first frame. Every other tile takes one explicit Segment or Selection window; sorting those disjoint windows gives the strict reveal order and fills each tier from inside to outside. Both entry modes appear in place with a quick overshoot and soft settle. A direct tile appears in its final cell. A drop tile appears on the stage, remains still while that Item is discussed, then follows an eased curved glide into its final cell during the window's last move interval. Every placed tile remains settled while later ones arrive.",
         preview: previewImage("TierBoard.svg", "image/svg+xml"),
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names this board so its Schedule, Program and Tracks can be referenced elsewhere in the Source." },
           ...temporalContextAttributeVocabulary,
-          { name: "canvas", kind: "reference", required: true, accepts: [spatialTypes.canvas],
-            summary: "Chooses the Canvas coordinate space used by the independent explanation stage." },
+          { name: "within", kind: "reference", required: true, accepts: [spatialTypes.frame],
+            summary: "Chooses the placement Frame used by the independent explanation stage." },
           { name: "frame", kind: "reference", required: true, accepts: [spatialTypes.frame],
             summary: "Chooses the compact Frame occupied only by the tier table." },
-          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [narrativeTypes.selection, narrativeTypes.excerpt],
+          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [temporalTypes.window],
             summary: "Spans the complete film clock when written as program, or projects the referenced Segment or Selection into the board lifetime." },
           { name: "style", kind: "reference", required: true, accepts: [rankingTypes.tierStyle],
             summary: "Chooses the TierBoardStyle this board is drawn in, and only that variant's." },
@@ -525,7 +523,7 @@ const allRankingMarkupSurfaces = [
                 summary: "Chooses an in-place entrance in the final cell or on the independent stage; a staged Item holds for the explanation, then glides into the tier at the window end. It is required for non-preset Items and forbidden for preset Items." },
               { name: "icon", kind: "reference", required: true, accepts: [mediaTypes.blobArtifact],
                 summary: "Chooses the image drawn beside the Item." },
-              { name: "during", kind: "reference", required: false, accepts: [narrativeTypes.selection, narrativeTypes.excerpt],
+              { name: "during", kind: "reference", required: false, accepts: [temporalTypes.window],
                 summary: "Chooses this non-preset Item's exact Segment or Selection interval; all sibling intervals must be disjoint." },
               { name: "stack", kind: "literal", required: false,
                 summary: "Overrides the Style's draw order for this Item alone." },
@@ -544,11 +542,11 @@ const allRankingMarkupSurfaces = [
             summary: "The rendered board sound, published only when a sound is authored." },
         ],
         example: `<ranking:TierBoardStyle id="tier-style" recipe={recipes.ranking.tier} font={ui-font}/>
-<ranking:TierBoard id="tiers" timeline={speech.timeline} canvas={vertical} frame={board-frame}
-  during="program"
+<ranking:TierBoard id="tiers" timeline={speech.timeline} within={vertical.bounds} frame={board-frame}
+  during={speech.window}
   style={tier-style}>
   <ranking:TierItem id="row-regen" tier="s" preset="true" icon={icon-regen}/>
-  <ranking:TierItem id="row-remini" tier="a" entry="drop" icon={icon-remini} during={story.selection.remini}/>
+  <ranking:TierItem id="row-remini" tier="a" entry="drop" icon={icon-remini} during={remini}/>
 </ranking:TierBoard>`,
         notes: [
           "The board requires at least one TierItem, accepts no other child and no text of its own, and Item ids must be unique within it.",
@@ -558,21 +556,21 @@ const allRankingMarkupSurfaces = [
           "Authoring either sound also connects the Style's `.sound` output, so `style` must name a TierBoardStyle written in this Source.",
         ],
       } },
-    { name: "column", tag: "Column", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, rankingTypes.textItemShell, temporalTypes.instantSpec, temporalTypes.windowSpec, temporalTypes.instant, temporalTypes.window, rankingTypes.schedule, rankingTypes.columnProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
+    { name: "column", tag: "Column", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, rankingTypes.textItemShell, rankingTypes.schedule, rankingTypes.columnProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
       vocabulary: {
         summary: "Places rows by explicit rank, reveals each non-preset row in its own Segment or Selection, and publishes the board and the Tracks it renders to.",
         appearance:
-          "A narrow vertical rank rail occupies its Frame while a large reveal stage is positioned independently in Canvas space. Preset rows are settled from the first frame. Each other row rises into the stage during its own projected Segment or Selection, then shrinks and moves into the content slot beside its numbered rank. Rank, child order and reveal time are independent.",
+          "A narrow vertical rank rail occupies its Frame while a large reveal stage is positioned independently in a separate placement Frame. Preset rows are settled from the first frame. Each other row rises into the stage during its own projected Segment or Selection, then shrinks and moves into the content slot beside its numbered rank. Rank, child order and reveal time are independent.",
         preview: previewImage("Column.svg", "image/svg+xml"),
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names this board so its Schedule, Program and Tracks can be referenced elsewhere in the Source." },
           ...temporalContextAttributeVocabulary,
-          { name: "canvas", kind: "reference", required: true, accepts: [spatialTypes.canvas],
-            summary: "Chooses the Canvas coordinate space used by the independent reveal stage." },
+          { name: "within", kind: "reference", required: true, accepts: [spatialTypes.frame],
+            summary: "Chooses the placement Frame used by the independent reveal stage." },
           { name: "frame", kind: "reference", required: true, accepts: [spatialTypes.frame],
             summary: "Chooses the fixed Frame occupied by the vertical rank rail." },
-          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [narrativeTypes.selection, narrativeTypes.excerpt],
+          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [temporalTypes.window],
             summary: "Spans the complete film clock when written as program, or projects the referenced Segment or Selection into the Column lifetime." },
           { name: "style", kind: "reference", required: true, accepts: [rankingTypes.columnStyle],
             summary: "Chooses the ColumnStyle this board is drawn in, and only that variant's." },
@@ -593,7 +591,7 @@ const allRankingMarkupSurfaces = [
                 summary: "Sets the positive rank number and final row position independently from reveal order." },
               { name: "preset", kind: "literal", required: false, values: ["true", "false"],
                 summary: "Settles the row from the start of the outer window; defaults to false." },
-              { name: "during", kind: "reference", required: false, accepts: [narrativeTypes.selection, narrativeTypes.excerpt],
+              { name: "during", kind: "reference", required: false, accepts: [temporalTypes.window],
                 summary: "Chooses this row's Segment or Selection reveal window; required unless preset is true." },
               { name: "icon", kind: "reference", required: false, accepts: [mediaTypes.blobArtifact],
                 summary: "Chooses the image drawn beside the row." },
@@ -614,11 +612,11 @@ const allRankingMarkupSurfaces = [
             summary: "The rendered board sound, published only when a sound is authored." },
         ],
         example: `<ranking:ColumnStyle id="board-style" recipe={recipes.ranking.board} font={ui-font}/>
-<ranking:Column id="board" timeline={speech.timeline} canvas={vertical} frame={board-frame}
-  during={story.segment.ranking}
+<ranking:Column id="board" timeline={speech.timeline} within={vertical.bounds} frame={board-frame}
+  during={ranking}
   style={board-style}>
-  <ranking:ColumnItem id="row-regen" rank="1" label="ReGen" icon={icon-regen} during={story.selection.regen}/>
-  <ranking:ColumnItem id="row-chatgpt" rank="2" label="ChatGPT" icon={icon-chatgpt} during={story.selection.chatgpt}/>
+  <ranking:ColumnItem id="row-regen" rank="1" label="ReGen" icon={icon-regen} during={regen}/>
+  <ranking:ColumnItem id="row-chatgpt" rank="2" label="ChatGPT" icon={icon-chatgpt} during={chatgpt}/>
   <ranking:ColumnItem id="row-remini" rank="5" preset="true" label="Remini" icon={icon-remini}/>
 </ranking:Column>`,
         notes: [
@@ -629,7 +627,7 @@ const allRankingMarkupSurfaces = [
           "Authoring either sound also connects the Style's `.sound` output, so `style` must name a ColumnStyle written in this Source.",
         ],
       } },
-    { name: "top-three", tag: "TopThree", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, rankingTypes.textItemShell, temporalTypes.instantSpec, temporalTypes.windowSpec, temporalTypes.instant, temporalTypes.window, rankingTypes.schedule, rankingTypes.topThreeProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
+    { name: "top-three", tag: "TopThree", mode: "structured", outputs: [rankingTypes.header, rankingTypes.itemSpec, rankingTypes.textItemShell, rankingTypes.schedule, rankingTypes.topThreeProgram, compositionTypes.visualTrack, rankingTypes.soundEvents, compositionTypes.audioTrack],
       vocabulary: {
         summary: "Fills a podium one slot at a time at the Moment owned by each Item, and publishes the board and the Tracks it renders to.",
         appearance:
@@ -641,10 +639,10 @@ const allRankingMarkupSurfaces = [
           ...temporalContextAttributeVocabulary,
           { name: "frame", kind: "reference", required: true, accepts: [spatialTypes.frame],
             summary: "Chooses the Frame the whole board occupies." },
-          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [narrativeTypes.selection, narrativeTypes.excerpt],
+          { name: "during", kind: "expression", required: true, values: ["program"], accepts: [temporalTypes.window],
             summary: "Chooses the board's whole-program, Selection or Segment lifetime." },
-          { name: "terminal", kind: "expression", required: true, accepts: [narrativeTypes.moment],
-            summary: "Chooses the terminal Moment or authored time, such as 8s." },
+          { name: "terminal", kind: "expression", required: true, accepts: [temporalTypes.instant],
+            summary: "Chooses the named absolute Instant at which the completed board settles." },
           { name: "style", kind: "reference", required: true, accepts: [rankingTypes.topThreeStyle],
             summary: "Chooses the TopThreeStyle this board is drawn in, and only that variant's." },
           { name: "appear-sound", kind: "reference", required: false, accepts: [mediaTypes.synchronized],
@@ -679,11 +677,11 @@ const allRankingMarkupSurfaces = [
         ],
         example: `<ranking:TopThreeStyle id="podium-style" recipe={recipes.ranking.podium} font={ui-font}/>
 <ranking:TopThree id="podium" timeline={speech.timeline} frame={board-frame}
-  during={story.selection.board} terminal={story.moment.done}
+  during={board} terminal={done}
   style={podium-style}>
-  <ranking:TopThreeItem id="slot-gold" label="ReGen" icon={icon-regen} at={story.moment.regen}/>
-  <ranking:TopThreeItem id="slot-silver" label="ChatGPT" at={story.moment.chatgpt}/>
-  <ranking:TopThreeItem id="slot-bronze" label="Remini" at={story.moment.remini}/>
+  <ranking:TopThreeItem id="slot-gold" label="ReGen" icon={icon-regen} at={regen}/>
+  <ranking:TopThreeItem id="slot-silver" label="ChatGPT" at={chatgpt}/>
+  <ranking:TopThreeItem id="slot-bronze" label="Remini" at={remini}/>
 </ranking:TopThree>`,
         notes: [
           "The board requires at least one TopThreeItem, accepts no other child and no text of its own, and Item ids must be unique within it.",
@@ -699,7 +697,7 @@ export const rankingMarkupSurfaces = allRankingMarkupSurfaces;
 
 export const rankingManifest: ModuleManifest = {
   format: "hypit.module@1", name: rankingModuleRef.name, version: rankingModuleRef.version,
-  dependencies: [artifactDependency, mediaDependency, narrativeDependency, timelineDependency, spatialDependency, temporalDependency, compositionDependency, textDependency],
+  dependencies: [blobDependency, mediaDependency, timelineDependency, spatialDependency, temporalDependency, compositionDependency, textDependency],
   types: [
     { name: rankingTypes.header.name },
     { name: rankingTypes.itemSpec.name },
@@ -736,7 +734,7 @@ export const rankingManifest: ModuleManifest = {
     ], outputs: [{ name: "set", type: rankingTypes.triggeredCandidates }], needs: [] },
     { name: rankingProducers.schedule.name, inputs: [
       { name: "header", type: rankingTypes.header }, { name: "items", type: rankingTypes.itemSpecs },
-      { name: "timeline", type: timelineTypes.track },
+      { name: "timeline", type: timelineTypes.timeline },
       { name: "outer", type: temporalTypes.window }, { name: "candidates", type: rankingTypes.triggeredCandidates },
       { name: "terminal", type: temporalTypes.instant },
     ], outputs: [{ name: "schedule", type: rankingTypes.schedule }], needs: [] },
@@ -749,7 +747,7 @@ export const rankingManifest: ModuleManifest = {
     ], outputs: [{ name: "set", type: rankingTypes.tierWindows }], needs: [] },
     { name: rankingProducers.tierSchedule.name, inputs: [
       { name: "header", type: rankingTypes.header }, { name: "items", type: rankingTypes.itemSpecs },
-      { name: "timeline", type: timelineTypes.track },
+      { name: "timeline", type: timelineTypes.timeline },
       { name: "outer", type: temporalTypes.window }, { name: "windows", type: rankingTypes.tierWindows },
     ], outputs: [{ name: "schedule", type: rankingTypes.schedule }], needs: [] },
     { name: rankingProducers.createColumnWindows.name, inputs: [], outputs: [
@@ -761,7 +759,7 @@ export const rankingManifest: ModuleManifest = {
     ], outputs: [{ name: "set", type: rankingTypes.columnWindows }], needs: [] },
     { name: rankingProducers.columnSchedule.name, inputs: [
       { name: "header", type: rankingTypes.header }, { name: "items", type: rankingTypes.itemSpecs },
-      { name: "timeline", type: timelineTypes.track },
+      { name: "timeline", type: timelineTypes.timeline },
       { name: "outer", type: temporalTypes.window }, { name: "windows", type: rankingTypes.columnWindows },
     ], outputs: [{ name: "schedule", type: rankingTypes.schedule }], needs: [] },
     ...([
@@ -788,14 +786,14 @@ export const rankingManifest: ModuleManifest = {
       { name: programProducer.name, inputs: [
         { name: "header", type: rankingTypes.header },
         ...(programType === rankingTypes.columnProgram || programType === rankingTypes.tierProgram
-          ? [{ name: "canvas", type: spatialTypes.canvas }] : []),
+          ? [{ name: "within", type: spatialTypes.frame }] : []),
         { name: "frame", type: spatialTypes.frame }, { name: "schedule", type: rankingTypes.schedule },
         { name: "style", type: styleType }, { name: "set", type: setType },
       ], outputs: [{ name: "program", type: programType }], needs: [] },
       { name: eventProducer.name, inputs: [
         { name: "schedule", type: rankingTypes.schedule }, { name: "style", type: styleType }, { name: "specs", type: rankingTypes.itemSpecs },
       ], outputs: [{ name: "events", type: rankingTypes.soundEvents }], needs: [] },
-      { name: renderProducer.name, inputs: [{ name: "timeline", type: timelineTypes.track }, { name: "program", type: programType }], outputs: [{ name: "track", type: compositionTypes.visualTrack }], needs: [] },
+      { name: renderProducer.name, inputs: [{ name: "timeline", type: timelineTypes.timeline }, { name: "program", type: programType }], outputs: [{ name: "track", type: compositionTypes.visualTrack }], needs: [] },
     ]),
     { name: rankingProducers.createSounds.name, inputs: [], outputs: [{ name: "sounds", type: rankingTypes.sounds }], needs: [] },
     ...([
@@ -805,7 +803,7 @@ export const rankingManifest: ModuleManifest = {
       name: producer.name, inputs: [{ name: "sounds", type: rankingTypes.sounds }, { name: "media", type: mediaTypes.synchronized }], outputs: [{ name: "sounds", type: rankingTypes.sounds }], needs: [],
     })),
     { name: rankingProducers.renderAudio.name, inputs: [
-      { name: "timeline", type: timelineTypes.track }, { name: "events", type: rankingTypes.soundEvents },
+      { name: "timeline", type: timelineTypes.timeline }, { name: "events", type: rankingTypes.soundEvents },
       { name: "style", type: rankingTypes.soundStyle }, { name: "sounds", type: rankingTypes.sounds },
     ], outputs: [{ name: "track", type: compositionTypes.audioTrack }], needs: [] },
   ],

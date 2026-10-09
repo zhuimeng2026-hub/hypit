@@ -1,27 +1,26 @@
 ---
 title: Image Operations
-description: Compose, correct and cut out images before they reach a generator or a Track.
+description: Compose and correct images before they reach a generator or a Track.
 ---
 
-Three packages work on a picture and hand back a picture. None of them produces a Track: each output
-is an image you reference downstream — as a Seedance reference frame, as a Media Item, or as the
+One Image Operations package works on pictures and hands back a picture. It does not produce a Track: each output
+is an image you reference downstream — as a Seedance reference frame, as a Visual Clip, or as the
 source of another operation.
 
-They all need an endpoint. `image-compose` and `image-transform` ask for the raster capability, which
-`@hypit/provider-image-opencv-local` answers by running OpenCV in a bounded Python process on
-your own machine; `background-removal` asks for its own capability, which a selected project Provider implements. Select the supporting Endpoint in your [Runtime Profile](../guide/runtime.md)
-when using these operations.
+Transform and Compose ask for separate image capabilities. The default
+`@hypit/provider-image-opencv-local` Endpoint implements both by running OpenCV in bounded Python
+processes on your own machine.
 
 ## Composing layers
 
-`compose:Image` paints layers onto one canvas, in the order they are written, and hands back a PNG.
+`image:Compose` paints layers onto one canvas, in the order they are written, and hands back a PNG.
 
 ```svml
-<import as="compose" from="@hypit/image-compose@1"/>
+<import as="image" from="@hypit/image-operations@1"/>
 ```
 
 The element takes `id` and `canvas`, and optionally `background` — which must carry alpha, as
-`#RRGGBBAA`, and defaults to fully transparent. Its children are `compose:Layer`, at least one and at
+`#RRGGBBAA`, and defaults to fully transparent. Its children are `image:Layer`, at least one and at
 most sixty-four, each empty:
 
 | Attribute | Takes |
@@ -33,10 +32,10 @@ most sixty-four, each empty:
 | `opacity` | optional — 0 to 1, default 1 |
 
 ```svml
-<compose:Image id="card" canvas={portrait} background="#00000000">
-  <compose:Layer source={background.image} frame={full} fit="cover"/>
-  <compose:Layer source={product.image} frame={product-frame} fit="contain"/>
-</compose:Image>
+<image:Compose id="card" canvas={portrait.canvas} background="#00000000">
+  <image:Layer source={background.image} frame={full} fit="cover"/>
+  <image:Layer source={product.image} frame={product-frame} fit="contain"/>
+</image:Compose>
 ```
 
 **Output:** `{card.image}` — an image, not a Track.
@@ -47,7 +46,7 @@ An `image:Program` is a named list of operations; an `image:Transform` runs one 
 split is deliberate: a program written once is applied to every shot that needs the same treatment.
 
 ```svml
-<import as="image" from="@hypit/image-transform@1"/>
+<import as="image" from="@hypit/image-operations@1"/>
 ```
 
 `image:Program` takes only `id`, and holds its operations as children, applied in the order written:
@@ -82,23 +81,7 @@ and `Crop` runs on defaults alone, so `<image:Denoise/>` is a complete instructi
 **Output:** `{clean-shot.image}`. The program on its own produces no image — it is a recipe, and
 naming it in a `Transform` is what runs it.
 
-## Removing a background
-
-```svml
-<import as="remove" from="@hypit/background-removal@1"/>
-```
-
-`remove:Background` is empty and takes `id` and `source`. It picks no model, threshold or storage —
-that is the endpoint's business, not the Source's.
-
-```svml
-<remove:Background id="cutout" source={portrait.image}/>
-```
-
-**Output:** `{cutout.image}` — typically fed to a Media Item so a presenter sits over the picture
-rather than in a box.
-
-## Removing a moving person's background
+## Matting a moving person
 
 For a presenter over another picture, process the generated or supplied video with
 [`@hypit/volcengine-matting`](https://github.com/hypit-ai/hypit/blob/main/packages/volcengine-matting/README.md),
@@ -109,8 +92,7 @@ served by a supporting HypiHub Endpoint:
 <matte:Portrait id="cutout" source={performance.video}/>
 ```
 
-Normalize `cutout.video` to prepare it for the timeline. If it establishes the spoken program,
-align that prepared media to its Script Segment and assemble it through Timeline assembly. Present the
-picture with Media Track or a project scene, at the chosen location and paint order. As B-roll,
-the normalized cutout can enter Media Track directly. Matting changes the picture's background;
-the composition determines its role.
+Normalize `cutout.video` to obtain synchronized media and its local domain. If it carries spoken
+meaning, align that local domain to its Script Segment, then project the alignment through the
+equal-length Timeline Window. Place the normalized cutout as an ordinary Visual Clip. Matting changes the picture's
+background; the composition determines its role.

@@ -1,4 +1,4 @@
-import type { GenerationRequest } from "@hypit/generation";
+import type { GenerationRequest } from "@hypit/hypit/generation";
 import type { PixverseModel } from "./index.js";
 
 /**

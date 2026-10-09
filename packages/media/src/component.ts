@@ -1,5 +1,10 @@
-import type { ComponentPackage } from "@hypit/component-kit";
-import { verifyMediaInspection, verifyMediaStreamSelection, verifyMuxedMedia, verifyRenderedVisual, verifySynchronizedMedia, verifyTimelineAudio } from "./identity.js";
+import type { AdmissionPackage } from "@hypit/admission";
+import type { ProducerPackage } from "@hypit/producer";
+import { verifyMediaInspection, verifyMediaStreamSelection, verifyMuxedMedia, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "./identity.js";
+import { mediaLocalTemporalDomain } from "./domain.js";
+import type { MediaDomainSpec, SynchronizedMedia } from "./types.js";
+import { canonicalize } from "@hypit/protocol";
+import { mediaProducers } from "./manifest.js";
 import { mediaTypes } from "./manifest.js";
 import { verifyMediaFrameRange } from "./frame-range.js";
 function inline(value: { readonly kind: string; readonly value?: unknown }, subject: string): unknown { if (value.kind !== "inline") throw new Error(`${subject} must be inline`); return value.value; }
@@ -9,8 +14,15 @@ export const mediaComponent = {
     { type: mediaTypes.inspection, handler: ({ value }) => verifyMediaInspection(inline(value, "MediaInspection")) },
     { type: mediaTypes.streamSelection, handler: ({ value }) => verifyMediaStreamSelection(inline(value, "MediaStreamSelection")) },
     { type: mediaTypes.synchronized, handler: ({ value }) => verifySynchronizedMedia(inline(value, "SynchronizedMedia")) },
-    { type: mediaTypes.renderedVisual, handler: ({ value }) => verifyRenderedVisual(inline(value, "RenderedVisual")) },
+    { type: mediaTypes.timelineVisual, handler: ({ value }) => verifyTimelineVisual(inline(value, "TimelineVisual")) },
     { type: mediaTypes.timelineAudio, handler: ({ value }) => verifyTimelineAudio(inline(value, "TimelineAudio")) },
     { type: mediaTypes.muxed, handler: ({ value }) => verifyMuxedMedia(inline(value, "MuxedMedia")) },
   ],
-} satisfies ComponentPackage;
+  producers: [
+    { producer: mediaProducers.localDomain, handler: ({ inputs }) => {
+      const media = inline(inputs.media!.value, "SynchronizedMedia") as SynchronizedMedia;
+      const spec = inline(inputs.spec!.value, "MediaDomainSpec") as MediaDomainSpec;
+      return { outputs: { domain: { kind: "inline", value: canonicalize(mediaLocalTemporalDomain(spec.id, media)) } }, needs: {} };
+    } },
+  ],
+} satisfies ProducerPackage & AdmissionPackage;

@@ -5,8 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
 
-import { createRuntimeEndpointAdapterFacet, RuntimeAdapterRegistry } from "@hypit/runtime-kit";
-import type { ManagedProgram, ManagedProgramCommand } from "@hypit/runtime-kit";
+import { createRuntimeEndpointAdapterFacet, RuntimeAdapterRegistry } from "@hypit/runtime-local/extension";
+import type { ManagedProgram, ManagedProgramCommand } from "@hypit/runtime-local/extension";
 import type { CapabilityRef } from "@hypit/protocol";
 
 import {

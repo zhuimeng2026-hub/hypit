@@ -1,14 +1,18 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
 
 import { emojiRevealComponent, emojiRevealManifest, emojiRevealMarkupSurfaces, emojiRevealModuleRef } from "./index.js";
 import { decodeEmojiRevealStyleSurface, decodeEmojiRevealTrackSurface } from "./surface.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
-  modules: [{ manifest: emojiRevealManifest }], components: [emojiRevealComponent],
-  hostFacets: [
-    createMarkupSurfaceHostFacet({ module: emojiRevealModuleRef, declaration: emojiRevealMarkupSurfaces.find((item) => item.name === "style")!, handler: decodeEmojiRevealStyleSurface }),
-    createMarkupSurfaceHostFacet({ module: emojiRevealModuleRef, declaration: emojiRevealMarkupSurfaces.find((item) => item.name === "track")!, handler: decodeEmojiRevealTrackSurface }),
+  format: "hypit.package@1" as const,
+  modules: [{ manifest: emojiRevealManifest }],
+  facets: [
+    createProducerPackageFacet(emojiRevealComponent),
+    createAdmissionPackageFacet(emojiRevealComponent),
+    createMarkupSurfaceFacet({ module: emojiRevealModuleRef, declaration: emojiRevealMarkupSurfaces.find((item) => item.name === "style")!, handler: decodeEmojiRevealStyleSurface }),
+    createMarkupSurfaceFacet({ module: emojiRevealModuleRef, declaration: emojiRevealMarkupSurfaces.find((item) => item.name === "emojiReveal")!, handler: decodeEmojiRevealTrackSurface }),
   ],
 };
 export default hypitPackage;

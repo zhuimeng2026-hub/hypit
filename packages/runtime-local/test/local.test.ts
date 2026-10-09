@@ -17,24 +17,26 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 
-import { FileResourceStore } from "@hypit/resource-store-fs";
-import { FileBuildResultRepository } from "@hypit/build-result";
-import type { BuildResultRepository } from "@hypit/build-result";
+import { FileResourceStore } from "../src/resource-store.js";
+import { FileBuildResultRepository } from "@hypit/result/node";
+import type { BuildResultRepository } from "@hypit/result";
 import { EnvironmentCredentialStore } from "@hypit/credential-store-env";
-import { defineEndpointPackage } from "@hypit/endpoint-kit";
-import type { AsyncEndpoint, EndpointPackage } from "@hypit/endpoint-kit";
-import type { ComponentPackage } from "@hypit/component-kit";
+import { defineEndpoint } from "@hypit/endpoint";
+import type { AsyncEndpoint, EndpointInstance } from "@hypit/endpoint";
+import { createProducerPackageFacet } from "@hypit/producer";
+import type { ProducerPackage } from "@hypit/producer";
+import { createAdmissionPackageFacet } from "@hypit/admission";
+import type { AdmissionPackage } from "@hypit/admission";
 import { createLocalRuntime } from "@hypit/runtime-local";
-import { resolveProjectRoot } from "@hypit/project-context-node";
-import { NodeFilesystemWorkspace } from "../../workspace-fs-node/src/index.js";
-import { defineBuild } from "@hypit/core";
-import {
-  collectLoadedNodePackageComponents,
-  loadNodePackageSelection,
-} from "@hypit/package-loader-node";
-import { buildExecutionActivity, credentialRef } from "@hypit/runtime";
-import type { BuildCompletion, CredentialValue, WritableCredentialStore } from "@hypit/runtime";
-import { SqliteRuntimeState } from "@hypit/store-sqlite";
+import { resolveProjectRoot } from "@hypit/project";
+import { NodeFilesystemWorkspace } from "@hypit/workspace/node";
+import { defineBuild } from "@hypit/kernel";
+import { loadNodePackageSelection } from "@hypit/loader/node";
+import { credentialRef } from "@hypit/runtime";
+import { buildExecutionActivity } from "@hypit/runtime-local";
+import type { BuildCompletion } from "@hypit/runtime-local";
+import type { CredentialValue, WritableCredentialStore } from "@hypit/runtime";
+import { SqliteRuntimeState } from "../src/sqlite-state.js";
 
 import {
   capabilities,
@@ -43,7 +45,7 @@ import {
   manifest as greetingManifest,
   producers,
   types,
-} from "../../core/test/greeting-fixture.js";
+} from "../../kernel/test/greeting-fixture.js";
 
 const providerModule = { name: "example.local-endpoint", version: "1" } as const;
 
@@ -74,11 +76,8 @@ function projectRuntimeFixture(directory: string) {
     clearBuildResources: async (build: string) => {
       await rm(join(work, build), { recursive: true, force: true });
     },
-    openBuildResultRepository: async (location: import("@hypit/build-result-kit").BuildResultRepositoryLocation) => {
-      assert.equal(location.selection.use, "@hypit/build-result-fs");
-      const config = location.selection.config as { readonly path?: string } | undefined;
-      return { repository: new FileBuildResultRepository(join(location.root, config?.path ?? ".hypit/results")) };
-    },
+    openBuildResultRepository: async (location: import("@hypit/runtime-local").BuildResultRepositoryLocation) =>
+      ({ repository: new FileBuildResultRepository(join(location.root, location.path)) }),
     credentialStore: new EnvironmentCredentialStore(),
     close: () => state.close(),
   } as const;
@@ -86,10 +85,7 @@ function projectRuntimeFixture(directory: string) {
 
 function resultDestination(directory: string) {
   return {
-    repository: {
-      root: directory,
-      selection: { use: "@hypit/build-result-fs", config: { path: "results" } },
-    },
+    repository: { root: directory, path: "results" },
   } as const;
 }
 
@@ -122,18 +118,87 @@ test("a project directory alias admits its Source and stores a project-relative 
     await writeFile(join(parent, "outside.svs"), "outside");
     await symlink(directory, alias, "junction");
     await symlink(parent, join(directory, "escape"), "junction");
-    const root = await resolveProjectRoot({ workspaceRoot: alias });
-    const session = await new NodeFilesystemWorkspace({ root }).open(join(alias, "main.svml"));
-    await assert.rejects(async () => await session.resolveSource(session.entry, { from: "./escape/outside.svs", alias: "outside" }),
+    const root = await resolveProjectRoot({ projectRoot: alias });
+    const session = await new NodeFilesystemWorkspace({
+      root,
+      sourceAdapter: (unit) => ({ unit, frontend: "test.frontend@1" }),
+    }).open(join(alias, "main.svml"));
+    await assert.rejects(async () => await session.resolveSource(session.entry.unit, { from: "./escape/outside.svs", alias: "outside" }),
       { code: "SOURCE_OUTSIDE_ROOT" });
     const runtime = await createLocalRuntime(projectRuntimeFixture(directory));
     try {
       const request = durableBuildRequest(root, "bld_20260916T150000000Z_0000000001", createGreetingBuild());
-      await runtime.build({ ...request, catalog: { ...request.catalog, source: { path: session.entry.id } } });
+      await runtime.build({ ...request, catalog: { ...request.catalog, source: { path: session.entry.unit.id } } });
       const result = await new FileBuildResultRepository(join(directory, "results")).read(request.id);
-      assert.equal(result?.source.path, "main.svml");
+      assert.equal(result?.source.id, "main.svml");
     } finally { await runtime.close(); }
   } finally { await rm(parent, { recursive: true, force: true }); }
+});
+
+test("a forward-only Build completes with no Core records or Producer work", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "hypit-local-forward-only-"));
+  const priorId = "bld_20260924T120000000Z_0000000001";
+  const buildId = "bld_20260924T120000001Z_0000000001";
+  try {
+    await writeFile(join(directory, "main.svml"), "source");
+    const repository = new FileBuildResultRepository(join(directory, "results"));
+    const prior = await repository.create({
+      id: priorId,
+      source: { id: "main.svml" },
+      targets: ["document"],
+      publishedOutputs: [{ name: "document", output: "document" }],
+    });
+    await prior.sync({
+      state: {
+        status: "complete",
+        records: [{ id: "record:document", type: types.document, value: { kind: "inline", value: { text: "ready" } } }],
+        plan: { outputBindings: [{ output: "document", record: "record:document", type: types.document }] },
+      } as unknown as import("@hypit/protocol").BuildState,
+      resources: { async open() { throw new Error("fixture has no files"); } },
+    });
+    await prior.finish({ outcome: "complete" });
+
+    const template = createGreetingBuild();
+    const empty = defineBuild({
+      program: template.program,
+      initialRecords: [],
+      plan: { format: "hypit.plan@1", steps: [], goals: [], outputBindings: [] },
+      targets: [],
+    });
+    const runtime = await createLocalRuntime(projectRuntimeFixture(directory));
+    try {
+      await runtime.build({
+        id: buildId,
+        definition: empty,
+        catalog: {
+          source: { path: join(directory, "main.svml") },
+          targets: [{ kind: "logical-output", id: "forwarded-document" }],
+          publishedOutputs: [{ name: "document", ref: { kind: "logical-output", id: "forwarded-document" } }],
+        },
+        result: {
+          ...resultDestination(directory),
+          forwards: [{
+            output: "forwarded-document",
+            build: priorId,
+            sourceOutput: "document",
+            type: types.document,
+          }],
+        },
+      });
+      const completion = await finishClaimedBuild(runtime);
+      assert.equal(completion.outcome, "complete");
+      const result = await repository.read(buildId);
+      assert.deepEqual(result?.targets, ["document"]);
+      assert.deepEqual(result?.outputs.document, {
+        type: types.document,
+        value: { kind: "build-output", build: priorId, output: "document" },
+      });
+    } finally {
+      await runtime.close();
+    }
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 async function finishClaimedBuild(
@@ -151,7 +216,7 @@ async function finishClaimedBuild(
 // An embedding test supplies implementations explicitly and advances their owned turns.
 // Production process lifecycle is exercised through superviseBuilds in the process tests.
 async function runFixture(runtime: Awaited<ReturnType<typeof createLocalRuntime>>,
-  store: import("@hypit/runtime").BuildExecutionStore,
+  store: import("@hypit/runtime-local").BuildExecutionStore,
   options: {idlePollMs:number,signal:AbortSignal}): Promise<void> {
   const active = new Map<string,Promise<void>>();
   let failure: unknown;
@@ -178,9 +243,7 @@ test("Endpoint-declared credentials use the selected writable Store without a Pr
     async put(ref, value) { values.set(ref.key, value); },
     async delete(ref) { return values.delete(ref.key); },
   };
-  const endpoint = defineEndpointPackage({
-    module: providerModule,
-    facet: "generation",
+  const endpoint = defineEndpoint({
     instance: "generation.auth-test",
     pool: "generation.auth-test",
     credentials: { apiKey: credentialRef("memory", "generation.api-key") },
@@ -237,7 +300,7 @@ test("project local Runtime advances, polls and cancels work with replaceable pa
   let starts = 0;
   let polls = 0;
   let cancels = 0;
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [
       {
         producer: producers.makePrompt,
@@ -298,9 +361,7 @@ test("project local Runtime advances, polls and cancels work with replaceable pa
       return { status: "confirmed" };
     },
   };
-  const endpointPackage: EndpointPackage = defineEndpointPackage({
-    module: providerModule,
-    facet: "generation",
+  const endpointInstance: EndpointInstance = defineEndpoint({
     instance: "generation.personal",
     pool: "generation.personal",
     capabilities: [{
@@ -315,8 +376,8 @@ test("project local Runtime advances, polls and cancels work with replaceable pa
   try {
     firstRuntime = await createLocalRuntime({
       ...projectRuntimeFixture(directory),
-      components: [components],
-      endpoints: [endpointPackage],
+      producerPackages: [components], admissionPackages: [components],
+      endpoints: [endpointInstance],
     });
     const first = await firstRuntime.build({
       id: "bld_20260902T120000001Z_0000000001",
@@ -332,7 +393,7 @@ test("project local Runtime advances, polls and cancels work with replaceable pa
     assert.equal(starts, 1);
     assert.equal(polls, 0);
     assert.equal("work" in firstRuntime, false, "execution lifecycle belongs to the Runtime Host");
-    const otherRuntime = await createLocalRuntime({ ...projectRuntimeFixture(directory), components:[components], endpoints:[endpointPackage] });
+    const otherRuntime = await createLocalRuntime({ ...projectRuntimeFixture(directory), producerPackages: [components], admissionPackages: [components], endpoints:[endpointInstance] });
     try {
       assert.equal(await otherRuntime.workOnce(), undefined);
       await assert.rejects(otherRuntime.workOnce({build:"bld_20260902T120000001Z_0000000001"}), /another execution context/u);
@@ -389,7 +450,7 @@ test("a completed public file moves into its Build Result and leaves no Runtime 
   const workStore = new FileResourceStore(join(directory, ".hypit", "work", id));
   const initial = createGreetingBuild({ generationRealization: "placeholder", targetOutputs: ["generated"] });
   const buildDefinition = definition(initial);
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [{
       producer: producers.makePrompt,
       handler: () => ({ outputs: { prompt: { kind: "inline", value: "make a clip" } }, needs: {} }),
@@ -404,7 +465,7 @@ test("a completed public file moves into its Build Result and leaves no Runtime 
   try {
     const runtime = await createLocalRuntime({
       ...projectRuntimeFixture(directory),
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
     });
     await runtime.build({
       id,
@@ -437,7 +498,7 @@ test("a completed public file moves into its Build Result and leaves no Runtime 
 test("a failed Build keeps public Outputs completed before removing active Runtime state", async () => {
   const directory = await mkdtemp(join(tmpdir(), "hypit-local-bld_20260902T120000005Z_0000000001-"));
   const initial = createGreetingBuild();
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [{
       producer: producers.makePrompt,
       handler: () => ({ outputs: { prompt: { kind: "inline", value: "Greet Ada" } }, needs: {} }),
@@ -449,9 +510,7 @@ test("a failed Build keeps public Outputs completed before removing active Runti
       },
     }],
   };
-  const endpoint = defineEndpointPackage({
-    module: providerModule,
-    facet: "generation",
+  const endpoint = defineEndpoint({
     instance: "generation.failure",
     pool: "generation.failure",
     capabilities: [{
@@ -467,7 +526,7 @@ test("a failed Build keeps public Outputs completed before removing active Runti
   try {
     const runtime = await createLocalRuntime({
       ...projectRuntimeFixture(directory),
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
       endpoints: [endpoint],
     });
     await runtime.build({
@@ -504,7 +563,7 @@ for (const phase of ["submit", "poll"] as const) {
     const initial = createParallelGreetingBuild();
     let starts = 0;
     let polls = 0;
-    const components: ComponentPackage = { producers: [
+    const components: ProducerPackage & AdmissionPackage = { producers: [
       { producer: producers.makePrompt, handler: () => ({ outputs: { prompt: { kind: "inline", value: "hello" } }, needs: {} }) },
       { producer: producers.requestText, handler: () => ({ outputs: {}, needs: { generation: {} } }) },
     ] };
@@ -513,8 +572,8 @@ for (const phase of ["submit", "poll"] as const) {
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
       return { status: "completed" as const, result: { value: { kind: "inline" as const, value: "retained sibling output" } } };
     };
-    const endpoint = defineEndpointPackage({
-      module: providerModule, facet: "generation", instance: "generation.siblings", pool: "generation.siblings", defaultConcurrency: 2,
+    const endpoint = defineEndpoint({
+      instance: "generation.siblings", pool: "generation.siblings", defaultConcurrency: 2,
       capabilities: [{ lifecycle: "asynchronous", capability: capabilities.generation, returns: types.generated, endpoint: {
         start() {
           const id = ++starts;
@@ -523,7 +582,7 @@ for (const phase of ["submit", "poll"] as const) {
         poll({ handle }) { polls++; return finish((handle as { id: number }).id); },
       } }],
     });
-    const runtime = await createLocalRuntime({ ...projectRuntimeFixture(directory), components: [components], endpoints: [endpoint] });
+    const runtime = await createLocalRuntime({ ...projectRuntimeFixture(directory), producerPackages: [components], admissionPackages: [components], endpoints: [endpoint] });
     try {
       const id = "bld_20260906T110000000Z_0000000001";
       await runtime.build(durableBuildRequest(directory, id, initial));
@@ -546,7 +605,7 @@ test("an interrupted Result write finishes explicitly without rerunning the Buil
   const initial = createGreetingBuild({ generationRealization: "placeholder" });
   let generationCalls = 0;
   let rejectSync = true;
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [{
       producer: producers.makePrompt,
       handler: () => ({ outputs: { prompt: { kind: "inline", value: "Greet Ada" } }, needs: {} }),
@@ -570,10 +629,9 @@ test("an interrupted Result write finishes explicitly without rerunning the Buil
   };
   const fixture = projectRuntimeFixture(directory);
   const openRepository = async (
-    location: import("@hypit/build-result-kit").BuildResultRepositoryLocation,
+    location: import("@hypit/runtime-local").BuildResultRepositoryLocation,
   ) => {
-    const path = (location.selection.config as { readonly path?: string } | undefined)?.path ?? ".hypit/results";
-    const base = new FileBuildResultRepository(join(location.root, path));
+    const base = new FileBuildResultRepository(join(location.root, location.path));
     const repository: BuildResultRepository = {
       create: async (seed) => await base.create(seed),
       async openWriter(build) {
@@ -603,7 +661,7 @@ test("an interrupted Result write finishes explicitly without rerunning the Buil
     const runtime = await createLocalRuntime({
       ...fixture,
       openBuildResultRepository: openRepository,
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
     });
     await runtime.build({
       id: "bld_20260902T120000006Z_0000000001",
@@ -674,7 +732,7 @@ test("an immediate Command left in started state fails its Build without invokin
   const directory = await mkdtemp(join(tmpdir(), "hypit-local-command-receipt-"));
   const initial = createGreetingBuild({ generationRealization: "placeholder" });
   let calls = 0;
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [{
       producer: producers.makePrompt,
       handler: () => {
@@ -687,7 +745,7 @@ test("an immediate Command left in started state fails its Build without invokin
   try {
     runtime = await createLocalRuntime({
       ...projectRuntimeFixture(directory),
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
     });
     const submitted = await runtime.build(durableBuildRequest(directory, "bld_20260902T120000008Z_0000000001", initial));
     const command = submitted.state.outstanding[0];
@@ -732,7 +790,7 @@ test("a selected file is staged once and remains referenced in the produced Comp
   });
   let attachmentOpens = 0;
   let endpointCalls = 0;
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [{
       producer: producers.makePrompt,
       handler: ({ inputs }) => ({ outputs: { prompt: inputs.intent!.value }, needs: {} }),
@@ -747,9 +805,7 @@ test("a selected file is staged once and remains referenced in the produced Comp
       }),
     }],
   };
-  const endpoint = defineEndpointPackage({
-    module: providerModule,
-    facet: "generation",
+  const endpoint = defineEndpoint({
     instance: "generation.bld_20260902T120000009Z_0000000001",
     pool: "generation.bld_20260902T120000009Z_0000000001",
     capabilities: [{
@@ -770,7 +826,7 @@ test("a selected file is staged once and remains referenced in the produced Comp
     await writeFile(inputPath, bytes);
     const runtime = await createLocalRuntime({
       ...projectRuntimeFixture(directory),
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
       endpoints: [endpoint],
     });
     await runtime.build({
@@ -835,7 +891,7 @@ test("one local Worker admits later Builds while preserving shared Endpoint capa
   let markSecondStarted: (() => void) | undefined;
   const secondStarted = new Promise<void>((resolve) => { markSecondStarted = resolve; });
   let unrestrictedStarts = 0;
-  const components: ComponentPackage = {
+  const components: ProducerPackage & AdmissionPackage = {
     producers: [
       {
         producer: producers.makePrompt,
@@ -885,9 +941,7 @@ test("one local Worker admits later Builds while preserving shared Endpoint capa
       },
     ],
   };
-  const endpoint = defineEndpointPackage({
-    module: providerModule,
-    facet: "generation",
+  const endpoint = defineEndpoint({
     instance: "generation.serial",
     pool: "generation.serial",
     defaultConcurrency: 1,
@@ -924,7 +978,7 @@ test("one local Worker admits later Builds while preserving shared Endpoint capa
         },
         remove: (...args) => fixture.buildStore.remove!(...args),
       },
-      components: [components],
+      producerPackages: [components], admissionPackages: [components],
       endpoints: [endpoint],
     });
     await runtime.build(durableBuildRequest(directory, "bld_20260902T120000010Z_0000000001", createGreetingBuild()));
@@ -1005,10 +1059,12 @@ test("project local runtime accepts components loaded from an installed package"
     const module = { name: manifest.name, version: manifest.version };
     const producer = (name) => ({ module, name });
     export default {
-      format: "hypit.node-package@1",
+      format: "hypit.package@1",
       modules: [{ manifest }],
-      components: [{
-        producers: [
+      facets: [{
+        abi: "hypit.producer-package@1",
+        implementation: {
+          producers: [
           {
             producer: producer("make-prompt"),
             handler({ inputs }) {
@@ -1028,7 +1084,8 @@ test("project local runtime accepts components loaded from an installed package"
               return { outputs: { document: { kind: "inline", value: { text: inputs.generated.value.value } } }, needs: {} };
             },
           },
-        ],
+          ],
+        },
       }],
     };
   `, "utf8");
@@ -1036,15 +1093,14 @@ test("project local runtime accepts components loaded from an installed package"
   try {
     const runtime = await createLocalRuntime({
       ...projectRuntimeFixture(runtimeRoot),
-      loadComponentPackages: async (specifiers) => {
-        const loaded = await loadNodePackageSelection(specifiers, installedRoot);
-        return collectLoadedNodePackageComponents(loaded);
+      loadProducerPackages: async (specifiers) => {
+        return await loadNodePackageSelection(specifiers, installedRoot);
       },
     });
     const selected = createGreetingBuild({ generationRealization: "placeholder" });
     const result = await runtime.build({
       ...durableBuildRequest(runtimeRoot, "bld_20260902T120000012Z_0000000001", selected),
-      componentPackages: ["example-greeting-components"],
+      executionPackages: ["example-greeting-components"],
     });
     assert("view" in result);
     assert.equal(result.view.activity, "ready");
@@ -1061,7 +1117,7 @@ test("project local runtime accepts components loaded from an installed package"
 test("project local runtime remembers the complete package closure across incremental Builds", async () => {
   const directory = await mkdtemp(join(tmpdir(), "hypit-local-component-closure-"));
   const loadedSelections: string[][] = [];
-  const sharedComponents: ComponentPackage = {
+  const sharedComponents: ProducerPackage & AdmissionPackage = {
     validators: [{ type: types.intent, handler() {} }],
     producers: [
       {
@@ -1091,11 +1147,14 @@ test("project local runtime remembers the complete package closure across increm
   };
   const runtime = await createLocalRuntime({
     ...projectRuntimeFixture(directory),
-    loadComponentPackages(specifiers) {
+    loadProducerPackages(specifiers) {
       loadedSelections.push([...specifiers]);
       return [
-        ...specifiers.map((specifier) => ({ specifier, components: [] })),
-        { specifier: "example-shared-components", components: [sharedComponents] },
+        ...specifiers.map((specifier) => ({ specifier, contribution: { format: "hypit.package@1" as const } })),
+        { specifier: "example-shared-components", contribution: {
+          format: "hypit.package@1" as const,
+          facets: [createProducerPackageFacet(sharedComponents), createAdmissionPackageFacet(sharedComponents)],
+        } },
       ];
     },
   });
@@ -1108,7 +1167,7 @@ test("project local runtime remembers the complete package closure across increm
       const initial = createGreetingBuild({ generationRealization: "placeholder" });
       await runtime.build({
         ...durableBuildRequest(directory, id, initial),
-        componentPackages: [specifier],
+        executionPackages: [specifier],
       });
       const completed = await finishClaimedBuild(runtime);
       assert.equal(completed.outcome, "complete");
@@ -1129,7 +1188,7 @@ for (const cancellation of ["accepted", "unsupported", "failed-build", "host-fai
     let fixture = projectRuntimeFixture(directory);
     let failRead = false;
     let remoteActive = 0, starts = 0, cancels = 0, polls = 0;
-    const provider = defineEndpointPackage({ module: providerModule, facet: "generation", instance: "settlement",
+    const provider = defineEndpoint({ instance: "settlement",
       pool: "shared", defaultConcurrency: 1, capabilities: [{ capability: capabilities.generation, returns: types.generated,
         lifecycle: "asynchronous", endpoint: {
           start() { starts++; remoteActive++; return { status: "pending", handle: { job: starts }, receipt: { id: `job-${starts}` }, wakeAt: Date.now() + 60_000 }; },
@@ -1144,7 +1203,7 @@ for (const cancellation of ["accepted", "unsupported", "failed-build", "host-fai
           if (failRead) { failRead = false; throw new Error("Runtime read interrupted"); }
           return await fixture.buildStore.read(build);
         },
-      }, components: [{ producers: [
+      }, producerPackages: [{ producers: [
       { producer: producers.makePrompt, handler: () => ({ outputs: { prompt: { kind: "inline", value: "hello" } }, needs: {} }) },
       { producer: producers.requestText, handler: () => ({ outputs: {}, needs: { generation: { prompt: "hello" } } }) },
     ] }] });
@@ -1158,7 +1217,7 @@ for (const cancellation of ["accepted", "unsupported", "failed-build", "host-fai
       if (cancellation === "failed-build" || cancellation === "host-failure") {
         if (cancellation === "failed-build") {
           const snapshot = (await fixture.buildStore.read(first))!;
-          const { BuildMachine } = await import("@hypit/core");
+          const { BuildMachine } = await import("@hypit/kernel");
           const machine = new BuildMachine(snapshot.definition, snapshot.facts);
           const operation = (await fixture.operationStore.list({ build: first }))[0]!;
           const fact = machine.evaluate({ kind: "command-failed", command: operation.command, code: "EXAMPLE_FAILURE", message: "a sibling failed" });
@@ -1192,8 +1251,8 @@ test("concurrent durable Builds preserve action capacity and outcomes across fai
   const fixture = projectRuntimeFixture(directory);
   let starts = 0, activeTasks = 0, peakTasks = 0, downloads = 0, peakDownloads = 0;
   const checks = new Map<number, number>();
-  const provider = defineEndpointPackage({
-    module: providerModule, facet: "generation", instance: "concurrent", pool: "shared-account",
+  const provider = defineEndpoint({
+    instance: "concurrent", pool: "shared-account",
     defaultConcurrency: 8,
     actionLimits: { submit: { concurrency: 2 }, collect: { concurrency: 2 } },
     capabilities: [{ capability: capabilities.generation, returns: types.generated, lifecycle: "asynchronous", endpoint: {
@@ -1235,7 +1294,7 @@ test("concurrent durable Builds preserve action capacity and outcomes across fai
   const runtime = await createLocalRuntime({
     ...fixture,
     endpoints: [provider],
-    components: [{ producers: [
+    producerPackages: [{ producers: [
       { producer: producers.makePrompt, handler: () => ({ outputs: { prompt: { kind: "inline", value: "hello" } }, needs: {} }) },
       { producer: producers.requestText, handler: () => ({ outputs: {}, needs: { generation: { prompt: "hello" } } }) },
     ] }],
@@ -1284,7 +1343,7 @@ test("local call logs survive cleanup and remain attributed across concurrent su
   const fixture = projectRuntimeFixture(directory);
   const runtime = await createLocalRuntime({
     ...fixture,
-    endpoints: [defineEndpointPackage({ module: providerModule, facet: "generation", instance: "local-logs", pool: "local-logs", defaultConcurrency: 2,
+    endpoints: [defineEndpoint({ instance: "local-logs", pool: "local-logs", defaultConcurrency: 2,
       capabilities: [{ capability: capabilities.generation, returns: types.generated, lifecycle: "immediate", async handler(context) {
         const call = ++calls;
         for (let completed = 0; completed < 4; completed++) await context.reportProgress?.({ phase: "rendering", completed, total: 4 });
@@ -1294,7 +1353,7 @@ test("local call logs survive cleanup and remain attributed across concurrent su
         await context.reportProgress?.({ phase: "storing" });
         return { value: { kind: "inline", value: `call ${call}` } };
       } }] })],
-    components: [{ producers: [
+    producerPackages: [{ producers: [
       { producer: producers.makePrompt, handler: () => ({ outputs: { prompt: { kind: "inline", value: "hello" } }, needs: {} }) },
       { producer: producers.requestText, handler: () => ({ outputs: {}, needs: { generation: { prompt: "hello" } } }) },
     ] }],

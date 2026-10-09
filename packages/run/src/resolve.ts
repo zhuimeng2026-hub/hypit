@@ -2,7 +2,7 @@ import {
   elaborateGraphFragment,
   exportRunFragment,
   resolveCompiledSourceExport,
-} from "@hypit/elaborator";
+} from "@hypit/author";
 import { canonicalize, sameType } from "@hypit/protocol";
 import type {
   Candidate,

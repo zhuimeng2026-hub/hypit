@@ -1,16 +1,11 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding } from "@hypit/generation";
-import type { GenerationMediaPort } from "@hypit/generation";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/model-kit";
-import type { CanonicalValue } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding } from "@hypit/hypit/generation";
+import type { GenerationMediaPort } from "@hypit/hypit/generation";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
+import { textTypes, verifyText } from "@hypit/hypit/text";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
 
 import { createElevenLabsSpeechAudioFragment } from "./fragment.js";
 import { elevenLabsSpeechEndpoints, sealElevenLabsSpeechRequestDraft } from "./index.js";

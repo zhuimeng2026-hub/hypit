@@ -3,13 +3,13 @@
   "dataRoot": ".hypit/execution",
   "endpoints": {
     "media.local": {
-      "use": "@hypit/provider-media-local",
+      "use": "@hypit/media-local",
       "config": {
         "defaultConcurrency": 2
       }
     },
-    "hyperframes.local": {
-      "use": "@hypit/provider-hyperframes-local",
+    "html.local": {
+      "use": "@hypit/provider-html-local",
       "config": {
         "workers": 8,
         "defaultConcurrency": 1
@@ -17,8 +17,8 @@
     }
   },
   "bindings": {
-    "@hypit/render-hyperframes@1#render-visual": "hyperframes.local",
-    "@hypit/media-pipeline@1#render-timeline-audio": "media.local",
-    "@hypit/media-pipeline@1#mux-program-media": "media.local"
+    "@hypit/html-program@1#rasterize-visual": "html.local",
+    "@hypit/media-operations@1#render-timeline-audio": "media.local",
+    "@hypit/media-operations@1#mux-program-media": "media.local"
   }
 }

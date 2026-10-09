@@ -1,25 +1,32 @@
 import { resolve } from "node:path";
 
-import type { NodeCompiledSourceClosure } from "@hypit/compiler-node";
-import { registerProducerFacets, registerTypeValidatorFacets } from "@hypit/component-kit";
+import type { CompiledAuthorSource } from "@hypit/compiler";
+import {
+  producerPackagesFromFacets,
+  registerProducerFacets,
+} from "@hypit/producer";
 import type {
   PlannedNeedFacet,
   PlannedNeedPresentation,
   PlannedNeedSpecification,
-} from "@hypit/component-kit";
-import { evaluateProducerPlan, ProducerRegistry } from "@hypit/driver-node";
-import type { NodePackageContribution } from "@hypit/package-loader-node";
+} from "@hypit/producer";
+import { evaluateProducerPlan, ProducerRegistry } from "@hypit/executor";
+import type { PackageContribution } from "@hypit/loader";
 import type { BuildDefinition, BuildState, CanonicalValue, CapabilityRef } from "@hypit/protocol";
-import type { NodeRuntimeHost } from "@hypit/runtime-host-node";
-import { plannedNeeds } from "@hypit/runtime";
-import type { BuildCatalogDescriptor } from "@hypit/runtime";
-import { TypeValidatorRegistry } from "@hypit/validation";
+import type { CliBuildCatalogDescriptor, CliProviderQuery, CliRuntimeHost } from "./runtime-port.js";
+import { plannedNeeds } from "@hypit/kernel";
+import {
+  admissionPackagesFromFacets,
+  registerTypeValidatorFacets,
+  TypeValidatorRegistry,
+} from "@hypit/admission";
 
 export function createCatalogDescriptor(options: {
   readonly source: string;
-  readonly compilation: NodeCompiledSourceClosure;
+  readonly compilation: CompiledAuthorSource;
   readonly run?: { readonly path: string };
-}): BuildCatalogDescriptor {
+  readonly targets?: readonly { readonly output: string }[];
+}): CliBuildCatalogDescriptor {
   const publishedOutputs = options.compilation.exports.flatMap((item) => {
     if (item.ref.kind === "operation-result") {
       throw new Error(`public output ${item.name} was not lowered to a stable Record or Logical Output`);
@@ -44,6 +51,9 @@ export function createCatalogDescriptor(options: {
   return {
     source: { path: resolve(options.source) },
     ...(options.run === undefined ? {} : { run: { path: resolve(options.run.path) } }),
+    ...(options.targets === undefined ? {} : {
+      targets: options.targets.map((target) => ({ kind: "logical-output" as const, id: target.output })),
+    }),
     publishedOutputs,
   };
 }
@@ -121,6 +131,11 @@ export type EvaluatedPlanNeed = {
 export type EvaluatedPlan = {
   readonly state: BuildState;
   readonly needs: ReadonlyMap<string, EvaluatedPlanNeed>;
+  /** Every deterministic Producer failure, independent of whether that Step declares a Need. */
+  readonly producerFailures: readonly {
+    readonly step: string;
+    readonly message: string;
+  }[];
 };
 
 export type PlanNeedView = {
@@ -206,9 +221,9 @@ function summarizePresentation(presentation: PlannedNeedPresentation): NeedSumma
   return { fields, references: structuredClone(presentation.references) };
 }
 
-function plannedNeedFacets(contributions: readonly NodePackageContribution[]): readonly PlannedNeedFacet[] {
+function plannedNeedFacets(contributions: readonly PackageContribution[]): readonly PlannedNeedFacet[] {
   return contributions.flatMap((contribution) =>
-    (contribution.components ?? []).flatMap((component) => component.plannedNeeds ?? []));
+    producerPackagesFromFacets(contribution.facets ?? []).flatMap((item) => item.plannedNeeds ?? []));
 }
 
 function plannedNeedFacetFor(
@@ -231,14 +246,17 @@ function plannedNeedFacetFor(
  */
 export async function evaluatePlanNeeds(
   definition: BuildDefinition,
-  contributions: readonly NodePackageContribution[],
+  contributions: readonly PackageContribution[],
 ): Promise<EvaluatedPlan> {
   const producers = new ProducerRegistry();
   const validators = new TypeValidatorRegistry();
   for (const contribution of contributions) {
-    for (const component of contribution.components ?? []) {
-      registerProducerFacets(producers, component.producers ?? []);
-      registerTypeValidatorFacets(validators, component.validators ?? []);
+    const facets = contribution.facets ?? [];
+    for (const item of producerPackagesFromFacets(facets)) {
+      registerProducerFacets(producers, item.producers ?? []);
+    }
+    for (const item of admissionPackagesFromFacets(facets)) {
+      registerTypeValidatorFacets(validators, item.validators ?? []);
     }
   }
   const evaluation = await evaluateProducerPlan(definition, producers, validators);
@@ -276,7 +294,6 @@ export async function evaluatePlanNeeds(
           kind: item.role === "image" || item.role === "video" || item.role === "audio" ? item.role : "other",
         }),
       }));
-      const issue = evaluation.failures.get(planned.step);
       result.set(planned.need, {
         constraints: specification.constraints,
         pendingInputs: specification.pendingInputs,
@@ -284,7 +301,6 @@ export async function evaluatePlanNeeds(
           ? summarizeConstraints(specification.constraints)
           : summarizePresentation(facet.present(specification)),
         pending,
-        ...(issue === undefined ? {} : { issue }),
       });
       continue;
     }
@@ -296,23 +312,24 @@ export async function evaluatePlanNeeds(
         const sourceStep = producedBy.get(record);
         return { input, record, ...(sourceStep === undefined ? {} : { sourceStep }) };
       });
-    const issue = evaluation.failures.get(planned.step);
     result.set(planned.need, {
       pendingInputs: [],
       pending,
-      issue: issue === undefined
-        ? `Package does not describe the complete request for ${capabilityName(planned.capability)} before Build`
-        : `${issue}; package also does not describe the complete request for ${capabilityName(planned.capability)} before Build`,
+      issue: `Package does not describe the complete request for ${capabilityName(planned.capability)} before Build`,
     });
   }
-  return { state, needs: result };
+  return {
+    state,
+    needs: result,
+    producerFailures: [...evaluation.failures].map(([step, message]) => ({ step, message })),
+  };
 }
 
 /** The complete pre-Build requests shared by Endpoint selection and Provider pricing reads. */
 export function plannedProviderQueries(
   state: BuildState,
   evaluated: EvaluatedPlan,
-): readonly import("@hypit/runtime-host-node").RuntimeHostProviderQuery[] {
+): readonly CliProviderQuery[] {
   const planned = plannedNeeds(state);
   return planned.flatMap((item) => {
     const plannedRequest = evaluated.needs.get(item.need);
@@ -335,7 +352,7 @@ export function plannedProviderQueries(
 
 /** Resolve every planned request independently; concrete constraints exercise Endpoint `supports`. */
 export async function describePlanProviders(
-  host: NodeRuntimeHost,
+  host: CliRuntimeHost,
   state: BuildState,
   evaluated: EvaluatedPlan,
 ): Promise<readonly PlanProviderView[]> {
@@ -361,7 +378,7 @@ export async function describePlanProviders(
 
 /** Read Provider-owned pricing material relevant to each planned request. */
 export async function describePlanPricing(
-  host: NodeRuntimeHost,
+  host: CliRuntimeHost,
   state: BuildState,
   evaluated: EvaluatedPlan,
 ): Promise<readonly PlanPricingView[]> {
@@ -421,7 +438,7 @@ export function assertPlannedRequests(
   }
 }
 
-export async function preflightPlan(host: NodeRuntimeHost, state: BuildState, providers: readonly PlanProviderView[]) {
+export async function preflightPlan(host: CliRuntimeHost, state: BuildState, providers: readonly PlanProviderView[]) {
   const capabilities = demandedCapabilities(state);
   const endpoints = [...new Set(providers.flatMap((item) => item.status === "resolved" && item.endpoint !== undefined ? [item.endpoint] : []))];
   const result = await host.preflight({ endpoints });

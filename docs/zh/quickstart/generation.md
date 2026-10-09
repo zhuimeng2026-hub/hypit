@@ -9,7 +9,7 @@ description: 声明媒体资源并使用 Seedance 生成视频。
 
 ```svml
 <import as="media" from="@hypit/media@1"/>
-<import as="mediaop" from="@hypit/media-pipeline@1"/>
+<import as="mediaop" from="@hypit/media-operations@1"/>
 <import as="text" from="@hypit/text@1"/>
 <import as="seedance" from="@hypit/seedance@1"/>
 <import as="speaker-kit" source="@hypit/seedance-kits/speaker"/>
@@ -47,10 +47,10 @@ description: 声明媒体资源并使用 Seedance 生成视频。
 
 ## 时长是字面量
 
-生成片段的长度由作者决定，直接写在需要它的元素上。先量稿子，再写数字：
+生成片段的长度由作者决定，直接写在需要它的元素上。先估算稿子，再写数字：
 
 ```bash
-hypit measure main.svml --segment hook --language en --pace normal --rounding round
+hypit estimate main.svml --segment hook --language en --pace normal --rounding round
 # 7s
 ```
 
@@ -60,7 +60,7 @@ hypit measure main.svml --segment hook --language en --pace normal --rounding ro
 </seedance:ReferenceVideo>
 ```
 
-`hypit measure` 按口播策略——`language`、`pace`（英语 `slow = 4.2`、`normal = 4.6`、`fast = 5.0` 音节/秒）或数值 `rate`、`rounding`——统计 Segment 台词的读音单位，不调用任何外部服务。请求时长在 Build 开始前已经明确。用估时结果调整稿子并选择模型支持的时长；实际词时间由生成表演后的语义处理提供。
+`hypit estimate` 按口播策略——`language`、`pace`（英语 `slow = 4.2`、`normal = 4.6`、`fast = 5.6` 音节/秒）或数值 `rate`、`rounding`——统计 Segment 台词的读音单位，不调用任何外部服务。请求时长在 Build 开始前已经明确。用估时结果调整稿子并选择模型支持的时长；实际词时间由生成表演后的语义处理提供。
 
 ## text:Value
 
@@ -106,7 +106,7 @@ Seedance 2.5 复用同样的 Surface，而不是由 Runtime 把别的模型偷�
 <seedance:TextVideo id="ambient" model="mini"
   prompt={ambient-direction} duration="5" web-search="false"/>
 ```
-对于反复出现的人物、产品或场景，先制作参考图能给视频模型明确的视觉方向。多个 Take 可以复用这些参考，再由 Script 与 action Prompt 指导各段表演。当场景可以直接描述、不需要保持特定视觉身份时，也可以使用 TextVideo。
+对于反复出现的人物、产品或场景，先制作参考图能给视频模型明确的视觉方向。多个生成片段可以复用这些参考，再由 Script 与 action Prompt 指导各段表演。当场景可以直接描述、不需要保持特定视觉身份时，也可以使用 TextVideo。
 
 
 ### seedance:FrameVideo
@@ -143,7 +143,7 @@ Seedance 2.5 复用同样的 Surface，而不是由 Runtime 把别的模型偷�
 
 这个低层组件并不知道它被用来做口播；用途只存在于传入的 Text 中。公共属性包括
 `id`、`model`、`prompt`、`duration`、`resolution`、
-`aspect-ratio`、`generate-audio`；`duration` 是模型范围内的整秒字面量，事先用 `hypit measure` 量好。
+`aspect-ratio`、`generate-audio`；`duration` 是模型范围内的整秒字面量，事先用 `hypit estimate` 估算。
 
 可以直接抽取前一段生成视频里的音频，并通过普通图边给后续片段当作参考。这个操作不会把音频提升成语音证据，也不会凭空附加说话人语义：
 
@@ -313,5 +313,5 @@ dialogue/action 由普通 Text 模块组装，结果再像其他生成任务一�
 </seedance:ReferenceVideo>
 ```
 
-每个 `seedance:ReferenceVideo` 产出 `{*.video}`，进入下一阶段的 `time:Timeline`。不同 Take
+每个 `seedance:ReferenceVideo` 产出 `{*.video}`，进入下一阶段的 `time:Timeline`。不同生成片段
 可以使用不同参考图，同时共享相同的音色与 Prompt Recipe。

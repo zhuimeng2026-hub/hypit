@@ -9,17 +9,18 @@ class Param {
   setValueAtTime(value: number, time: number) { this.events.push({ kind: "set", value, time }); }
   linearRampToValueAtTime(value: number, time: number) { this.events.push({ kind: "ramp", value, time }); }
 }
-function player(gain: number, presentation: object = {}) {
+function player(gain: number, levelAutomation: object = {}) {
   const nodes: { gain: Param; connect: () => void }[] = [];
   const attrs: Record<string,string> = {
     "data-start": "0", "data-duration": "4", "data-media-start": "0", "data-media-end": "4",
-    "data-gain": String(gain), "data-presentation": encodeURIComponent(JSON.stringify(presentation)),
+    "data-gain": String(gain), "data-level-automation": encodeURIComponent(JSON.stringify(levelAutomation)),
   };
   const audio = { getAttribute: (name: string) => attrs[name] ?? null, currentTime: 0, readyState: 4,
     paused: true, volume: 0, muted: false, pause() { this.paused = true; },
     play() { this.paused = false; return Promise.resolve(); }, addEventListener() {}, removeEventListener() {} };
   const root = { style: {}, getAttribute: (name: string) => ({ "data-fps": "30", "data-composition-id": "test" })[name] ?? null };
-  const window: Record<string, any> = { addEventListener() {}, dispatchEvent() {} };
+  const window: Record<string, any> = { addEventListener() {}, dispatchEvent() {},
+    __hypitFrameProgram: { async applyFrame() {} } };
   const html = injectRuntimeShim("").trim();
   vm.runInNewContext(html.slice("<script>".length, -"</script>".length), {
     window, document: { querySelector: () => root, querySelectorAll: (selector: string) => selector === ".hypit-studio-audio" ? [audio] : [] },

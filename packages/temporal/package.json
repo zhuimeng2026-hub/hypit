@@ -5,16 +5,18 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./markup": "./src/markup/index.ts"
   },
   "hypit": {
     "activation": "./src/activation.ts"
   },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/program-space": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/producer": "workspace:*",
     "@hypit/protocol": "workspace:*",
-    "@hypit/timeline": "workspace:*"
+    "@hypit/timeline": "workspace:*",
+    "@hypit/admission": "workspace:*"
   }
 }

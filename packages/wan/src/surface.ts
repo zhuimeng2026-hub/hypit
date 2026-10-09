@@ -1,20 +1,15 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
-import type { GenerationMediaPort, GenerationPortValue } from "@hypit/generation";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationMediaPort, GenerationPortValue } from "@hypit/hypit/generation";
 import {
   createExactModelPrimaryGenerationFragment,
   exactModelMediaInputNames,
   exactModelTextInputName,
-} from "@hypit/model-kit";
-import type { ExactModelEndpoint } from "@hypit/model-kit";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+} from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint } from "@hypit/hypit/generation/model";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 
 import { wanEndpoints } from "./index.js";
 
@@ -97,7 +92,7 @@ function decoder(endpoint: ExactModelEndpoint): StructuredSurfaceHandler {
       assert(localName(child.name) === "Reference", `${element.name} accepts only Reference children`);
       exact(child, ["image"], ["image"]);
       assert(!child.children.some((item) => item.kind === "element" || item.value.trim()), `${child.name} must be empty`);
-      const image = ref(child, "image", artifactTypes.blob, resolveReference);
+      const image = ref(child, "image", blobTypes.blob, resolveReference);
       if (image.record !== undefined) {
         assert(image.record.value.kind === "blob" && image.record.value.mediaType.startsWith("image/"),
           `${child.name}.image must reference image media`);

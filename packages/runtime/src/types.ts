@@ -4,7 +4,7 @@ import type {
   BuildFact,
   BuildState,
   CommandResult,
-  CoreCommand,
+  BuildCommand,
   ResourceId,
 } from "@hypit/protocol";
 import type { OperationSnapshot } from "./operations.js";
@@ -16,7 +16,7 @@ export type RuntimeBlockedCommand = {
 };
 
 export type RuntimeRunnableCommand = {
-  readonly command: CoreCommand;
+  readonly command: BuildCommand;
   /** Every resource is acquired atomically before the command can cause a side effect. */
   readonly resources: readonly RuntimeResourceClaim[];
   /** Asynchronous work retains one shared in-flight reservation while polling. */
@@ -57,11 +57,26 @@ export type RuntimeExecutionResult =
   | { readonly status: "pending"; readonly operation: string; readonly wakeAt?: number }
   | { readonly status: "deferred"; readonly wakeAt?: number; readonly reason: string };
 
-/** Minimal execution port used by a Scheduler. `prepare` is the sole command-generation boundary. */
+/** Build-local indexed execution view. Definition + Facts remain the only durable representation. */
+export type RuntimeBuildExecution = {
+  view(): BuildState;
+  commands(): readonly BuildCommand[];
+  record(id: string): import("@hypit/protocol").TypedRecord | undefined;
+};
+
+/** Minimal execution port used by a Scheduler. Core has already generated `state.outstanding`; prepare classifies it for this Host. */
 export type RuntimeCommandExecutor = {
   prepare(state: BuildState): RuntimePreparation;
+  /** Optional indexed path used while one BuildMachine is alive. */
+  prepareExecution?(execution: RuntimeBuildExecution): RuntimePreparation;
   executeCommand(
     state: BuildState,
+    command: RuntimeRunnableCommand,
+    context: RuntimeExecutionContext,
+  ): Promise<RuntimeExecutionResult>;
+  /** Optional indexed counterpart to executeCommand; it avoids rebuilding Record lookup tables. */
+  executeExecutionCommand?(
+    execution: RuntimeBuildExecution,
     command: RuntimeRunnableCommand,
     context: RuntimeExecutionContext,
   ): Promise<RuntimeExecutionResult>;
@@ -130,7 +145,7 @@ export type ScheduledBuild =
 
 export type SchedulerExecutionOutcome = {
   readonly command: string;
-  readonly kind: CoreCommand["kind"];
+  readonly kind: BuildCommand["kind"];
   readonly resources: readonly string[];
   readonly status: "completed" | "pending" | "deferred" | "error";
   readonly operation?: string;

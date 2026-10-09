@@ -1,4 +1,6 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/admission";
+import { createProducerPackageFacet } from "@hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/markup";
 
 import {
   decodeAnchoredFrameSurface,
@@ -6,9 +8,9 @@ import {
   decodeCanvasSurface,
   decodeExtentSurface,
   decodeFrameSurface,
+  decodeMapSurface,
   decodePathSurface,
   decodePointSurface,
-  decodeRegionTimelineSurface,
 } from "./surface.js";
 import {
   spatialManifest,
@@ -18,25 +20,25 @@ import {
 import { spatialComponent } from "./component.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: spatialManifest }],
-  components: [spatialComponent],
-  hostFacets: [
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+  facets: [
+    ...[spatialComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "canvas")!, handler: decodeCanvasSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "point")!, handler: decodePointSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "path")!, handler: decodePathSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "extent")!, handler: decodeExtentSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
-    declaration: spatialMarkupSurfaces.find((item) => item.name === "region-timeline")!, handler: decodeRegionTimelineSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
+    declaration: spatialMarkupSurfaces.find((item) => item.name === "map")!, handler: decodeMapSurface }),
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "frame")!, handler: decodeFrameSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "anchored-frame")!, handler: decodeAnchoredFrameSurface }),
-    createMarkupSurfaceHostFacet({ module: spatialModuleRef,
+    createMarkupSurfaceFacet({ module: spatialModuleRef,
     declaration: spatialMarkupSurfaces.find((item) => item.name === "aspect-frame")!, handler: decodeAspectFrameSurface }),
   ],
 };

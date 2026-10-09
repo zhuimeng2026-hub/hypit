@@ -1,22 +1,26 @@
 {
   "name": "@hypit/seedance",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
-    "@hypit/artifact": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/generation": "workspace:*",
-    "@hypit/model-kit": "workspace:*",
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/hypit": "workspace:*",
+    "@hypit/markup": "workspace:*",
     "@hypit/protocol": "workspace:*",
-    "@hypit/text": "workspace:*",
-    "@hypit/markup": "workspace:*"
+    "typescript": "5.9.3"
   }
 }

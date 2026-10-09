@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/hypit/blob";
 import { parseStructuredElement } from "@hypit/markup";
-import type { StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/markup";
-import { textTypes } from "@hypit/text";
+import type { StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes } from "@hypit/hypit/text";
 import { fixtureResource } from "../../../test/fixture-resource.js";
 
 import {
@@ -22,7 +22,7 @@ const refs = new Map<string, SurfaceResolvedReference>([
   ...["first.image", "last.image", "generated.image", "voice.audio"].map((path) => [path, {
     path,
     ref: { kind: "component-output" as const, component: path.split(".")[0]!, output: path.split(".")[1]! },
-    type: artifactTypes.blob,
+    type: blobTypes.blob,
   }] as const),
 ]);
 
@@ -55,7 +55,7 @@ test("admitted M4A audio is rejected at decode while future audio remains a grap
     admitted.set("voice.audio", {
       ...refs.get("voice.audio")!,
       record: {
-        id: "voice", type: artifactTypes.blob,
+        id: "voice", type: blobTypes.blob,
         value: { kind: "blob", resource: fixtureResource("admitted-voice"), size: 4, mediaType },
       },
     });

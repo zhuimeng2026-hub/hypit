@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/blob";
 import { generationTypes } from "@hypit/generation";
 import { parseStructuredElement } from "@hypit/markup";
 import type { SurfaceResolvedReference } from "@hypit/markup";
@@ -36,10 +36,10 @@ const speechReference: SurfaceResolvedReference = {
 const voiceReference: SurfaceResolvedReference = {
   path: "host.reference",
   ref: { kind: "record", id: "host.reference" },
-  type: artifactTypes.blob,
+  type: blobTypes.blob,
   record: {
     id: "host.reference",
-    type: artifactTypes.blob,
+    type: blobTypes.blob,
     value: { kind: "blob", resource: "res_voice-reference", size: 4, mediaType: "audio/wav" },
   },
 };
@@ -65,7 +65,7 @@ test("MiMo Speech declares the two exact audio request shapes", () => {
 });
 
 test("the installed author package contributes the two explicit speech operations", () => {
-  assert.equal(mimoNodePackage.format, "hypit.node-package@1");
+  assert.equal(mimoNodePackage.format, "hypit.package@1");
   assert.equal(mimoNodePackage.modules[0]?.manifest.version, "1");
   assert.deepEqual(mimoSpeechMarkupSurfaces.map((surface) => surface.name), ["voiceDesign", "voiceClone"]);
 });
@@ -76,7 +76,7 @@ test("VoiceDesign publishes one reusable voice reference", async () => {
   </mimo:VoiceDesign>`));
   assert.deepEqual(result.components[0]!.outputs, { audio: "host.reference" });
   const exported = result.fragments[0]!.exports.find((item) => item.name === "audio");
-  assert.deepEqual(exported?.type, artifactTypes.blob);
+  assert.deepEqual(exported?.type, blobTypes.blob);
   assert.deepEqual(result.components[0]!.inputs["speech:text"], {
     kind: "record",
     id: "story.segment.opening.speech",

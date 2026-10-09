@@ -1,12 +1,12 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/speech-evidence";
-import type { AlignedTranscriptEvidence } from "@hypit/speech-evidence";
-import type { EndpointInvocationContext, EndpointFulfillment } from "@hypit/endpoint-kit";
-import { canonicalize } from "@hypit/protocol";
-import type { CanonicalValue } from "@hypit/protocol";
-import { defineEndpointPackage } from "@hypit/endpoint-kit";
+import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
+import type { AlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
+import type { EndpointInvocationContext, EndpointFulfillment } from "@hypit/hypit/endpoint";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
+import { defineEndpoint } from "@hypit/hypit/endpoint";
 import {
   assertWhisperXEvidenceWav,
   interpretWhisperXTranscript,
@@ -119,9 +119,7 @@ export function createLocalWhisperXProvider(config: CreateLocalWhisperXProviderO
   const requestTimeoutMs = positiveInteger(config.requestTimeoutMs ?? 10 * 60_000, "requestTimeoutMs");
   const maxResponseBytes = positiveInteger(config.maxResponseBytes ?? 64 * 1024 * 1024, "maxResponseBytes");
 
-  return defineEndpointPackage({
-    module: localWhisperXProviderModuleRef,
-    facet: "alignment",
+  return defineEndpoint({
     instance: config.instance ?? "whisperx.local",
     pool: config.pool ?? config.instance ?? "whisperx.local",
     pricing: { kind: "local" },
@@ -181,6 +179,8 @@ export function createLocalWhisperXProvider(config: CreateLocalWhisperXProviderO
           const response = raw.value as WhisperXServiceResponse;
           const passages = interpretWhisperXResponse(response, request.sampleFrames);
           const evidence: AlignedTranscriptEvidence = sealAlignedTranscriptEvidence({
+            domainId: request.domainId,
+            sampleFrames: request.sampleFrames,
             passages,
           });
           await context.reportProgress?.({ phase: "Word timing ready" });

@@ -1,15 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { relative } from "node:path";
 
-import { markupAuthorFrontendId } from "@hypit/markup";
-import type { RuntimeHostTransientExecution } from "@hypit/runtime-host-node";
-import { svsFrontendId } from "@hypit/svs";
+import { markupAuthorFrontendId } from "@hypit/hypit/markup";
+import type { CliTransientExecution as RuntimeHostTransientExecution } from "@hypit/hypit/cli";
+import { recipeFrontendId } from "@hypit/hypit/recipe";
 
 import type { ServedFile } from "./compile.js";
 import type { StudioDomain } from "./domain.js";
 import type { Observations } from "./observe.js";
-import { preview } from "./programme.js";
-import { renderStudioProgramme } from "./preview/render.js";
+import { resolveStudioProjection } from "./projection.js";
+import { renderStudioHtmlProgram } from "./preview/render.js";
 import type { RunPlan } from "./run.js";
 import type { StudioSnapshot } from "./shared.js";
 import type { StudioCompanionRegistry } from "./studio-registry.js";
@@ -17,6 +17,8 @@ import { snapshot } from "./snapshot.js";
 import { inspectStudioRun } from "./studio-preflight.js";
 import type { StudioViewRequirement } from "./studio-preflight.js";
 import type { StudioSourceFile } from "./parameters.js";
+import type { BuildState } from "@hypit/hypit/protocol";
+import type { Placement } from "./observe.js";
 
 function sourceFiles(run: RunPlan): readonly StudioSourceFile[] {
   const paths = [run.runPath, run.authorSource, ...run.source.compiled.closure.units.map((unit) => unit.id)];
@@ -26,7 +28,7 @@ function sourceFiles(run: RunPlan): readonly StudioSourceFile[] {
       const unit = run.source.compiled.closure.units.find((candidate) => candidate.id === path);
       const language = path === run.runPath
         ? "svrun" as const
-        : unit?.frontend === svsFrontendId
+        : unit?.frontend === recipeFrontendId
           ? "svs" as const
           : unit?.frontend === markupAuthorFrontendId
             ? "svml" as const
@@ -47,11 +49,16 @@ function sourceFiles(run: RunPlan): readonly StudioSourceFile[] {
 
 export type StudioSession = {
   readonly snapshot: StudioSnapshot;
-  readonly document: import("@hypit/hyperframes").HyperframesDocument;
+  readonly document: import("@hypit/hypit/html-program").HtmlProgram;
   readonly visualHtml: string;
   readonly material: ReadonlyMap<string, ServedFile>;
   readonly observations: Observations;
   readonly projections: readonly StudioViewRequirement[];
+  readonly temporalEdit: {
+    readonly state: BuildState;
+    readonly files: readonly StudioSourceFile[];
+    readonly placements: readonly Placement[];
+  };
 };
 
 export async function readStudioSession(input: {
@@ -69,8 +76,9 @@ export async function readStudioSession(input: {
     inspection.filmComposition,
     ...inspection.projections.map((projection) => projection.ref),
   ];
-  const built = await preview({
+  const built = await resolveStudioProjection({
     source,
+    registry: input.registry,
     run: input.run,
     domain: input.domain,
     outputRefs,
@@ -79,9 +87,9 @@ export async function readStudioSession(input: {
     projections: inspection.projections,
     ...(input.transientExecution === undefined ? {} : { transientExecution: input.transientExecution }),
   });
-  const rendered = renderStudioProgramme({
+  const rendered = renderStudioHtmlProgram({
     composition: built.composition,
-    space: built.space as never,
+    timeline: built.timeline,
     served: new Set(built.served.keys()),
   });
   const text = readFileSync(input.run.authorSource, "utf8");
@@ -103,7 +111,7 @@ export async function readStudioSession(input: {
       },
       canvas: built.canvas,
       frameRate: built.frameRate,
-      preview: { kind: "hyperframes", srcdoc: rendered.preview },
+      preview: { kind: "html-program", srcdoc: rendered.preview },
       workspaceRoot: input.workspaceRoot,
       sourceFiles: files,
       surfaces: input.domain.surfaces,
@@ -111,5 +119,10 @@ export async function readStudioSession(input: {
     material: built.served,
     observations: source.observations,
     projections: inspection.projections,
+    temporalEdit: {
+      state: built.state,
+      files,
+      placements: built.source.observations.placements,
+    },
   };
 }

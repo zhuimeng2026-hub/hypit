@@ -6,18 +6,23 @@ import { pathToFileURL } from "node:url";
 import { commandHint } from "../src/command-hint.js";
 import test from "node:test";
 
-import { FileBuildResult, FileBuildResultRepository } from "@hypit/build-result";
-import { ModulePackageRegistry, NodeCompiler } from "@hypit/compiler-node";
-import { AuthorFrontendRegistry, sealGraphFragment } from "@hypit/elaborator";
+import {
+  fileReferenceIdentity,
+  FileBuildResult,
+  FileBuildResultRepository,
+  ownedFileReference,
+} from "@hypit/result/node";
+import { ModulePackageRegistry, Compiler } from "@hypit/compiler";
+import { AuthorFrontendRegistry, sealGraphFragment } from "@hypit/author";
 import { createMarkupAuthorFrontend, MarkupSurfaceRegistry } from "@hypit/markup";
 import type { BuildState, ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
-import { runMarkupFrontend } from "@hypit/run-markup";
-import { NodeFilesystemWorkspace } from "@hypit/workspace-fs-node";
+import { runMarkupFrontend } from "@hypit/markup/run";
+import { NodeFilesystemWorkspace } from "@hypit/workspace/node";
 
 import type { CliDistribution } from "../src/distribution.js";
 import { createCatalogDescriptor } from "../src/build-planning.js";
 import { runCli } from "../src/main.js";
-import { loadRunFile } from "../src/run-file.js";
+import { loadRunFile, resolveBuildResultValue } from "../src/run-file.js";
 
 const valueType: TypeRef = {
   module: { name: "example.result", version: "1" },
@@ -38,8 +43,8 @@ async function fixture(root: string, id = "bld_20260902T110000000Z_0000000001", 
   const result = await FileBuildResult.create(join(root, ".hypit", "results"), {
     id,
     title: "episode-stage",
-    source: { path: source },
-    run: { path: "build.svrun" },
+    source: { id: source },
+    run: { id: "build.svrun" },
     targets: ["stage.value"],
     publishedOutputs: [{ name: "stage.value", output: "logical:stage" }],
   });
@@ -68,7 +73,7 @@ function resultDistribution(): CliDistribution {
 
 async function jsonCommand(args: readonly string[], root: string): Promise<unknown> {
   let output = "";
-  await runCli([...args, "--workspace", root, "--json"], {
+  await runCli([...args, "--project", root, "--json"], {
     write(text) { output += text; },
   }, resultDistribution());
   return JSON.parse(output);
@@ -76,7 +81,7 @@ async function jsonCommand(args: readonly string[], root: string): Promise<unkno
 
 async function humanCommand(args: readonly string[], root: string): Promise<string> {
   let output = "";
-  await runCli([...args, "--workspace", root], {
+  await runCli([...args, "--project", root], {
     write(text) { output += text; },
   }, resultDistribution());
   return output;
@@ -164,7 +169,7 @@ test("history scans older pages for matches and compares project-relative source
     ]) {
       const writer = await repository.create({
         id,
-        source: { path: "other.svml" },
+        source: { id: "other.svml" },
         targets: [],
         publishedOutputs: [],
       });
@@ -188,7 +193,7 @@ test("get exports Resource bytes and a self-contained Composite directory", asyn
   const root = await mkdtemp(join(tmpdir(), "hypit-cli-get-"));
   const build = "bld_20260902T110000010Z_0000000001";
   const videoType = { module: { name: "example.media", version: "1" }, name: "Video" } satisfies TypeRef;
-  const takeType = { module: { name: "example.speech", version: "1" }, name: "SemanticTake" } satisfies TypeRef;
+  const compositeType = { module: { name: "example.speech", version: "1" }, name: "CompositeValue" } satisfies TypeRef;
   const bytes = new TextEncoder().encode("video bytes");
   const video = {
     kind: "blob",
@@ -199,7 +204,7 @@ test("get exports Resource bytes and a self-contained Composite directory", asyn
   try {
     const result = await FileBuildResult.create(join(root, ".hypit", "results"), {
       id: build,
-      source: { path: join(root, "main.svml") },
+      source: { id: join(root, "main.svml") },
       targets: ["final.video"],
       publishedOutputs: [
         { name: "final.video", output: "logical:video" },
@@ -213,13 +218,13 @@ test("get exports Resource bytes and a self-contained Composite directory", asyn
           { id: "record:video", type: videoType, value: video },
           {
             id: "record:take",
-            type: takeType,
+            type: compositeType,
             value: { kind: "inline", value: { words: ["hello"], media: { artifact: video } } },
           },
         ],
         plan: { outputBindings: [
           { output: "logical:video", record: "record:video", type: videoType },
-          { output: "logical:take", record: "record:take", type: takeType },
+          { output: "logical:take", record: "record:take", type: compositeType },
         ] },
       } as unknown as BuildState,
       resources: {
@@ -276,22 +281,22 @@ test("get requires an exact Output name and an explicit destination", async () =
   try {
     const silent = { write() {} };
     await assert.rejects(
-      runCli(["get", "bld_20260902T110000000Z_0000000001", "--workspace", root], silent, resultDistribution()),
+      runCli(["get", "bld_20260902T110000000Z_0000000001", "--project", root], silent, resultDistribution()),
       /get requires --output/u,
     );
     await assert.rejects(
       runCli([
-        "get", "bld_20260902T110000000Z_0000000001", "--output", "stage.value", "--workspace", root,
+        "get", "bld_20260902T110000000Z_0000000001", "--output", "stage.value", "--project", root,
       ], silent, resultDistribution()),
       /get requires --to/u,
     );
     await assert.rejects(
-      runCli(["history", "--source", join(root, "main.svml"), "--workspace", root], silent,
+      runCli(["history", "--source", join(root, "main.svml"), "--project", root], silent,
         resultDistribution()),
       /history requires one exact Output name/u,
     );
     await assert.rejects(
-      runCli(["history", "stage.value", "--pin", "--workspace", root], silent, resultDistribution()),
+      runCli(["history", "stage.value", "--pin", "--project", root], silent, resultDistribution()),
       /unknown option --pin/u,
     );
   } finally {
@@ -406,7 +411,7 @@ test("build-record selects one exact Result Output without leaking its storage a
         return resolved;
       },
     }));
-    const authorCompiler = new NodeCompiler({
+    const authorCompiler = new Compiler({
       modules,
       frontends: authorFrontends,
       workspace: new NodeFilesystemWorkspace({ root }),
@@ -415,8 +420,8 @@ test("build-record selects one exact Result Output without leaking its storage a
     const resultsRoot = join(root, ".hypit", "results");
     const result = await FileBuildResult.create(resultsRoot, {
       id: "bld_20260902T110000001Z_0000000001",
-      source: { path: join(root, "main.svml") },
-      run: { path: join(root, "prior.svrun") },
+      source: { id: join(root, "main.svml") },
+      run: { id: join(root, "prior.svrun") },
       targets: ["shot.video"],
       publishedOutputs: [{ name: "shot.video", output: "logical:video" }],
     });
@@ -451,7 +456,7 @@ test("build-record selects one exact Result Output without leaking its storage a
   <import as="media" from="example.result-reuse@1"/>
   <media:Video id="shot"/>
 </svml>`, "utf8");
-    await writeFile(runFile, `<?svml using="@hypit/run-markup@1"?>
+    await writeFile(runFile, `<?svml using="@hypit/markup/run@1"?>
 <svrun version="1">
   <author source="./main.svml"/>
   <target output="shot.video"/>
@@ -459,10 +464,15 @@ test("build-record selects one exact Result Output without leaking its storage a
   <satisfy output="shot.video" candidate="prior"/>
 </svrun>`, "utf8");
 
-    const workspace = await authorCompiler.openFile(runFile);
+    const workspace = await authorCompiler.openEntry(runFile);
     const repository = new FileBuildResultRepository(resultsRoot);
     let opens = 0;
+    let resolves = 0;
     const countedRepository: FileBuildResultRepository = Object.create(repository) as FileBuildResultRepository;
+    countedRepository.resolve = async (build, output) => {
+      resolves += 1;
+      return await repository.resolve(build, output);
+    };
     countedRepository.openFile = async (build, file) => {
       opens += 1;
       return await repository.openFile(build, file);
@@ -485,31 +495,61 @@ test("build-record selects one exact Result Output without leaking its storage a
     assert.equal(candidate?.root.kind, "value");
     const value = candidate?.root.kind === "value" ? candidate.root.value.value : undefined;
     assert.equal(value?.kind, "inline");
-    assert.equal(value?.kind === "inline"
-      ? (value.value as { readonly artifact?: { readonly kind?: string } }).artifact?.kind
-      : undefined, "blob");
+    assert.equal(value?.kind === "inline" ? value.value : undefined, null,
+      "a forward-only Candidate remains structural and is never materialized into Core");
     const logicalOutput = loaded.author.exports.find((item) => item.name === "shot.video")?.ref;
     assert.equal(logicalOutput?.kind, "logical-output");
     assert.deepEqual(loaded.compiler.planCompilation(loaded).resultForwards, [{
       output: logicalOutput!.id,
       build: "bld_20260902T110000001Z_0000000001",
       sourceOutput: "shot.video",
+      type: videoType,
     }]);
-    assert.equal(loaded.attachments.length, 1);
-    assert.deepEqual(Object.values(loaded.resultResourceReferences), [{
-      kind: "build-file", build: "bld_20260902T110000001Z_0000000001",
-      path: "files/file-0001.mp4", size: bytes.byteLength, mediaType: "video/mp4",
-    }]);
-    assert.equal(opens, 0, "compilation does not read or summarize historical bytes");
-    const reused: number[] = [];
-    for await (const chunk of await loaded.attachments[0]!.open()) reused.push(...chunk);
-    assert.deepEqual(Uint8Array.from(reused), bytes);
-    assert.equal(opens, 1, "Runtime staging opens the historical Result exactly once");
-    assert.equal(loaded.compiler.planCompilation(loaded).state.plan.steps.length, 0);
+    assert.equal(resolves, 0, "forward-only compilation never opens the historical value document");
+    assert.equal(loaded.attachments.length, 0);
+    assert.deepEqual(loaded.resultResourceReferences, {});
+    const forwardedPlan = loaded.compiler.planCompilation(loaded);
+    assert.equal(forwardedPlan.state.plan.steps.length, 0);
+    assert.equal(forwardedPlan.state.status, "complete");
+    assert.deepEqual(forwardedPlan.state.targets, []);
+    assert.equal(opens, 0);
+
+    const materializeImport = async (base: typeof loaded, build: string): Promise<typeof loaded> => {
+      const [resolved, stored] = await Promise.all([
+        resolveBuildResultValue(repository, build, "shot.video"),
+        repository.resolve(build, "shot.video"),
+      ]);
+      assert(resolved !== undefined && resolved.value.kind === "inline");
+      assert(stored?.value.kind === "value");
+      if (stored?.value.kind !== "value") throw new Error("expected composite");
+      const files = new Map<string, typeof stored.value.document.resources[number]["file"]>();
+      for (const binding of stored.value.document.resources) {
+        files.set(fileReferenceIdentity(stored.build, binding.file), binding.file);
+      }
+      const references = Object.fromEntries((resolved.attachments ?? []).map((attachment, index) => {
+        const file = [...files.values()][index];
+        if (file === undefined) throw new Error("resolved attachment has no Result file");
+        return [attachment.artifact.resource, ownedFileReference(stored.build, file)];
+      }));
+      return {
+        ...base,
+        run: {
+          ...base.run,
+          graph: {
+            ...base.run.graph,
+            candidates: base.run.graph.candidates.map((item, index) => index === 0 && item.root.kind === "value"
+              ? { ...item, root: { ...item.root, value: { ...item.root.value, value: resolved.value } } }
+              : item),
+          },
+        },
+        attachments: resolved.attachments ?? [],
+        resultResourceReferences: references,
+      };
+    };
 
     // New Composite records may wrap imported values at arbitrary depth. Their Resource ownership
     // must survive multiple Builds, including a mix of old media and newly produced bytes.
-    let imported = loaded;
+    let imported = await materializeImport(loaded, "bld_20260902T110000001Z_0000000001");
     const owner = "bld_20260902T110000001Z_0000000001";
     for (const id of ["bld_20260902T110000002Z_0000000001", "bld_20260902T110000003Z_0000000001"]) {
       const rootValue = imported.run.graph.candidates[0]!.root;
@@ -517,7 +557,7 @@ test("build-record selects one exact Result Output without leaking its storage a
       if (rootValue.kind !== "value") throw new Error("expected value");
       const extra = { kind: "blob" as const, resource: `res_${id}`, size: 1, mediaType: "image/png" };
       const current = await repository.create({
-        id, source: { path: authorFile }, targets: ["shot.video"],
+        id, source: { id: authorFile }, targets: ["shot.video"],
         publishedOutputs: [{ name: "shot.video", output: "wrapped" }],
         resourceReferences: imported.resultResourceReferences,
       });
@@ -542,14 +582,14 @@ test("build-record selects one exact Result Output without leaking its storage a
       for await (const chunk of (await repository.openFile(id, original.file))!) received.push(...chunk);
       assert.deepEqual(Uint8Array.from(received), bytes);
       await writeFile(runFile, (await readFile(runFile, "utf8")).replace(/build="[^"]+"/, `build="${id}"`));
-      imported = await loadRunFile({ workspace: await authorCompiler.openFile(runFile), authorCompiler,
-        frontends: [runMarkupFrontend], packageContributions: [], results: repository });
+      imported = await materializeImport(await loadRunFile({ workspace: await authorCompiler.openEntry(runFile), authorCompiler,
+        frontends: [runMarkupFrontend], packageContributions: [], results: repository }), id);
     }
 
     // Explicit export collects a standalone bundle, including same-named files with different owners.
     const bundle = join(root, "exported-layout");
     await jsonCommand(["get", "bld_20260902T110000003Z_0000000001", "--output", "shot.video", "--to", bundle], root);
-    const exported = JSON.parse(await readFile(join(bundle, "value.json"), "utf8")) as import("@hypit/build-result").BuildResultValueDocument;
+    const exported = JSON.parse(await readFile(join(bundle, "value.json"), "utf8")) as import("@hypit/result").BuildResultValueDocument;
     assert.equal(exported.resources.length, 3);
     const exportedPaths = new Set<string>();
     for (const binding of exported.resources) {
@@ -565,17 +605,17 @@ test("build-record selects one exact Result Output without leaking its storage a
     // A file Candidate is a live address, even when republished by separate Builds.
     const externalPath = join(root, "selected.mp4");
     await writeFile(externalPath, bytes);
-    await writeFile(runFile, `<?svml using="@hypit/run-markup@1"?>
+    await writeFile(runFile, `<?svml using="@hypit/markup/run@1"?>
 <svrun version="1"><author source="./main.svml"/><target output="shot.video"/>
 <file id="selected" type="example.result-reuse@1#Video" from="./selected.mp4" media-type="video/mp4"/>
 <satisfy output="shot.video" candidate="selected"/></svrun>`);
-    const externalRun = await loadRunFile({ workspace: await authorCompiler.openFile(runFile), authorCompiler,
+    const externalRun = await loadRunFile({ workspace: await authorCompiler.openEntry(runFile), authorCompiler,
       frontends: [runMarkupFrontend], packageContributions: [], results: repository });
     assert.deepEqual(Object.values(externalRun.resultResourceReferences), [{
       kind: "external-file", uri: pathToFileURL(await realpath(externalPath)).href, size: bytes.length, mediaType: "video/mp4",
     }]);
     for (const id of ["bld_20260902T110000004Z_0000000001", "bld_20260902T110000005Z_0000000001"]) {
-      const current = await repository.create({ id, source: { path: authorFile }, targets: ["shot.video"],
+      const current = await repository.create({ id, source: { id: authorFile }, targets: ["shot.video"],
         publishedOutputs: [{ name: "shot.video", output: logicalOutput!.id }],
         resourceReferences: externalRun.resultResourceReferences });
       await current.sync({ state: externalRun.compiler.planCompilation(externalRun).state,
@@ -599,12 +639,43 @@ test("build-record selects one exact Result Output without leaking its storage a
   }
 });
 
+test("Composite Result resources rebuild each shared container once", async () => {
+  const count = 400;
+  let visited = 0;
+  class CountedArray extends Array<null> {
+    override map<U>(callback: (value: null, index: number, array: null[]) => U, thisArg?: unknown): U[] {
+      visited += this.length;
+      return super.map(callback, thisArg);
+    }
+  }
+  const value = new CountedArray(count).fill(null);
+  const file = { kind: "build-file" as const, path: "files/one.mp4", size: 1, mediaType: "video/mp4" };
+  const repository = {
+    read: async () => ({ outcome: "complete" as const }),
+    resolve: async () => ({ build: "owner", output: "composite", type: valueType, value: {
+      kind: "value" as const,
+      path: "values/value-0001.json",
+      document: {
+        format: "hypit.result-value@1" as const,
+        value,
+        resources: Array.from({ length: count }, (_, index) => ({ at: [index], file })),
+      },
+    } }),
+    describeFile: async () => file,
+    openFile: async () => undefined,
+  } as unknown as import("@hypit/result").BuildResultRepository;
+  const resolved = await resolveBuildResultValue(repository, "owner", "composite");
+  assert.equal(resolved?.value.kind, "inline");
+  assert.equal(visited, count, "the root array is rebuilt once rather than once per Resource binding");
+  assert.equal(resolved?.attachments?.length, 1, "one historical file identity remains one lazy attachment");
+});
+
 test("a failed Result exposes task receipts and credential references without a Runtime", async () => {
   const root = await mkdtemp(join(tmpdir(), "hypit-receipts-"));
   const id = "bld_20260906T110000000Z_0000000001";
   try {
     const result = await FileBuildResult.create(join(root, ".hypit", "results"), {
-      id, source: { path: "main.svml" }, targets: [], publishedOutputs: [],
+      id, source: { id: "main.svml" }, targets: [], publishedOutputs: [],
     });
     const operation = {
       operation: "op-1", command: "need-1", endpoint: "selected-account", pool: "my-pool",
@@ -636,7 +707,7 @@ test("logs reads finished evidence without a Runtime and clearly limits the tail
   try {
     const id = "bld_20260913T130000000Z_0000000001";
     const result = await FileBuildResult.create(join(root, ".hypit/results"), {
-      id, source: { path: "main.svml" }, targets: [], publishedOutputs: [],
+      id, source: { id: "main.svml" }, targets: [], publishedOutputs: [],
     });
     const records = ["started", "completed"].map((kind, time) => ({ format: "hypit.execution-log@1", time, kind, endpoint: "renderer", command: "c1" }));
     await result.finish({ outcome: "complete", executionLog: (async function* () {
@@ -697,13 +768,13 @@ test("logs reports unavailable evidence as unsuccessful, while an existing empty
       if (state === "no-log") await fixture(root);
       if (state === "empty-log") {
         const result = await FileBuildResult.create(join(root, ".hypit/results"), {
-          id: "bld_20260902T110000001Z_0000000001", source: { path: "main.svml" }, targets: [], publishedOutputs: [],
+          id: "bld_20260902T110000001Z_0000000001", source: { id: "main.svml" }, targets: [], publishedOutputs: [],
         });
         await result.finish({ outcome: "complete", executionLog: (async function* () {})() });
       }
       let exit = 0;
       let output = "";
-      await runCli(["logs", state === "empty-log" ? "bld_20260902T110000001Z_0000000001" : id, "--workspace", root, "--json"], {
+      await runCli(["logs", state === "empty-log" ? "bld_20260902T110000001Z_0000000001" : id, "--project", root, "--json"], {
         write: (text) => { output += text; }, setExitCode: (code) => { exit = code; },
       }, resultDistribution());
       assert.equal(exit, state === "empty-log" ? 0 : 1);

@@ -1,4 +1,4 @@
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 
 export const fineCaptionOneShotMotions = [
   "none", "fade", "pop", "scale", "spring", "bounce", "elastic", "stamp", "tilt", "zoom-blur",

@@ -8,7 +8,7 @@ SVS（`.svs`）文件使用类 CSS 语法定义可复用的类型化配置值。
 ## 基本语法
 
 ```svs
-<?svml using="@hypit/svs@1"?>
+<?svml using="@hypit/recipe@1"?>
 
 <sheet version="1" id="studio">
   film.vertical {
@@ -23,7 +23,7 @@ SVS（`.svs`）文件使用类 CSS 语法定义可复用的类型化配置值。
 </sheet>
 ```
 
-- 处理指令 `<?svml using="@hypit/svs@1"?>` 用于选择 SVS 解析器。
+- 处理指令 `<?svml using="@hypit/recipe@1"?>` 用于选择 SVS 解析器。
 - `<sheet>` 元素包裹所有声明。`id` 属性成为顶层命名空间。
 - 每个块的格式为 `namespace.name { ... }`，属性以 `;` 结尾的键值对形式书写。
 - 注释使用 `/* ... */`。
@@ -56,7 +56,7 @@ film.vertical {
 
 ```svml
 <space:Canvas id="vertical" width="1080" height="1920"/>
-<film:Film id="main" canvas={vertical} timeline={speech.timeline} appearance={recipes.film.vertical}>
+<film:Film id="main" canvas={vertical.canvas} timeline={speech.timeline} appearance={recipes.film.vertical}>
 ```
 
 ## Caption Fine
@@ -96,7 +96,7 @@ caption.dialogue {
 Style。字体家族、字重和字形只在这条精确字体边上声明一次：
 
 ```svml
-<fonts:Stack id="caption-font" family="inter" weight="600" style="normal"/>
+<fonts:Face id="caption-font" package="@fontsource-variable/inter" weight="600" style="normal"/>
 <caption-fine:Style id="primary-caption" recipe={recipes.caption.dialogue}
   font={caption-font}/>
 ```
@@ -132,27 +132,26 @@ caption.bob {
 然后在 Track 中通过 Use 选择呈现样式：
 
 ```svml
-<fonts:Stack id="caption-font" family="inter" weight="600" style="normal"/>
+<fonts:Face id="caption-font" package="@fontsource-variable/inter" weight="600" style="normal"/>
 <caption-fine:Style id="default-caption" recipe={recipes.caption.dialogue} font={caption-font}/>
 <caption-fine:Style id="alice-caption" recipe={recipes.caption.alice} font={caption-font}/>
 <caption-fine:Style id="bob-caption" recipe={recipes.caption.bob} font={caption-font}/>
-<caption-fine:Track id="captions" document={story.caption} timeline={speech.timeline}>
+<caption-fine:Caption id="captions" document={story.caption} timing={story-captions}
+  timeline={speech.timeline} within={vertical.bounds}>
   <caption-fine:Use style={default-caption}/>
   <caption-fine:Use role="ALICE" style={alice-caption}/>
   <caption-fine:Use role="BOB" style={bob-caption}/>
-</caption-fine:Track>
+</caption-fine:Caption>
 ```
 
-## Media Track
+## Visual Track Clip
 
-Media 将空间位置、框呈现与生命周期运动分开。`SpatialFrame` 负责位置和尺寸；外观 Recipe
-负责素材适配与框材质；可选的 motion Recipe 负责入场、持续和退场。
+Visual Clip 将空间、源时间、像素处理与局部运动分开。`SpatialFrame` 负责位置和尺寸；
+`z`、fit 与可选的源时间偏映射是这次出现的直接事实。处理 Recipe 只复用图像与 Frame 的
+绘制，而类型化 Motion 是仿射/透明度关键帧，不是封闭的效果名。
 
 ```svs
-media.product {
-  stack-order: 40;
-  fit: contain;
-  playback: hold-start;
+visual.product {
   frame-paint: #111116;
   clip: rounded;
   radius: 28;
@@ -162,51 +161,50 @@ media.product {
   border-color: #FFFFFF20;
   shadows: 0 10 24 0 #00000066;
 }
-
-motion.product {
-  enter: slide;
-  enter-frames: 8;
-  enter-direction: up;
-  enter-easing: ease-out;
-  exit: fade;
-  exit-frames: 6;
-  exit-easing: ease-in;
-}
 ```
 
 | 属性 | 描述 |
 |---|---|
-| `stack-order` | Z 轴层叠顺序 |
+| `z` | 直接的 Z 轴层叠顺序；重叠 Clip 不可静默共用 |
 | `fit` | `contain`、`cover`、`fit-width`、`fit-height`、`native`、`scale-down` 或 `stretch` |
 | `frame-x`、`frame-y` | 放置 Frame 内的对齐点 |
 | `content-x`、`content-y` | 素材内部独立选择的焦点 |
-| `playback` | `once-start`、`hold-start`、`loop-end`、`stretch` 等有时长素材占用方式 |
+| `source-time` / `Map` | 含时素材坐标的可复用或内联偏映射 |
 | `frame-paint` | 采样素材背后的纯色或渐变 Paint |
 | `clip`、`radius`、`padding` | 框裁切与内缩 |
 | `border-*`、`shadows` | 框自有的边框与有序阴影 |
-| `enter`、`exit` | 生命周期算子；帧数、缓动和方向使用独立属性 |
-| `sustain` | 零个或多个确定性局部运动，例如 `float 12 2 up` |
+| `motion` / `Pose` | Clip 局部时钟上的可选仿射与透明度状态 |
 
 位置始终是一条显式图边：
 
 ```svml
-<space:Frame id="product-frame" within={vertical}
+<space:Frame id="product-frame" within={vertical.bounds}
   left="8%" top="20%" right="92%" bottom="68%"/>
-<media-track:Item media={product-media.media}
-  during={story.selection.demo} frame={product-frame}
-  appearance={recipes.media.product} motion={recipes.motion.product}/>
+<visual:Motion id="product-in">
+  <visual:Pose at="start" y="80" opacity="0" easing="ease-out"/>
+  <visual:Pose at="8f" y="0" opacity="1"/>
+  <visual:Pose at="end" y="0" opacity="1"/>
+</visual:Motion>
+<visual:Clip media={product-media.media}
+  during={demo} frame={product-frame}
+  z="40" fit="contain"
+  treatment={recipes.visual.product} motion={product-in}>
+  <visual:Map/>
+</visual:Clip>
 ```
+
+如果行为要协调多个对象、改变结构或赋予素材新的视觉角色，就编写组件。Motion 是共享的
+数学底座，不是试图枚举未来所有效果的目录。
 
 ## 文本
 
-文本叠加层外观——排版与 Paint。位置由另一条 `SpatialFrame` 图边提供。
+细粒度文字 Style 只拥有可复用的排版与 Paint。几何、具体形式的布局和绝对 `z`
+由每次 occurrence 直接拥有，因为这些事实会随同一 Style 的不同使用而改变。
 
 ```svs
 text.title {
-  stack-order: 90;
   weight: 900;
   size: 64;
-  align: center;
   fill: #FFFFFF;
   tracking: -1;
 }
@@ -214,21 +212,20 @@ text.title {
 
 | 属性 | 描述 |
 |---|---|
-| `stack-order` | Z 轴层叠顺序 |
 | `weight` | 字体粗细 |
 | `size` | 字体大小（像素） |
-| `align` | 文本对齐方式 |
 | `fill` | 文本颜色 |
 | `tracking` | 字间距调整 |
 
 先与精确字体字节一起编译为 `text:Style`，再由具体放置形式引用：
 
 ```svml
-<fonts:Stack id="title-font" family="inter" weight="900" style="normal"/>
+<fonts:Face id="title-font" package="@fontsource-variable/inter" weight="900" style="normal"/>
 <text:Style id="title-style" recipe={recipes.text.title} font={title-font}/>
-<text:Area id="meaning" placement={title-frame} style={title-style} during="program">
+<text:Flow id="meaning" timeline={speech.timeline} within={title-frame}
+  style={title-style} z="90" align="center" during={speech.window}>
   MEANING
-</text:Area>
+</text:Flow>
 ```
 
 ## Speaker Text Template
@@ -296,35 +293,38 @@ interview.street {
 
 ## 精确字体声明
 
-SVS 描述字体策略，但不选择或打开字体字节。常用开源字体由私有的预发布字体目录显式导入；只有作者图真正引用的字体会进入本次 Build：
+SVS 描述字体策略，但不选择或打开字体字节。官方 Hypit Distribution 已提供 Fontsource 适配器；
+在视频项目自己的 `package.json` 中安装实际选中的上游字体包，普通 lockfile 固定真实版本：
 
 ```svml
-<import as="fonts" from="@hypit/fonts-open@1"/>
+<import as="fonts" from="@hypit/fontsource@1"/>
+<import as="media" from="@hypit/media@1"/>
 
-<fonts:Stack id="caption-fonts" family="inter" weight="600" style="normal" emoji="color">
-  <fonts:Fallback family="noto-sans-sc" weight="600" style="normal"/>
-</fonts:Stack>
+<fonts:Face id="caption-latin" package="@fontsource-variable/inter" weight="600" style="normal"/>
+<fonts:Face id="caption-han" package="@fontsource-variable/noto-sans-sc" weight="600" style="normal"/>
+<media:FontStack id="caption-fonts" primary={caption-latin}>
+  <media:Fallback font={caption-han}/>
+</media:FontStack>
 ```
 
 | 属性 | 描述 |
 |---|---|
-| `family` | 字体包有限目录中的字体族 |
+| `package` | 一个已经安装的 `@fontsource` 或 `@fontsource-variable` 包 |
 | `weight` | 精确选择的字体粗细 |
-| `style` | `normal` 或该字体族支持的 `italic` |
-| `emoji` | `Stack` 可选的 `color`（COLRv1）或 `mono` 兜底 |
+| `style` | `normal` 或该字体包支持的 `italic` |
 
-目录现有 109 个开源字体族，覆盖手写、书法、展示、无衬线、衬线、等宽、CJK、其他文字系统与 Emoji。Fontsource 依赖固定为 `5.3.0`，Chromium 兼容的 COLRv1 Emoji 包另行锁定版本；编译器把已安装字节哈希成内容寻址的字体值，Build 过程不会下载字体，Runtime
-也不猜字体：
+Hypit 不维护有限字体目录，也不会在编译时安装字体族。适配器只把所选包的 metadata、CSS
+和字体文件作为数据读取；编译器把已安装字节变成 Resource-backed 字体值。Build 过程不会下载字体，Runtime 也不猜字体：
 
 ```svml
 <caption-fine:Style id="dialogue" recipe={recipes.caption.dialogue}
   font={caption-fonts}/>
 ```
 
-`fonts:Stack` 产出通用 `FontStackRef`，主字体与 Fallback 都保留自己的真实元数据；
+`media:FontStack` 产出通用 `FontStackRef`，主字体与 Fallback 都保留自己的真实元数据；
 Caption Recipe 不再重复家族、字重或字形。CJK 与 Emoji 即使由多个 Unicode-range 文件组成，在作者图中仍是一条逻辑边。终端 Text 与 Fine Caption 都拒绝省略字体栈；Visual IR 不接受机器字体兜底。对于同时具有文本与 Emoji 两种呈现的符号，作者应写真实的 Unicode Emoji 序列（例如包含 VS16 的 `☎️`）；任何包都不会为了强制彩色而改写显示稿。
 
-品牌字体与自定义字体仍是显式作者资产，不会被塞进共享目录：
+品牌字体与自定义字体仍是显式作者资产，不会被塞进中央目录：
 
 ```svml
 <import as="media" from="@hypit/media@1"/>
@@ -337,7 +337,7 @@ Caption Recipe 不再重复家族、字重或字形。CJK 与 Emoji 即使由多
 一个完整的 `recipes.svs` 文件，用于四段式说话人头像项目：
 
 ```svs
-<?svml using="@hypit/svs@1"?>
+<?svml using="@hypit/recipe@1"?>
 
 <sheet version="1" id="studio">
 
@@ -380,5 +380,5 @@ Caption Recipe 不再重复家族、字重或字形。CJK 与 Emoji 即使由多
 <caption-fine:Style id="primary-caption" recipe={recipes.caption.primary} font={caption-font}/>
 
 <space:Canvas id="vertical" width="720" height="1280"/>
-<film:Film id="main" canvas={vertical} timeline={speech.timeline} appearance={recipes.film.vertical}>
+<film:Film id="main" canvas={vertical.canvas} timeline={speech.timeline} appearance={recipes.film.vertical}>
 ```

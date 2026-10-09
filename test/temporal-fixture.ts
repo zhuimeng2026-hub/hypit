@@ -1,21 +1,24 @@
-import { projectTimelineSpace } from "@hypit/timeline";
-import type { NarrativeExcerpt, NarrativeMomentRef, NarrativeSelectionRef } from "@hypit/narrative";
+import type { NarrativeSegmentRef, NarrativeMomentRef, NarrativeSelectionRef } from "@hypit/narrative";
 import type { Timeline } from "@hypit/timeline";
 import {
   composeTemporalWindow,
-  projectMomentInstant,
   projectProgramInstant,
-  projectSegmentInstant,
-  projectSelectionInstant,
+  shiftTemporalInstant,
+  temporalExtentFromDuration,
 } from "@hypit/temporal";
-import type { TemporalInstantExpression } from "@hypit/temporal";
+import type { TemporalDuration, TemporalInstantExpression } from "@hypit/temporal";
+import { projectNarrativeInstant } from "@hypit/narrative-temporal";
+import type { NarrativeProjection } from "@hypit/narrative-temporal";
 
 export type TemporalWindowProjection = {
   readonly start: TemporalInstantExpression;
   readonly end: TemporalInstantExpression;
 };
-
-const fixed = { kind: "fixed" as const };
+type NarrativeInstantExpression = {
+  readonly ref: "selection.start" | "selection.end" | "segment.start" | "segment.end" | "moment.cue";
+  readonly offset?: import("@hypit/temporal").TemporalDuration;
+};
+type NarrativeWindowProjection = { readonly start: NarrativeInstantExpression; readonly end: NarrativeInstantExpression };
 
 export function projectProgramInstantFixture(input: {
   readonly itemId: string;
@@ -23,17 +26,20 @@ export function projectProgramInstantFixture(input: {
   readonly semantic: Timeline;
   readonly projection: TemporalInstantExpression;
 }) {
-  return projectProgramInstant({ ...input, timeline: input.semantic, subjectId: input.subjectId ?? input.itemId, authority: fixed });
+  return projectProgramInstant({ ...input, timeline: input.semantic, subjectId: input.subjectId ?? input.itemId });
 }
 
 export function projectMomentInstantFixture(input: {
   readonly itemId: string;
   readonly subjectId?: string;
   readonly semantic: Timeline;
+  readonly narrative: NarrativeProjection;
   readonly moment: NarrativeMomentRef;
-  readonly projection: TemporalInstantExpression;
+  readonly projection: NarrativeInstantExpression;
 }) {
-  return projectMomentInstant({ ...input, timeline: input.semantic, subjectId: input.subjectId ?? input.itemId, authority: fixed });
+  return projectNarrativeFixture({ itemId: input.itemId, subjectId: input.subjectId ?? input.itemId,
+    semantic: input.semantic, narrative: input.narrative, source: input.moment, sourceKind: "moment",
+    expression: input.projection });
 }
 
 export function projectProgramWindow(input: {
@@ -44,45 +50,85 @@ export function projectProgramWindow(input: {
 }) {
   const subjectId = input.subjectId ?? input.itemId;
   return composeTemporalWindow({ id: input.itemId, subjectId },
-    projectProgramInstant({ itemId: `${input.itemId}.start`, subjectId, timeline: input.semantic, projection: input.projection.start, authority: fixed }),
-    projectProgramInstant({ itemId: `${input.itemId}.end`, subjectId, timeline: input.semantic, projection: input.projection.end, authority: fixed }));
+    projectProgramInstant({ itemId: `${input.itemId}.start`, subjectId, timeline: input.semantic, projection: input.projection.start }),
+    projectProgramInstant({ itemId: `${input.itemId}.end`, subjectId, timeline: input.semantic, projection: input.projection.end }));
 }
 
 export function projectSelectionWindow(input: {
   readonly itemId: string;
   readonly subjectId?: string;
   readonly semantic: Timeline;
+  readonly narrative: NarrativeProjection;
   readonly selection: NarrativeSelectionRef;
-  readonly projection: TemporalWindowProjection;
+  readonly projection: NarrativeWindowProjection;
 }) {
   const subjectId = input.subjectId ?? input.itemId;
   return composeTemporalWindow({ id: input.itemId, subjectId },
-    projectSelectionInstant({ itemId: `${input.itemId}.start`, subjectId, timeline: input.semantic, selection: input.selection, projection: input.projection.start, authority: fixed }),
-    projectSelectionInstant({ itemId: `${input.itemId}.end`, subjectId, timeline: input.semantic, selection: input.selection, projection: input.projection.end, authority: fixed }));
+    projectNarrativeFixture({ itemId: `${input.itemId}.start`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.selection, sourceKind: "selection", expression: input.projection.start }),
+    projectNarrativeFixture({ itemId: `${input.itemId}.end`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.selection, sourceKind: "selection", expression: input.projection.end }));
 }
 
 export function projectSegmentWindow(input: {
   readonly itemId: string;
   readonly subjectId?: string;
   readonly semantic: Timeline;
-  readonly segment: NarrativeExcerpt;
-  readonly projection: TemporalWindowProjection;
+  readonly narrative: NarrativeProjection;
+  readonly segment: NarrativeSegmentRef;
+  readonly projection: NarrativeWindowProjection;
 }) {
   const subjectId = input.subjectId ?? input.itemId;
   return composeTemporalWindow({ id: input.itemId, subjectId },
-    projectSegmentInstant({ itemId: `${input.itemId}.start`, subjectId, timeline: input.semantic, segment: input.segment, projection: input.projection.start, authority: fixed }),
-    projectSegmentInstant({ itemId: `${input.itemId}.end`, subjectId, timeline: input.semantic, segment: input.segment, projection: input.projection.end, authority: fixed }));
+    projectNarrativeFixture({ itemId: `${input.itemId}.start`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.segment, sourceKind: "segment", expression: input.projection.start }),
+    projectNarrativeFixture({ itemId: `${input.itemId}.end`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.segment, sourceKind: "segment", expression: input.projection.end }));
 }
 
 export function projectMomentWindow(input: {
   readonly itemId: string;
   readonly subjectId?: string;
   readonly semantic: Timeline;
+  readonly narrative: NarrativeProjection;
   readonly moment: NarrativeMomentRef;
-  readonly projection: TemporalWindowProjection;
+  readonly projection: NarrativeWindowProjection;
 }) {
   const subjectId = input.subjectId ?? input.itemId;
   return composeTemporalWindow({ id: input.itemId, subjectId },
-    projectMomentInstant({ itemId: `${input.itemId}.start`, subjectId, timeline: input.semantic, moment: input.moment, projection: input.projection.start, authority: fixed }),
-    projectMomentInstant({ itemId: `${input.itemId}.end`, subjectId, timeline: input.semantic, moment: input.moment, projection: input.projection.end, authority: fixed }));
+    projectNarrativeFixture({ itemId: `${input.itemId}.start`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.moment, sourceKind: "moment", expression: input.projection.start }),
+    projectNarrativeFixture({ itemId: `${input.itemId}.end`, subjectId, semantic: input.semantic,
+      narrative: input.narrative, source: input.moment, sourceKind: "moment", expression: input.projection.end }));
+}
+
+function narrativeSpec(id: string, subjectId: string, expression: NarrativeInstantExpression) {
+  return { id, subjectId,
+    boundary: expression.ref === "moment.cue" ? "cue" as const : expression.ref.endsWith(".start") ? "start" as const : "end" as const };
+}
+
+function positiveDuration(value: TemporalDuration): { readonly direction: 1 | -1; readonly duration: TemporalDuration } {
+  const negative = value.unit === "seconds" ? value.numerator < 0 : value.value < 0;
+  if (!negative) return { direction: 1, duration: value };
+  return { direction: -1, duration: value.unit === "seconds"
+    ? { ...value, numerator: Math.abs(value.numerator) }
+    : { ...value, value: Math.abs(value.value) } };
+}
+
+function projectNarrativeFixture(input: {
+  readonly itemId: string;
+  readonly subjectId: string;
+  readonly semantic: Timeline;
+  readonly narrative: NarrativeProjection;
+  readonly source: NarrativeSelectionRef | NarrativeSegmentRef | NarrativeMomentRef;
+  readonly sourceKind: "selection" | "segment" | "moment";
+  readonly expression: NarrativeInstantExpression;
+}) {
+  const base = projectNarrativeInstant({ narrative: input.narrative, source: input.source, sourceKind: input.sourceKind,
+    spec: narrativeSpec(input.expression.offset === undefined ? input.itemId : `${input.itemId}.__base`,
+      input.subjectId, input.expression) });
+  if (input.expression.offset === undefined) return base;
+  const offset = positiveDuration(input.expression.offset);
+  return shiftTemporalInstant({ id: input.itemId, subjectId: input.subjectId, direction: offset.direction }, input.semantic,
+    base, temporalExtentFromDuration(offset.duration, input.semantic));
 }

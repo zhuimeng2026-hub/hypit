@@ -1,13 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type {
-  SurfaceAttributeVocabulary,
-  SurfacePortVocabulary,
-  SurfaceVocabulary,
-} from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary, SurfacePortVocabulary, SurfaceVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const minimaxH3ModuleRef = { name: "@hypit/minimax-h3", version: "1" } as const;
 
@@ -107,7 +103,7 @@ const minimaxH3AspectRatio: SurfaceAttributeVocabulary = {
 };
 
 const minimaxH3VideoPorts: readonly SurfacePortVocabulary[] = [
-  { name: "video", type: artifactTypes.blob, summary: "The generated video Artifact." },
+  { name: "video", type: blobTypes.blob, summary: "The generated video Artifact." },
 ];
 
 const minimaxH3DurationNote = "`duration` is a whole number of seconds between 4 and 15.";
@@ -129,9 +125,9 @@ export const minimaxH3MarkupSurfaces = [
       summary: "Generates one video Artifact from a first frame, a last frame, or both with the MiniMax H3 model.",
       attributes: [
         ...minimaxH3Common,
-        { name: "first-frame", kind: "reference", required: false, accepts: [artifactTypes.blob],
+        { name: "first-frame", kind: "reference", required: false, accepts: [blobTypes.blob],
           summary: "Selects the image Artifact the generated video opens on." },
-        { name: "last-frame", kind: "reference", required: false, accepts: [artifactTypes.blob],
+        { name: "last-frame", kind: "reference", required: false, accepts: [blobTypes.blob],
           summary: "Selects the image Artifact the generated video closes on." },
       ],
       ports: minimaxH3VideoPorts,
@@ -154,11 +150,11 @@ export const minimaxH3MarkupSurfaces = [
         { tag: "Reference", cardinality: "many",
           summary: "Attaches one subject Artifact the model generates from, chosen by an `image`, `video` or `audio` reference.",
           attributes: [
-            { name: "image", kind: "reference", required: false, accepts: [artifactTypes.blob],
+            { name: "image", kind: "reference", required: false, accepts: [blobTypes.blob],
               summary: "Selects the image Artifact whose subject the generated video carries." },
-            { name: "video", kind: "reference", required: false, accepts: [artifactTypes.blob],
+            { name: "video", kind: "reference", required: false, accepts: [blobTypes.blob],
               summary: "Selects the video Artifact whose subject the generated video carries." },
-            { name: "audio", kind: "reference", required: false, accepts: [artifactTypes.blob],
+            { name: "audio", kind: "reference", required: false, accepts: [blobTypes.blob],
               summary: "Selects the audio Artifact the generated video carries." },
           ] },
       ],

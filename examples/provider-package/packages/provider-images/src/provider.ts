@@ -1,5 +1,5 @@
-import { canonicalize, defineEndpointPackage, wakeAfter } from "@hypit/hypit/endpoint-kit";
-import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint-kit";
+import { canonicalize, defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
+import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint";
 import { compileWireRequest, generationTypes, sealGeneratedImageSet, selectWireModelForRequest } from "@hypit/hypit/generation";
 import type { GenerationRequest, GenerationWireMapping } from "@hypit/hypit/generation";
 
@@ -132,8 +132,8 @@ export function createImageProvider(options: {
       } } };
     },
   };
-  return defineEndpointPackage({
-    module: providerModule, facet: "images", instance: options.instance, pool: options.pool,
+  return defineEndpoint({
+    instance: options.instance, pool: options.pool,
     credentials: { apiKey: options.apiKey }, credentialInputs: { apiKey: { label: "Image service API key" } },
     defaultConcurrency: options.concurrency ?? 1,
     actionLimits: { submit: { concurrency: 1 }, poll: { concurrency: 4 }, collect: { concurrency: 1 } },

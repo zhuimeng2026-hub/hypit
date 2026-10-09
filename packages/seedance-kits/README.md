@@ -3,6 +3,13 @@
 Data-only authoring Kits for recurring Seedance semantics. They are `TextTemplate` source modules,
 not model wrappers, Providers or new execution nodes.
 
+This package has no activation and no Runtime dependency. Running
+`npm run pack:independent -- packages/seedance-kits` preserves the ordinary package exports, the SVS files and their documentation;
+projects select its npm release through their package manager and lockfile.
+
+The official Hypit Distribution currently obtains this data package as a default npm dependency; it
+is not copied into the root tarball and does not share the root package's release cadence.
+
 Import a selected public Source from the installed package, for example
 `@hypit/seedance-kits/speaker`. The package manager or active Distribution owns the installed
 version; Source Closure reads that Source and its relative dependencies without copying it into the
@@ -71,7 +78,7 @@ Run Target lets an author inspect the assembled prompt without generating media.
 
 Speaker, B-roll, Podcast, Call and Street Interview expose prompt choices through their Text
 Templates. The examples above use author-chosen literal durations. Measure adopted speech with
-`hypit measure` first, then choose a duration within the selected model's declared range; there is
+`hypit estimate` first, then choose a duration within the selected model's declared range; there is
 no duration-estimation node on the generation route.
 
 ## Recipe, dialogue and action
@@ -81,7 +88,7 @@ Script Segment's `.dialogue` Text, retaining pronunciation and Role turns. Optio
 this passage's attitude, vocal delivery, attention, interaction and any motivated cuts admitted by
 the Kit. In Speaker, `performance` selects the recurring approach to voice and visible expression;
 `gesture` selects body language, while `action` directs the particular thought and response.
-Do not retype the complete spoken text into action or treat each Role turn as a required new Take.
+Do not retype the complete spoken text into action or treat each Role turn as a required new generated clip.
 For B-roll, `story` carries the silent visual events rather than spoken dialogue.
 
 These files are reusable packaged authoring material. When one production needs a different prompt
@@ -97,8 +104,8 @@ For ordinary direct-to-camera social video, explicitly select
 for the directing judgment, and the [Speaker template](kits/speaker-v1.svs) for the exact wording of
 its Recipe choices. Choose `performance` and `gesture` for the character's intended presence.
 
-Reuse the same person-and-scene image and voice for ordinary Takes belonging to one UGC performance.
-Each Take can begin from that shared reference and meet the others at a natural cut. There is no
+Reuse the same person-and-scene image and voice for ordinary generated clips belonging to one UGC performance.
+Each clip can begin from that shared reference and meet the others at a natural cut. There is no
 required previous-tail-frame chain. Independent generation follows the intended edited form.
 
 For example, a lively ranking host can use:
@@ -156,7 +163,7 @@ continuous shot for the whole montage” ask for different results.
 
 Every Seedance image/video Reference requires `person-reference="true|false"`: true if the supplied
 material contains a person, false otherwise. Audio must omit it. The
-[Seedance author package](../seedance/README.md#visual-reference-metadata) explains `person-reference`
+[Seedance author package](https://www.npmjs.com/package/@hypit/seedance#visual-reference-metadata) explains `person-reference`
 and its frame variants. The Kit supplies direction; the actual reference edges supply media and
 metadata. For movement-led work, a reference video can carry the motion while the text explains what
 to preserve and change.

@@ -77,7 +77,8 @@ export type MediaStreamSelection = {
 };
 
 export type SynchronizedMedia = {
-  readonly timeline: {
+  /** The normalized source-local clock and extent; this is not a film Timeline. */
+  readonly frameDomain: {
     readonly frameRate: MediaRational;
     readonly frameCount: number;
   };
@@ -91,8 +92,11 @@ export type SynchronizedMedia = {
   };
 };
 
-/** Silent, frame-exact visual output from a renderer such as HyperFrames. */
-export type RenderedVisual = {
+/** Identity for deriving an author-visible local temporal domain from normalized media. */
+export type MediaDomainSpec = { readonly id: string };
+
+/** Silent, frame-exact visual output produced from a timeline composition. */
+export type TimelineVisual = {
   readonly frameRate: MediaRational;
   readonly frameCount: number;
   readonly canvas: {

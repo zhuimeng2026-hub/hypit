@@ -17,26 +17,22 @@ README shows its Source use and explains the timing and material boundaries.
 
 `chat.svml` is an eight-second composition drawn entirely in a project component. It needs no Script,
 WhisperX, image generation or source video. Four messages arrive on authored times; the same
-`@example/chat-scene` component accepts Script Moments when used beside a speaking performance.
+`@example/chat-scene` component accepts Script Moments when used beside ordinary speaking Clips.
 
 From the repository after installing its dependencies:
 
 ```bash
 pnpm build:public-types
 pnpm --filter @example/chat-scene build
-node bin/hypit.mjs check examples/semantic-composition/chat.svml --workspace examples/semantic-composition
-node bin/hypit.mjs build examples/semantic-composition/chat.svrun --workspace examples/semantic-composition --runtime examples/semantic-composition/hypit.runtime.json --follow
+node bin/hypit.mjs check examples/semantic-composition/chat.svml --project examples/semantic-composition
+node bin/hypit.mjs build examples/semantic-composition/chat.svrun --project examples/semantic-composition --runtime examples/semantic-composition/hypit.runtime.json --follow
 ```
 
-The Profile selects local HyperFrames and FFmpeg. Its execution data lives in `.hypit/runtimes/local`;
+The Profile selects local HTML rasterization and FFmpeg. Its execution data lives in `.hypit/runtimes/local`;
 `.hypit/runtime` is reserved for the project's Profile-selection file. Use the machine's prepared browser/media tools;
 there is no hosted generation account in this example. The final Output is `final.video`. The same
 Run can be opened in Studio, where its component lane and physical clock work without a Script lane.
-For an independent project, install `@hypit/hypit`, copy the component into `packages/`, replace its workspace
-dependency with the installed Hypit version, and build the package normally.
-
-## Sound presentation Styles
-
-`packages/sound-styles` defines a project crossfade with explicit outgoing and incoming Segments.
-It uses Sound Uses over the same Timeline and preserves original source playback through the blend.
-Its README explains authoring and the public fragment interface.
+For an independent project, install `@hypit/hypit`, `@hypit/fontsource` and
+`@fontsource-variable/inter` in the project's ordinary `package.json`, copy the component into
+`packages/`, replace its workspace dependency with the installed Hypit version, and build the
+package normally. The project lockfile, rather than Hypit, fixes the exact font package version.

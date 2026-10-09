@@ -1,12 +1,12 @@
 import {
   createRuntimeEndpointAdapterFacet, runtimeConfigCredentialRef, runtimeConfigExact,
   runtimeConfigObject, runtimeConfigPositiveInteger, runtimeConfigString,
-} from "@hypit/hypit/runtime-kit";
+} from "@hypit/runtime-local/extension";
 import { createVideoProvider, providerModule } from "./provider.js";
 
 export default {
-  format: "hypit.node-package@1" as const,
-  hostFacets: [createRuntimeEndpointAdapterFacet({
+  format: "hypit.package@1" as const,
+  facets: [createRuntimeEndpointAdapterFacet({
     use: providerModule.name,
     activate(context) {
       const config = runtimeConfigObject(context.config, "Video service");

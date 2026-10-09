@@ -1,5 +1,5 @@
 import { sealVisualTrack } from "@hypit/hypit/composition";
-import { browserProgram } from "@hypit/hypit/hyperframes";
+import { htmlVisual } from "@hypit/hypit/html-program";
 import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
 const sty = (o) => Object.entries(o).map(([name, value]) => ({ name, value }));
 const esc = (s) =>
@@ -7,23 +7,24 @@ const esc = (s) =>
     /[&<>"']/g,
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
   );
-function seal(t, c, w, o, html, css, setup, data, children = []) {
-  assertTemporalWindowFor(w, { subjectId: o.id, space: t });
+function seal(t, within, w, o, html, css, setup, data, children = []) {
+  assertTemporalWindowFor(w, { subjectId: o.id, timeline: t });
   return sealVisualTrack({
     id: o.id,
-    programSpaceId: t.id,
+    timelineId: t.id,
     visualIr: "hypit.visual-ir@1",
     presents: [
       {
         id: o.id,
+        order: 0,
+        z: o.z,
         span: w.span,
-        stacking: { order: o.z, tieBreak: o.id },
         elements: [
           {
             id: "scene",
             kind: "program",
             order: 0,
-            program: browserProgram({
+            program: htmlVisual({
               html: html + '<div class="font-resource">{{font}}</div>',
               css:
                 ":scope{pointer-events:none}.font-resource{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}" +
@@ -35,9 +36,10 @@ function seal(t, c, w, o, html, css, setup, data, children = []) {
             }),
             style: sty({
               position: "absolute",
-              inset: 0,
-              width: c.widthPx + "px",
-              height: c.heightPx + "px",
+              left: within.xPx + "px",
+              top: within.yPx + "px",
+              width: within.widthPx + "px",
+              height: within.heightPx + "px",
             }),
           },
           {
@@ -55,10 +57,10 @@ function seal(t, c, w, o, html, css, setup, data, children = []) {
     ],
   });
 }
-export function renderPoster(t, c, w, font, o) {
+export function renderPoster(t, within, w, font, o) {
   return seal(
     t,
-    c,
+    within,
     w,
     o,
     `<div class="poster"><div class="poster-title">${esc(o.text)}</div><div class="poster-subtitle">${esc(o.subtitle)}</div></div>`,

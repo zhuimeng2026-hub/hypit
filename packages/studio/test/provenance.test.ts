@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { NodeCompiledSourceClosure } from "@hypit/compiler-node";
-import type { StudioPlacement } from "@hypit/studio-adapter";
+import type { CompiledAuthorSource } from "@hypit/compiler";
+import type { StudioPlacement } from "@hypit/studio-companion";
 
 import { observedCompiledSource } from "../src/compile.js";
 import { outputFor, placementFor } from "../src/studio-trace.js";
@@ -53,10 +53,10 @@ test("Studio joins repeated local names through compiler-owned provenance", asyn
       element("b.svml", "b::output::visual"),
     ] },
     attachments: [],
-  } as unknown as NodeCompiledSourceClosure;
+  } as unknown as CompiledAuthorSource;
   const source = await observedCompiledSource(compiled, {
     placements: [placement("a.svml"), placement("b.svml")],
-    sourceMaps: [],
+    temporalDomains: [],
   });
   assert.equal(outputFor(source, "b::output::visual")?.ref, "b::output::visual");
   assert.equal(placementFor(source, "b::output::visual")?.sourcePath, "b.svml");

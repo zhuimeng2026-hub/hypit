@@ -1,4 +1,6 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 
 import {
   decodeFishAudioVoiceCloneSurface,
@@ -11,17 +13,17 @@ import {
 } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: fishAudioSpeechManifest }],
-  components: [fishAudioSpeechComponent],
-  hostFacets: [
-    fishAudioSpeechDefinition.hostFacet,
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[fishAudioSpeechComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    fishAudioSpeechDefinition.facet,
+    createMarkupSurfaceFacet({
       module: fishAudioSpeechModuleRef,
       declaration: fishAudioSpeechMarkupSurfaces.find((item) => item.name === "voiceDesign")!,
       handler: decodeFishAudioVoiceDesignSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: fishAudioSpeechModuleRef,
       declaration: fishAudioSpeechMarkupSurfaces.find((item) => item.name === "voiceClone")!,
       handler: decodeFishAudioVoiceCloneSurface,

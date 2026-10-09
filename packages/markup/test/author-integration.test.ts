@@ -6,13 +6,13 @@ import {
   link,
   sealBuildRequest,
   start,
-} from "@hypit/core";
+} from "@hypit/kernel";
 import {
   AuthorGraphError,
   elaborateAuthorGraph,
   sealGraphFragment,
-} from "@hypit/elaborator";
-import type { GraphFragment } from "@hypit/elaborator";
+} from "@hypit/author";
+import type { GraphFragment } from "@hypit/author";
 import type {
   ModuleManifest,
   ProducerRef,

@@ -1,4 +1,6 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 import {
   grokImagineComponent,
   grokImagineDefinition,
@@ -9,17 +11,17 @@ import {
 import { decodeGrokImaginePreviewVideoSurface, decodeGrokImagineVideoSurface } from "./surface.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: grokImagineManifest }],
-  components: [grokImagineComponent],
-  hostFacets: [
-    grokImagineDefinition.hostFacet,
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[grokImagineComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    grokImagineDefinition.facet,
+    createMarkupSurfaceFacet({
       module: grokImagineModuleRef,
     declaration: grokImagineMarkupSurfaces.find((item) => item.name === "video")!,
       handler: decodeGrokImagineVideoSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: grokImagineModuleRef,
     declaration: grokImagineMarkupSurfaces.find((item) => item.name === "preview-video")!,
       handler: decodeGrokImaginePreviewVideoSurface,

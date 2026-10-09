@@ -27,12 +27,13 @@ It changes the interface, while your Script, video captions and comments keep th
 | --- | --- |
 | `--run <file.svrun>` | Select the Run to open. |
 | `--runtime <profile.json>` | Select a Runtime Profile; otherwise use the project's saved Runtime selection. |
-| `--workspace <directory>` | Set the project boundary for Source access and edits. |
+| `--project <directory>` | Set the project boundary for Source access and edits. |
 | `--port <number>` | Request a browser-server port; the default is `5179`. |
 
-The selected target must lead to one Film and its Timeline. Placed Takes add their semantic anchors;
-an animation can use a Timeline with an explicit end and no Takes. Both support visual components and
-property editing. The material needed to display the composition must already be available through
+The selected target must lead to one Film and its Timeline. Prepared media can establish Timeline
+extent, and optional semantic projection can add Script anchors when the composition uses them. An
+animation can use a Timeline with an explicit end and no performance media. Both support visual
+components and property editing. The material needed to display the composition must already be available through
 the Run. Studio can perform media preparation supported by the selected Runtime; submit generation
 and encoded renders through `hypit build`.
 
@@ -60,15 +61,15 @@ Candidate selection. This keeps the material choice in the editable project.
 
 ## Picture, timeline and Inspector
 
-The central Preview draws the composition with HyperFrames. It uses the same component layout,
+The central Preview evaluates the composition's compiled `HtmlProgram`. It uses the same component layout,
 media sampling and motion as an encoded render. Check the actual picture when adjusting caption
 placement, graphic emphasis or coverage.
 
-The Timeline shows component appearances on a shared clock. A semantic composition also shows
-Segments, Words, Selections and Moments. Select an entity to seek to it; playback, frame stepping,
+The Timeline shows component appearances on a shared clock. Domain projections can also contribute
+mapping and evidence rows, while authored Instants and Windows share a temporal row. Select an Item to seek to it; playback, frame stepping,
 zoom and scrolling help examine a particular transition or layout.
 
-The Inspector shows the selected entity's properties. Editable fields and timeline handles depend
+The Inspector shows the selected Item's properties. Editable fields and timeline handles depend
 on the component's **Studio Companion**, which describes the component to Studio. A project component
 can supply its own Companion alongside its rendering code. Renderability and the available editing
 controls are separate: a field or gesture needs a clear source value to change.
@@ -94,8 +95,8 @@ ready for delivery, run its export Build to create the encoded video. Studio and
 available to explore the editable work and discuss further changes.
 
 For component authors, [Timing edits in Studio](../guide/studio-temporal-windows.md) explains semantic
-editing, and the [Companion SDK](https://github.com/hypit-ai/hypit/blob/main/packages/studio-adapter/README.md)
-explains how to expose component entities and controls.
+editing, and the [Companion SDK](https://github.com/hypit-ai/hypit/blob/main/packages/studio-companion/README.md)
+explains how to expose component Items and controls.
 
 To add another interface language, load a local JSON translation with `--locale-pack ./language.json`.
 The [localization guide](https://github.com/hypit-ai/hypit/blob/main/packages/studio/LOCALIZATION.md)

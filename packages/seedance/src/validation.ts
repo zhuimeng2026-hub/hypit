@@ -1,5 +1,5 @@
-import type { GenerationRequestDraft } from "@hypit/generation";
-import type { BlobRef } from "@hypit/protocol";
+import type { GenerationRequestDraft } from "@hypit/hypit/generation";
+import type { BlobRef } from "@hypit/hypit/protocol";
 
 /** Seedance's reference-audio rule, shared by known imports and request assembly. */
 export function validateSeedanceAudio(artifact: BlobRef, subject = "Seedance reference audio"): void {

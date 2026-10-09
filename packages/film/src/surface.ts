@@ -1,15 +1,10 @@
-import { resolveTemporalContext } from "@hypit/temporal-markup";
-import { spatialTypes } from "@hypit/spatial";
-import { compositionTypes } from "@hypit/composition";
-import type { AudioTrack, Track, VisualTrack } from "@hypit/composition";
-import { svsRecipeType } from "@hypit/svs";
-import type { SvsRecipe } from "@hypit/svs";
-import type {
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-  MarkupAttributeValue,
-} from "@hypit/markup";
+import { compositionTypes } from "@hypit/hypit/composition";
+import type { AudioTrack, Track, VisualTrack } from "@hypit/hypit/composition";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
+import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import type { StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference, MarkupAttributeValue } from "@hypit/hypit/markup";
 
 import { createFilmAssemblyFragment } from "./fragment.js";
 import { filmTypes } from "./manifest.js";
@@ -61,14 +56,14 @@ function requiredReference(
   return resolved;
 }
 
-function recipe(reference: SurfaceResolvedReference, label: string): SvsRecipe {
-  if (!sameType(reference.type, svsRecipeType)) throw new Error(`${label} must reference an SVS Recipe`);
+function recipe(reference: SurfaceResolvedReference, label: string): Recipe {
+  if (!sameType(reference.type, recipeType)) throw new Error(`${label} must reference an SVS Recipe`);
   const value = reference.record?.value;
   if (value?.kind !== "inline" || value.value === null || Array.isArray(value.value)
     || typeof value.value !== "object") {
     throw new Error(`${label} must reference an authored Recipe value`);
   }
-  return value.value as SvsRecipe;
+  return value.value as Recipe;
 }
 
 function trackChildren(element: StructuredElement): StructuredElement[] {
@@ -97,7 +92,7 @@ export const decodeFilmSurface: StructuredSurfaceHandler = ({ element, resolveRe
   const id = stringAttribute(element, "id");
   const canvas = requiredReference(element, "canvas", resolveReference);
   if (!sameType(canvas.type, spatialTypes.canvas)) {
-    throw new Error(`${element.name}.canvas must reference CanvasSpace`);
+    throw new Error(`${element.name}.canvas must reference Canvas`);
   }
   const context = resolveTemporalContext({ element, resolveReference });
   const appearanceReference = requiredReference(element, "appearance", resolveReference);

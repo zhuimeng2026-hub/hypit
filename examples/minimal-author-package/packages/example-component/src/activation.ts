@@ -1,10 +1,15 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/hypit/author-kit";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
 import { decodeExampleSurface, exampleComponent, exampleManifest, exampleMarkupSurfaces, exampleModuleRef } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: exampleManifest }],
-  components: [exampleComponent],
-  hostFacets: exampleMarkupSurfaces.map((declaration) => createMarkupSurfaceHostFacet({ module: exampleModuleRef, declaration, handler: decodeExampleSurface })),
+  facets: [
+    createProducerPackageFacet(exampleComponent),
+    createAdmissionPackageFacet(exampleComponent),
+    ...exampleMarkupSurfaces.map((declaration) => createMarkupSurfaceFacet({ module: exampleModuleRef, declaration, handler: decodeExampleSurface })),
+  ],
 };
 export default hypitPackage;

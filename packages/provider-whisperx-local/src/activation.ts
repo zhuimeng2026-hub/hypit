@@ -5,7 +5,7 @@ import {
   runtimeConfigObject,
   runtimeConfigPositiveInteger,
   runtimeConfigString,
-} from "@hypit/runtime-kit";
+} from "@hypit/runtime-local/extension";
 
 import { createLocalWhisperXProvider, localWhisperXDefaults } from "./provider.js";
 import { localWhisperXProgram } from "./program.js";
@@ -95,8 +95,8 @@ const localWhisperXRuntimeAdapter = createRuntimeEndpointAdapterFacet({
 });
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
-  hostFacets: [localWhisperXRuntimeAdapter],
+  format: "hypit.package@1" as const,
+  facets: [localWhisperXRuntimeAdapter],
 };
 
 export default hypitPackage;

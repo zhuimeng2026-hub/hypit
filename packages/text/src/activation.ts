@@ -1,5 +1,7 @@
-import { createAuthorFrontendHostFacet } from "@hypit/elaborator";
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/admission";
+import { createProducerPackageFacet } from "@hypit/producer";
+import { createAuthorFrontendFacet } from "@hypit/author";
+import { createMarkupSurfaceFacet } from "@hypit/markup";
 
 import {
   decodeTextRenderSurface,
@@ -7,22 +9,22 @@ import {
   textComponent,
   textManifest,
   textModuleRef,
-  textSvsFrontend,
+  textRecipeFrontend,
   textMarkupSurfaces,
 } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: textManifest }],
-  components: [textComponent],
-  hostFacets: [
-    createAuthorFrontendHostFacet(textSvsFrontend),
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[textComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    createAuthorFrontendFacet(textRecipeFrontend),
+    createMarkupSurfaceFacet({
       module: textModuleRef,
     declaration: textMarkupSurfaces.find((item) => item.name === "value")!,
       handler: decodeTextValueSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: textModuleRef,
     declaration: textMarkupSurfaces.find((item) => item.name === "render")!,
       handler: decodeTextRenderSurface,

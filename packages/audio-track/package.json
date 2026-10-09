@@ -1,36 +1,46 @@
 {
   "name": "@hypit/audio-track",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./studio": "./src/studio.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/composition": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/media": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/program-space": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/timeline": "workspace:*",
-    "@hypit/temporal": "workspace:*",
-    "@hypit/temporal-markup": "workspace:*",
-    "@hypit/markup": "workspace:*"
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/artifact": "workspace:*",
-    "@hypit/core": "workspace:*",
-    "@hypit/media-pipeline": "workspace:*",
+    "@hypit/compiler": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*",
+    "@hypit/blob": "workspace:*",
+    "@hypit/producer": "workspace:*",
+    "@hypit/composition": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/source": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/media-operations": "workspace:*",
     "@hypit/spatial": "workspace:*",
-    "@hypit/speech": "workspace:*",
     "@hypit/speech-evidence": "workspace:*",
-    "@hypit/validation": "workspace:*",
-    "@hypit/visual-ir": "workspace:*"
+    "@hypit/admission": "workspace:*",
+    "@hypit/media": "workspace:*",
+    "@hypit/narrative": "workspace:*",
+    "@hypit/narrative-temporal": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/recipe": "workspace:*",
+    "@hypit/temporal": "workspace:*",
+    "@hypit/timeline": "workspace:*",
+    "typescript": "5.9.3"
   }
 }

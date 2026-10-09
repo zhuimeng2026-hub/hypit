@@ -82,7 +82,8 @@ examples/**/frames-overview.jpg/**
 examples/**/scripts/
 services/whisperx/.venv/
 services/whisperx/build/
-services/whisperx/**/__pycache__/
+**/__pycache__/
+*.py[cod]
 services/whisperx/src/*.egg-info/
 services/image-opencv/.venv/
 services/image-opencv/**/__pycache__/

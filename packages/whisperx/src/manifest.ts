@@ -1,10 +1,10 @@
-import { speechDependency, speechTypes } from "@hypit/speech";
-import { mediaDependency, mediaTypes } from "@hypit/media";
-import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
-import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/speech-evidence";
-import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
-import { mediaPipelineManifest, mediaPipelineModuleRef } from "@hypit/media-pipeline";
-import { speechAlignmentManifest, speechAlignmentModuleRef } from "@hypit/speech-alignment";
+import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+import { narrativeDependency, narrativeTypes } from "@hypit/hypit/narrative";
+import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/hypit/narrative-temporal";
+import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
+import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
+import { speechAlignmentModuleRef } from "@hypit/narrative-speech-alignment";
+import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
 
 export const whisperXModuleRef = { name: "@hypit/whisperx", version: "1" } as const;
 export const whisperXTypes = {
@@ -18,37 +18,41 @@ export const whisperXProducers = {
 } satisfies Record<string, ProducerRef>;
 
 export const whisperXMarkupSurfaces = [{
-    name: "semantic-take",
-    tag: "SemanticTake",
+    name: "alignment",
+    tag: "Alignment",
     mode: "structured",
-    outputs: [whisperXTypes.language, speechTypes.semanticTake],
+    outputs: [whisperXTypes.language, narrativeTemporalTypes.narrativeAlignment],
     vocabulary: {
       summary:
-        "Publishes a real-media SemanticTake: WhisperX-aligned words for speech, or exact prepared-media boundaries for an empty Segment.",
+        "Publishes source-local NarrativeAlignment: WhisperX-aligned words for speech, or exact prepared-media boundaries for an empty Segment.",
       attributes: [
         { name: "id", kind: "identifier", required: true,
-          summary: "Names this alignment and prefixes the bindings it publishes." },
+          summary: "Names the alignment it publishes." },
         { name: "narrative", kind: "reference", required: true,
           accepts: [narrativeTypes.narrative],
           summary: "Selects the authored Narrative that owns the Segment and Token identities." },
         { name: "segment", kind: "reference", required: true,
-          accepts: [narrativeTypes.excerpt],
-          summary: "Selects the single authored Segment performed by this Take." },
+          accepts: [narrativeTypes.segmentRef],
+          summary: "Selects the single authored Segment performed by this media." },
         { name: "media", kind: "reference", required: true,
           accepts: [mediaTypes.synchronized],
           summary: "Selects the already normalized SynchronizedMedia represented by this Segment." },
+        { name: "domain", kind: "reference", required: true,
+          accepts: [temporalTypes.localDomain],
+          summary: "Selects that normalized media's single local temporal domain." },
         { name: "language", kind: "literal", required: false,
           summary: "For a Segment with Tokens, explicitly states its spoken language code. The selected service owns the available alignment models." },
       ],
       ports: [
-        { name: "take", type: speechTypes.semanticTake,
-          summary: "The normalized media plus this Segment's authored words and local frame anchors." },
+        { name: "alignment", type: narrativeTemporalTypes.narrativeAlignment,
+          summary: "This Segment's authored boundary identities on the local domain, without media." },
       ],
-      example: `<whisperx:SemanticTake id="opening" narrative={story}
-  segment={story.segment.opening} media={opening-media.media} language="en"/>`,
+      example: `<whisperx:Alignment id="opening" narrative={story}
+  segment={story.segment.opening} media={opening-media.media}
+  domain={opening-media.domain} language="en"/>`,
       notes: [
         "A Segment with Tokens states all five attributes and sends its prepared audio for alignment.",
-        "An empty Segment omits language and maps its authored start/end Anchors directly to the prepared-media boundaries.",
+        "An empty Segment omits media and language and maps its authored start/end Anchors directly to the selected domain boundaries.",
         "For speech, each alignment call states an explicit lowercase two- or three-letter language code; language is not inferred from Script text or audio.",
         "Importing this package is what selects the WhisperX model family; the Runtime separately binds the alignment Need to an Endpoint.",
       ],
@@ -61,12 +65,12 @@ export const whisperXManifest: ModuleManifest = {
   name: whisperXModuleRef.name,
   version: whisperXModuleRef.version,
   dependencies: [
-    speechDependency,
     speechEvidenceDependency,
     mediaDependency,
     narrativeDependency,
-    { module: mediaPipelineModuleRef },
+    narrativeTemporalDependency,
     { module: speechAlignmentModuleRef },
+    temporalDependency,
   ],
   types: [{ name: whisperXTypes.language.name }],
   capabilities: [{
@@ -77,7 +81,7 @@ export const whisperXManifest: ModuleManifest = {
     {
       name: whisperXProducers.request.name,
       inputs: [
-        { name: "evidence", type: speechTypes.evidenceAudio },
+        { name: "evidence", type: speechEvidenceTypes.audio },
         { name: "language", type: whisperXTypes.language },
       ],
       outputs: [],

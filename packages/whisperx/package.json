@@ -1,28 +1,39 @@
 {
   "name": "@hypit/whisperx",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./cli": "./src/cli.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^"
+  },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/media-pipeline": "workspace:*",
-    "@hypit/media": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/speech": "workspace:*",
-    "@hypit/speech-alignment": "workspace:*",
-    "@hypit/speech-evidence": "workspace:*",
-    "@hypit/markup": "workspace:*"
+    "@hypit/media-local": "workspace:^",
+    "@hypit/narrative-speech-alignment": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/program-space": "workspace:*"
+    "@hypit/hypit": "workspace:*",
+    "@hypit/producer": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/media": "workspace:*",
+    "@hypit/narrative": "workspace:*",
+    "@hypit/narrative-temporal": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/speech-evidence": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/temporal": "workspace:*",
+    "typescript": "5.9.3",
+    "@hypit/timeline": "workspace:*"
   }
 }

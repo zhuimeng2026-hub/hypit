@@ -1,4 +1,5 @@
-import type { ComponentPackage, ProducerHandlerContext } from "@hypit/component-kit";
+import type { AdmissionPackage } from "@hypit/admission";
+import type { ProducerPackage, ProducerHandlerContext } from "@hypit/producer";
 import type { StoredValue } from "@hypit/protocol";
 
 import {
@@ -69,4 +70,4 @@ export const textComponent = {
       }),
     },
   ],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

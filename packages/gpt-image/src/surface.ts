@@ -1,28 +1,21 @@
-import { artifactTypes } from "@hypit/artifact";
+import { blobTypes } from "@hypit/hypit/blob";
 import {
   generationPort,
   sealGenerationMediaBinding,
-} from "@hypit/generation";
-import type { GenerationMediaPort } from "@hypit/generation";
-import {
-  gptImageDenoiseV1,
-  imageTransformTypes,
-} from "@hypit/image-transform";
+} from "@hypit/hypit/generation";
+import type { GenerationMediaPort } from "@hypit/hypit/generation";
+import { imageTransformTypes } from "@hypit/image-operations";
 import {
   exactModelMediaInputNames,
   exactModelTextInputName,
   createExactModelPrimaryGenerationFragment,
-} from "@hypit/model-kit";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+} from "@hypit/hypit/generation/model";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 
 import { createGptImageCleanFragment } from "./fragment.js";
+import { gptImageCleanupProgram } from "./cleanup-program.js";
 import {
   gptImage2Ports,
   gptImageEndpoints,
@@ -102,7 +95,7 @@ function references(
     exactAttributes(child, ["image"], ["image"]);
     assert(!child.children.some((item) => item.kind === "element" || item.value.trim().length > 0),
       `${child.name} must be empty`);
-    const image = resolve(child, "image", artifactTypes.blob, resolveReference);
+    const image = resolve(child, "image", blobTypes.blob, resolveReference);
     if (image.record !== undefined) {
       assert(image.record.value.kind === "blob" && image.record.value.mediaType.startsWith("image/"),
         `${child.name}.image must reference image media`);
@@ -167,7 +160,7 @@ function decode(clean: boolean): StructuredSurfaceHandler {
       records.push({
         id: `${id}.cleanup`,
         type: imageTransformTypes.program,
-        value: { kind: "inline", value: gptImageDenoiseV1 as unknown as CanonicalValue },
+        value: { kind: "inline", value: gptImageCleanupProgram as unknown as CanonicalValue },
         range: element.range,
       });
       inputs.cleanup = { kind: "record", id: `${id}.cleanup` };

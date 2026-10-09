@@ -1,38 +1,38 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { compileHyperframesDocument, materializeHyperframesHtml } from "@hypit/hyperframes";
+import { compileHtmlProgram, materializeHtmlProgram } from "@hypit/html-program";
 import { sealComposition } from "@hypit/composition";
 import sharp from "sharp";
 import test from "node:test";
 import { captureBrowserExecutablePath, withCapture } from "@hypit/browser-capture";
 import { captionDocument, parseScript } from "@hypit/script";
 import { sealTimeline } from "@hypit/timeline";
-import type { SvsRecipe } from "@hypit/svs";
+import type { Recipe } from "@hypit/recipe";
 import { projectProgramWindow } from "../../../test/temporal-fixture.js";
 import { fixtureResource } from "../../../test/fixture-resource.js";
 import { fineCaptionStyle, renderFineCaption, scheduleFineCaption } from "../src/index.js";
 
 const executablePath = process.env.HYPIT_CAPTURE_TEST_BROWSER ?? await captureBrowserExecutablePath();
 
-function cueHtml(source: string, width: number, extra: SvsRecipe["properties"]): string {
+function cueHtml(source: string, width: number, extra: Recipe["properties"]): string {
   const document = captionDocument(parseScript("layout", `<line>${source}</line>`), "caption", "story");
-  const timeline = sealTimeline({ id: "timeline", items: [], durationSec: 4, frameRate: { numerator: 30, denominator: 1 } });
+  const timeline = sealTimeline({ id: "timeline", frameCount: 120, frameRate: { numerator: 30, denominator: 1 } });
   const style = fineCaptionStyle("plain", { path: "caption", properties: {
     align: "center", background: "#00000000", fill: "#000000", "line-height": 1.2,
     "anchor-x": "left", "anchor-y": "top", padding: "0", radius: 0, "stack-order": 1, size: 36, width: 1, x: 0, y: 0, "word-gap": 14, "inline-size": "fixed",
     karaoke: "trail", "active-box": "trail", "active-box-continuity": "joined", "active-box-padding": "0", "active-box-background": "#00800080", "active-box-radius": 0, ...extra,
   } }, [{ sources: [{ artifact: { kind: "blob", resource: fixtureResource("font"), size: 1, mediaType: "font/woff2" } }], weight: 400, style: "normal" }]);
-  const program = { id: "p", documentId: document.id, styles: [style], uses: [{ styleId: "plain",
-    window: projectProgramWindow({ itemId: "use", semantic: timeline, projection: { start: { ref: "program.start" }, end: { ref: "program.end" } } }),
+  const program = { id: "p", documentId: document.id, styles: [style], uses: [{ id: "use", styleId: "plain",
+    window: projectProgramWindow({ itemId: "use", semantic: timeline, projection: { start: { ref: "timeline.start" }, end: { ref: "timeline.end" } } }),
   }] };
-  const timed = { spaceId: timeline.id, narrativeId: "story", documentId: document.id, cues: [{ id: "cue", startFrame: 0, endFrameExclusive: 90,
-    units: document.units.map((unit, index) => ({ unitId: unit.id, startFrame: index * 5, endFrameExclusive: index * 5 + 5 })),
-  }] };
-  const track = renderFineCaption(scheduleFineCaption(timed, program, document), program, document, timeline);
-  const compiled = compileHyperframesDocument(sealComposition({ id: "test",
+  const timed = { timelineId: timeline.id, documentId: document.id,
+    units: document.units.map((unit, index) => ({ unitId: unit.id, startFrame: index * 5, endFrameExclusive: index * 5 + 5 })) };
+  const track = renderFineCaption(scheduleFineCaption(timed, program, document), program, document, timeline,
+    { xPx: 0, yPx: 0, widthPx: width, heightPx: 500 });
+  const compiled = compileHtmlProgram(sealComposition({ id: "test",
     canvas: { width, height: 500, clearColor: "#ffffff" }, tracks: [track] }), timeline);
   // Both copies use the same face. Exact-font loading is exercised by renderer integration.
-  return materializeHyperframesHtml(compiled, () => "data:font/woff2;base64,AA==")
+  return materializeHtmlProgram(compiled, () => "data:font/woff2;base64,AA==")
     .replace("</head>", `<style>[data-hypit-element-id]{font-family:Arial!important}[data-composition-id]{width:${width}px;height:500px}</style></head>`);
 
 }
@@ -74,13 +74,15 @@ test("joined backgrounds cover wrapped glyphs, preserve opacity and seek without
       // Reverse/repeated seeks and a resized Cue exercise measurement after layout changes.
       for (const [frame, scale, size] of [[0, 1, width], [20, 1, width], [5, .7, width],
         [0, 1, width + 40], [20, 1, width]] as const) {
-        const coverage = await page.evaluate(({ frame, scale, size }) => {
+        const coverage = await page.evaluate(async ({ frame, scale, size }) => {
           const cue = document.querySelector<HTMLElement>('[data-hypit-element-id="cue"]')!;
           cue.style.width = `${size}px`;
           // The box is measured in its own coordinates even while its ancestors move.
           cue.style.transform = `rotate(12deg) scale(${scale})`;
-          window.dispatchEvent(new CustomEvent("hf-seek", { detail: { time: frame / 30 } }));
-          const error = (window as unknown as { __hypitBrowserProgramError?: string }).__hypitBrowserProgramError;
+          await (window as typeof window & {
+            __hypitFrameProgram: { applyFrame(frame: number): Promise<void> };
+          }).__hypitFrameProgram.applyFrame(frame);
+          const error = (window as unknown as { __hypitHtmlVisualError?: string }).__hypitHtmlVisualError;
           const layers = Array.from(document.querySelectorAll<HTMLElement>('[data-caption-active-box="joined"]'));
           const index = Math.min(Math.floor(frame / 5), layers.length - 1);
           const path = layers[index]!.querySelector<SVGPathElement>('path')!;
@@ -110,12 +112,14 @@ test("joined backgrounds cover wrapped glyphs, preserve opacity and seek without
     await page.setContent(cueHtml("supercalifragilisticexpialidocious", 170, {
       "active-box-padding": "12 8", "active-box-border-width": 2, "active-box-border-color": "#000000",
     }));
-    const samples = await page.evaluate(() => {
+    const samples = await page.evaluate(async () => {
       const word = document.querySelector('[data-hypit-element-id="atom-1-base-1"]')!;
       const range = document.createRange(); range.selectNodeContents(word);
       const lines = Array.from(range.getClientRects());
       for (const atom of Array.from(document.querySelectorAll<HTMLElement>('[data-caption-atom]'))) atom.style.visibility = "hidden";
-      window.dispatchEvent(new CustomEvent("hf-seek", { detail: { time: 1 } }));
+      await (window as typeof window & {
+        __hypitFrameProgram: { applyFrame(frame: number): Promise<void> };
+      }).__hypitFrameProgram.applyFrame(30);
       return {
         count: lines.length,
         points: lines.map(line => ({ x: (line.left + line.right) / 2, y: (line.top + line.bottom) / 2 })).concat(

@@ -71,7 +71,7 @@ Role Cue 会产生不同的文本投影：
 dialogue `Text` 包含 Role Cue 前缀，speech `Text` 和 CaptionDocument 会去除前缀。给
 `seedance:ReferenceVideo` 提供输入的 Prompt Program 可以使用 `{story.segment.dialogue.dialogue}`
 （带标签）。Script 输出一份 `{story.caption}` CaptionDocument，里面有显示词、N:M 对齐单元
-和作者写出的 Cue 分界；里面没有秒数或帧数。
+和作者 Cue；里面没有秒数或帧数。
 
 ## Dual Text
 
@@ -116,8 +116,8 @@ Cue 的切换。这同样适用于其他语言的短语或名字，例如 `<Git 
 `<组@{beat!}件化|>`。标记和显示属性不会成为口播内容。若明确写了右侧口播，标记仍然属于
 右侧。明确或共享的口播都必须包含可说出的词；`<API|...>` 只有标点，无法建立时间对应，因此无效。
 
-`||` 是 **Caption Cue Break** 语法，只能位于完整对齐单元之间，不能写进 Dual Text 或切开
-N:M 单元。字幕稍后才把 CaptionDocument 与 Timeline 汇合得到帧时间。
+`||` 是 **Caption Cue 分隔符**，它在一个完整对齐单元之后结束当前 Cue，不能写进 Dual Text 或切开
+N:M 单元。字幕稍后通过独立 NarrativeCaptionBinding 与 NarrativeProjection 得到绝对帧时间。
 
 ### 空格与拼写
 
@@ -143,11 +143,11 @@ N:M 单元。字幕稍后才把 CaptionDocument 与 Timeline 汇合得到帧时�
 
 ### CaptionDocument 的组成
 
-`CaptionDocument` 是 Script 拥有的字幕真相，包含三种明确的语法对象：
+`CaptionDocument` 是 Caption 拥有、Script 可由同一源码生成的显示值，包含三种明确的内容对象：
 
 - **Display Word（显示词）**：一个用于渲染的词面，包含应该显示的标点；
 - **Alignment Unit（对齐单元）**：最小的显示-口播对应关系，Dual Text 的 N:M 映射也保持为一个单元；
-- **Cue Break（Cue 分界）**：作者写出的 `||`，只能放在完整对齐单元之后。
+- **Cue**：由完整对齐单元组成的有序组。Segment 和 Role 边界会结束 Cue；`||` 可以在同一轮话语内显式结束当前 Cue。
 
 标点不是口播 token，也不会获得独立时间窗。Dual Text 后面的句号会吸附到前一个显示词：
 `<test | now>. here` 显示为 `test. here`，口播投影仍是 `now. here`。英文按词拆分；汉字、
@@ -209,7 +209,8 @@ Selection 标记是零宽度的，不会出现在任何文本投影中。它们�
 `startAnchorId`/`endAnchorId` 的 `NarrativeSelection`。Script 本身不包含秒数或帧号——时间
 信息来自 Timeline 对齐。
 
-其他组件通过 `{story.selection.problem}` 引用 Selection，将视觉内容绑定到叙事中的语义时刻。
+Narrative Projection 声明通过 `{story.selection.problem}` 引用 Selection，并发布具名绝对
+Window；组件消费这个 Window，不需要认识 Script 身份。
 
 ## Moment
 
@@ -230,7 +231,8 @@ Moment 是具名的时间**点**（不是范围）：
 每个 Moment 名字只出现一次，编译为带有 `anchorId` 的 `NarrativeMoment`。Selection 和 Moment
 共享同一命名空间——同一个 id 不能同时用于两者。
 
-其他组件通过 `{story.moment.ranking}` 引用 Moment。
+Narrative Projection 声明通过 `{story.moment.ranking}` 引用 Moment，并发布具名绝对 Instant；
+组件消费这个 Instant，不需要认识 Script 身份。
 
 ## 注释与转义
 
@@ -251,7 +253,7 @@ Moment 是具名的时间**点**（不是范围）：
 | `\\` | 字面量 `\` |
 | `\|` | 字面量 `|`（两个竖线写成 `\|\|`） |
 
-普通文本中的单个 `|` 本身就是字面量；未转义的 `||` 才是 Caption Cue Break。
+普通文本中的单个 `|` 本身就是字面量；未转义的 `||` 才是 Caption Cue 分隔符。
 在 Dual Text 内部，第一个未转义的 `|` 分隔 display 和 spoken 两侧；display 侧的竖线必须
 写成 `\|`，需要字面量右尖括号时写成 `\>`。
 
@@ -292,4 +294,6 @@ Moment 是具名的时间**点**（不是范围）：
 - 三个 Selection：`whole`（整个 Script）、`problem`、`solution`、`emphasis`
 - 一个 Moment：`ranking`（标记 "After the first recap" 这一瞬间）
 
-下游组件通过名称引用这些内容：`{story.segment.hook.dialogue}` 用于生成，`{story.selection.problem}` 用于 B-roll 时间绑定，`{story.moment.ranking}` 用于视觉卡片揭示。
+下游图节点通过名称引用这些内容：`{story.segment.hook.dialogue}` 提供生成文本；Narrative
+Projection 声明显影 `{story.selection.problem}` 供 B-roll 计时，并显影
+`{story.moment.ranking}` 供视觉卡片事件使用。

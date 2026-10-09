@@ -1,4 +1,4 @@
-import type { CaptionDisplayWord } from "@hypit/narrative";
+import type { CaptionDisplayWord } from "@hypit/hypit/caption";
 
 type Surface = Pick<CaptionDisplayWord, "text" | "separatorBefore">;
 

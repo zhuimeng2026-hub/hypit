@@ -31,7 +31,7 @@ For a Profile selecting local rendering, run `hypit programs up --runtime <profi
 <render-instance>` before the first render (or `hypit runtime up --runtime <profile>` to prepare
 the Profile and start its Worker). This explicitly prepares Chrome even when pnpm skips dependency
 build scripts. `hypit doctor --runtime <profile>` diagnoses missing setup without installing it.
-See the [local renderer README](packages/provider-hyperframes-local/README.md) for browser overrides.
+See the [local renderer README](packages/provider-html-local/README.md) for browser overrides.
 
 ## Make the change
 
@@ -72,20 +72,30 @@ diagnostics, and prepares the browser in an isolated cache. It uses a separate H
 and retains the temporary project on failure. The `npm package execution` workflow runs this on PRs
 and is reused by publication; publication uploads the same tarball that was installed and executed.
 
-For a formal release, use the existing GitHub Release workflow. Commit the next stable npm version
-in `package.json` to `main`. Open
+For a formal release, use the existing GitHub workflows. Commit the next stable npm version in
+`package.json` to `main`, then open
 **Releases → Draft a new release**, choose that commit with tag `v<version>` (for example `v0.1.8`),
 write the release notes, and publish the Release. The tagged commit must contain this workflow.
 `Publish npm` verifies the tag/version match and that the commit belongs to main's history, runs
-Linux/Windows checks, builds and checks the packaged CLI, then publishes to npm as `latest` and
-attaches the tarball to the Release. Checks and packaging use the triggering commit, even if main
-advances meanwhile. This path supports stable releases, not prereleases.
+repository checks and release-candidate construction in parallel, then installs and executes that
+one candidate on Linux and Windows. It preflights every package in the release plan against npm,
+publishes dependencies first and the Distribution last as `latest`, and attaches the Distribution
+tarball to the Release. No npm write occurs unless every check, package installation and registry
+preflight succeeds. Checks and packaging use the triggering commit, even if main advances meanwhile.
+This path supports stable releases, not prereleases.
 
 **Actions → Publish npm → Run workflow** on `main` remains available: enter the committed version
-and leave **Publish to npm** unchecked for checks and downloadable packaging only; check it for a
-manual npm publication. To finish a failed Release publication, fix the external problem and rerun
-that Release's workflow. If code must change, prepare a new version and Release. An existing npm
-version is skipped without changing `latest`; an existing Release attachment is retained.
+and leave **Publish to npm** unchecked for an optional package-only rehearsal and downloadable
+candidate; check it for a manual npm publication. Both paths build the candidate once and make both
+operating systems consume the same uploaded files. To finish a failed Release publication, fix the
+external problem and rerun that Release's workflow. A failed check or package preflight does not
+consume the npm version. If no
+package from the candidate reached npm, the Release and tag may be withdrawn, the code fixed while
+retaining the intended version, and the complete candidate validated again. If publication stops
+after some independent packages, rerun the same immutable candidate: matching versions are skipped
+and publication resumes in dependency order. Only after the root Distribution version exists on npm
+does a root code change require a new patch version; a failed asset upload or other external step can
+still be rerun without one. An existing Release attachment is retained.
 Pushing main, pushing a tag alone, or saving a draft Release does not publish npm. The workflow
 does not edit versions or create tags. A visible Release can precede successful npm publication;
 check its Actions result before announcing that the npm version is available.
@@ -94,6 +104,25 @@ The npm package's Trusted Publisher settings must allow GitHub Actions from orga
 repository `hypit`, workflow `publish-npm.yml`, with direct `npm publish` enabled and no environment
 name. The publishing job uses OIDC; no npm token secret is needed. An already published version
 cannot be overwritten. npm versions such as `0.1.2` are separate from the logical `@1` interfaces.
+
+Trusted Publisher authority belongs to each npm package rather than to the `@hypit` scope. When a
+new independently published package first enters the Distribution, prepare and check the exact
+candidate locally, sign in with `npm login`, then run:
+
+```sh
+npm run publish:release-dependencies
+npm run trust:release-dependencies -- --package=@hypit/new-package
+```
+
+The first command publishes only missing independent packages and never the root Distribution;
+existing versions are skipped only when their registry integrity matches the candidate. The second
+uses npm 11.15 or newer to bind the named package to this repository and workflow. Omit `--package`
+only when bootstrapping every independent package in a new release plan. npm's first authorization
+page can grant a five-minute window for the remaining package bindings; the command spaces requests
+to stay within registry limits. This is package creation, not a normal release step. Do not retain a
+long-lived npm publication token or publish the root Distribution from the workstation. After the
+package bindings exist, rerun the Release workflow; it verifies matching immutable versions and
+continues through OIDC.
 
 Release notes should identify the changed user behavior and the affected installation. The npm
 Distribution and an installed Skill update separately: link the relevant Skill changes and describe

@@ -1,7 +1,7 @@
 # Hypit Studio
 
 For direct picture inspection, `hypit snapshot --studio <studio-url>` reads the current compiled
-`HyperframesDocument` from `GET /__studio/document` and its existing `/__studio/material/<resource>`
+`HtmlProgram` from `GET /__studio/document` and its existing `/__studio/material/<resource>`
 resources. `GET /__studio/visual.html` exposes the same materialized picture without the interactive
 Studio playback shim or audio. Both representations come from the same compilation as the displayed
 preview. The snapshot invocation uses the selected Runtime Profile's frame Provider and creates no
@@ -11,7 +11,10 @@ reports its error instead of returning the previous picture as current.
 The single official Web Studio for SVML. It opens an explicit Run Source,
 traces its Film or Render target back to the semantic and visual projections
 Studio can edit, runs deterministic Producers and explicitly permitted transient Needs, and composites the
-resulting Tracks with HyperFrames.
+resulting Tracks with HTML renderer.
+
+`@hypit/studio/cli` exports Studio's `hypit.cli-command@1` contribution. The root CLI Host selects it
+through the installed Distribution manifest; Studio does not own or wrap the Hypit executable.
 
 ```bash
 cd /path/to/external-video-project
@@ -20,11 +23,11 @@ hypit studio --run build.svrun
 
 When `--runtime` is omitted, Studio reads the resolved project's `.hypit/runtime`
 selection made by `hypit runtime use`. It does not search parent projects for a
-Profile. `--workspace` explicitly selects the project boundary; `--package-root`
+Profile. `--project` explicitly selects the project boundary; `--package-root`
 overrides the author package resolution root when those locations intentionally differ.
 Startup prints the project, Run, Profile and whether the Profile came from the command argument or
 the project's selection file. Relative command-line paths start at the invoking directory;
-`--workspace` selects the project without rebasing `--run` or `--runtime`.
+`--project` selects the project without rebasing `--run` or `--runtime`.
 The upper-left library is intentionally not a filesystem browser:
 
 - Source is the exact Run + Author closure and writes back only the selected file;
@@ -90,7 +93,7 @@ to play or pause; the wider progress control seeks, with a hovered-frame preview
 main playhead alone. The hover picture uses one lazy, muted instance of the current preview document,
 released when leaving Comments. It needs no Build or thumbnail files.
 
-Studio retains picture selection and its right-click menu for overlapping Companion entities.
+Studio retains picture selection and its right-click menu for overlapping Companion Items.
 Comments uses viewing controls without selecting objects. Switching views preserves the composition
 time and Studio's selection; comments themselves only refer to a time and the user's words.
 
@@ -141,14 +144,22 @@ a separate, planned connection; **Send comment** currently saves the note only.
 ### Composition editing
 
 The selected targets must reach one Film and its resolved time source. Studio rejects several
-distinct Films in one view; use separate Runs/sessions for those. A Timeline supplies the
-placed material and semantic timing, including wordless Segments. The ruler always shows program
-time. When placed Segments are present, its left Timeline header spans the time ticks and the
-Segment, Word and Selection/Moment bands. Empty Word or marker bands are omitted based on the
-whole work, not the visible window or playhead. With no Segments, only the ordinary time ruler remains.
-The complete ruler area stays pinned while component tracks scroll.
+distinct Films in one view; use separate Runs/sessions for those. A Timeline supplies the complete
+program range and the ruler always shows program time. Each package-owned temporal-domain Companion
+may add an exact Projection view. Script Studio gives every Narrative Projection two rows: mapped
+Segments and projected word evidence. Selection and Moment objects that exist only to invert a
+Track/Item edit remain hidden rather than becoming a third semantic-content row. Common Studio has
+no Narrative slot or Narrative-shaped fallback; a beat or shot package can contribute its own two
+or more lanes without changing Studio.
 
-Semantic objects retain declaration-order drawing within each band. Their fine borders distinguish
+All package-declared primary Window and Instant outputs share one read-only declaration row. Their
+owning Surface Companions select the exact output ports; common Studio only resolves the absolute
+temporal values. Automatically derived Window boundaries, the Timeline's root range and internal
+helpers are not repeated as Items. The resulting time header is one ruler row, the lanes contributed
+by each exact Projection, and one common declaration row. Only the ruler is pinned while all rows
+scroll together with component Tracks.
+
+Domain items retain Companion projection order within each lane. Their fine borders distinguish
 adjacent and overlapping intervals without inventing time gaps. Selection raises an object above
 its peers; playback highlighting changes color without changing that order. Right-click an overlap
 to choose a covered object. These are editor presentation rules, independent of Film paint order.
@@ -162,33 +173,37 @@ package code or imports that introduce new packages. Browser refresh does not re
 server-side package modules.
 
 The Source pane can edit the selected `.svml`, `.svs` or `.svrun` file. The Inspector
-shows project facts when no entity is selected and declared facts and author fields for
-the selected entity. A reference can resolve to a shared Frame or Recipe, so one edit
+shows project facts when no Item is selected and declared facts and author fields for
+the selected Item. A reference can resolve to a shared Frame or Recipe, so one edit
 may affect several consumers. Structured fields save together when editing ends and the value is complete; missing required values stay in the editor with a completion hint.
 Check save status; source conflicts reject stale edits rather than overwrite newer files.
 
-Script source ranges come from its raw Surface and Companion. Marker edits use Script's parsed
-anchors and preserve unrelated prose, whitespace and word attributes; the displayed timeline words
-are not a replacement text source. Recipe parameter reads use the same Source Header preparation
+Temporal-domain source ranges come from their package Companion. For Script, marker edits use its
+parsed anchors and preserve unrelated prose, whitespace and word attributes; the displayed timeline
+words are not a replacement text source. Recipe parameter reads use the same Source Header preparation
 as compilation, preserving UTF-16 offsets for the exact property being edited.
 
-The Timeline owns the editor's complete range; displayed objects do not extend it. Take placement
-and complete extent are reference information in Studio.
+The Timeline owns the editor's complete range; displayed objects do not extend it. Placed media and
+their complete extents are reference information in Studio.
 
 Timeline gestures use explicit temporal authority. Moving a shared Selection or
 Moment edits Script and moves its consumers after recompilation. A parameter-based
 handle edits its exact authored parameter. Fixed or derived values with no supported
-inverse remain read-only. Seeing an entity does not promise every drag gesture.
+inverse remain read-only. Seeing an Item does not promise every drag gesture.
 
-A direct `during={selection}` move advances both endpoints by the same number of semantic
-stops (distinct frame positions), so its duration may change. `at/for` moves its event and
-offers a trailing duration trim; `until/for` offers the corresponding leading trim.
+A direct `during={selection}` move is available only where both semantic endpoints can move by the
+same absolute frame delta, so a move always preserves the Window duration. Trimming one edge keeps
+the opposite absolute edge fixed. For example, trimming the leading edge of `at/for` atomically
+changes the event and duration; trimming the trailing edge of `until/for` does the corresponding
+two-source edit. If the executed author relations cannot satisfy the whole gesture, it stays read-only.
 An Instant reference expression edits only its offset; a bare reference has an implicit zero offset.
 `start/end` trims edit the corresponding expression; moving the window shifts both by the same
-frame delta. Edited clock values and offsets are written in frames at the current ProgramSpace rate.
-The semantic marker Inspector exposes exact anchor identities and, where a
-declared handle supports it, offers choices among coincident anchors.
-See [temporal author forms](../temporal-markup/EDITING.md) for the complete behavior.
+frame delta. Edited clock values and offsets are written in frames at the current Timeline rate.
+The domain-item Inspector exposes exact anchor identities and, where a declared handle supports it,
+offers choices among coincident anchors. Their meaning and writeback remain package-owned.
+Dragging to a new frame with several distinct valid Anchor identities does not silently select one;
+the author must make that identity choice explicitly.
+See [temporal author forms](../temporal/EDITING.md) for the complete behavior.
 
 Tasks and Artifacts are inspection surfaces; selecting an Artifact does not write a
 Run Candidate. Use `build-record`/`satisfy` in the Run for explicit Output reuse.
@@ -197,6 +212,12 @@ Run Candidate. Use `build-record`/`satisfy` in the Run for explicit Output reuse
 
 [Inspector fields](INSPECTOR.md) describes Where/When/How grouping, numeric unit conversion,
 rich choices, fonts, color suggestions and exact Source writeback.
+
+The common author surface is `Track -> Item`. `Item` is only Studio's shared selection and
+presentation envelope: Visual and Audio packages retain their own Clip models, Typography retains
+its occurrence model, and project components retain their own domain names. Their Companions decide
+which domain objects become Items and declare each Item's title, interval, layers, Inspector facts,
+bindings and temporal lineage. Studio does not enumerate those domain families.
 
 Studio is an application boundary. Core and domain computation do not import it or
 register UI metadata. The installed Distribution explicitly selects one independent
@@ -207,15 +228,15 @@ Studio profile, package scan or replacement map.
 
 Project packages live at `<project>/packages/<package-basename>/`. Neither the
 project nor its packages are added to the Hypit Distribution or contributor workspace.
-The Host resolves selected project packages from the project first and official
-`@hypit/*` imports from the read-only tool Distribution. The `@hypit/*`
-namespace is Distribution-owned and cannot be shadowed by a project install.
-External Companions compile against `@hypit/hypit/studio-adapter` and the other public `@hypit/hypit/*`
+The Host protects exact packages physically embedded in the read-only tool Distribution.
+Other selected packages, including independently released official `@hypit/*` extensions,
+resolve from the project first and use the Distribution installation only as a fallback.
+External Companions compile against `@hypit/studio-companion` and the other public `@hypit/hypit/*`
 subpaths, with `@hypit/hypit` as a development dependency. The active Distribution supplies those APIs
 at runtime. Ship the Companion's compiled JavaScript with its component package.
 
 The companion owns what its Track means: matching, required same-Surface values,
-entities, lane range, finite chrome, title and ordered text/material layers,
+Items, lane range, finite chrome, title and ordered text/material layers,
 source bindings, Inspector fields and executed temporal lineage. Inspector fields
 select real bindings or package-owned facts and organize them under the Studio-owned
 `Where / When / How` domains, optional companion-owned pages and sections. A
@@ -241,9 +262,18 @@ explicit change through the normal revisioned mutation path.
 
 Temporal lineage comes from the exact executed graph selected by the Run. Studio indexes the
 `TemporalInstant` and `TemporalWindow` records in each Track's dependency closure, including each
-endpoint's author authority and direct consumer edge. Common timeline inverses come from that
-authority rather than Companion declarations. Track Companions never infer semantic sources from SVML
-attribute names, runtime id prefixes or coincident frame spans.
+endpoint's author authority and direct consumer edge. Common Temporal relations are handled by the
+shared planner; author packages contribute inverses for their own private construction Producers.
+Studio recursively composes those local relations, merges graph paths that produce the same exact
+author writes and applies only one distinct conflict-free author plan. The graph reader uses the
+same package-owned relations to reconstruct lineage; it does not recognize concrete Temporal or
+domain Producer names.
+Track Companions never infer semantic sources from SVML attribute names, runtime id prefixes or
+coincident frame spans.
+
+Temporal writes remain one Source transaction. After recompilation, Studio checks the rebuilt Item
+against the complete requested absolute-frame constraint; a compiling plan that resolves elsewhere
+is rejected and the original files are restored just like a compilation failure.
 
 Opening Studio never spends and never creates a Build. Its display closure contains
 the Candidates selected by the Run, deterministic Producers and exact Needs that
@@ -256,12 +286,12 @@ ordinary Run Candidates selected with `satisfy`.
 
 Studio and an encoded review use the same ordinary Run. Studio evaluates its
 transient display closure in the browser; building that Run evaluates the
-full target closure and sends the resulting HyperFrames document to the chosen
+full target closure and sends the resulting HTML renderer document to the chosen
 render Endpoint. A separate review Run is useful only when the author wants a
 different Candidate selection. Its path and filename carry no execution
 semantics.
 
-Read [`@hypit/studio-adapter`](../studio-adapter/README.md) for the Companion ABI,
+Read [`@hypit/studio-companion`](../studio-companion/README.md) for the Companion ABI,
 project activation example, value projection and Inspector declarations.
 
 ## Composition audio preview
@@ -270,7 +300,7 @@ The preview consumes generic AudioClips: source sampling, fixed gain, program-sa
 audibility regions and target-relative fades. Web Audio gain nodes schedule the independent factors
 on the same clock, including silence and amplification above unity. Visual video elements stay muted;
 the Film's selected AudioTracks own composition sound. Seeking is silent. This path is independent of
-which component emitted a clip.
+which component emitted an audio contribution.
 
 ### Interface language
 

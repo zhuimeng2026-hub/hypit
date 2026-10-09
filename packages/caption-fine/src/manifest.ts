@@ -1,17 +1,17 @@
-import { temporalDependency, temporalTypes } from "@hypit/temporal";
-import { temporalWindowAttributeVocabulary } from "@hypit/temporal-markup";
-import type { Timeline } from "@hypit/timeline";
+import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
+import { temporalContextAttributeVocabulary, temporalWindowAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { timelineDependency, timelineTypes } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/hypit/timeline";
 import { readFile } from "node:fs/promises";
 
-import { captionManifest, captionModuleRef, captionTypes } from "@hypit/caption";
-import { compositionDependency, compositionTypes } from "@hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/media";
-import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
+import { captionModuleRef, captionTypes } from "@hypit/hypit/caption";
+import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
+import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
 
-import type { ModuleManifest, ProducerRef } from "@hypit/protocol";
-import { timelineDependency, timelineTypes } from "@hypit/timeline";
-import { spatialDependency, spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
+import type { ModuleManifest, ProducerRef } from "@hypit/hypit/protocol";
+import { regionEvidenceDependency, regionEvidenceTypes } from "@hypit/hypit/region-evidence";
+import { spatialDependency, spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
 
 import { fineCaptionOneShotMotions } from "./recipe.js";
 
@@ -38,20 +38,20 @@ export const captionFineMarkupSurfaces = [
         summary: "Resolves one SVS Recipe and one exact font stack into a complete fine-grained Caption Style.",
         attributes: [
           { name: "id", kind: "identifier", required: true,
-            summary: "Names this Style so a timed Use can select it." },
-          { name: "recipe", kind: "reference", required: true, accepts: [svsRecipeType],
+            summary: "Names this Style so a Use can select it." },
+          { name: "recipe", kind: "reference", required: true, accepts: [recipeType],
             summary: "Chooses the Recipe that carries Cue geometry, Paint and local motion.",
             recipe: [
               { name: "stack-order", required: true,
-                summary: "Places this Style's Cues in the Track's drawing order, low behind high." },
+                summary: "Places this Style's Cues in the composition drawing order, low behind high." },
               { name: "x", required: true,
-                summary: "Places the Cue box horizontally as a fraction of the Canvas width." },
+                summary: "Places the Cue box horizontally as a fraction of the selected Frame's width." },
               { name: "y", required: true,
-                summary: "Places the Cue box vertically as a fraction of the Canvas height." },
+                summary: "Places the Cue box vertically as a fraction of the selected Frame's height." },
               { name: "width", required: true,
-                summary: "Sets the Cue box width as a fraction of the Canvas width." },
+                summary: "Sets the Cue box width as a fraction of the selected Frame's width." },
               { name: "height", required: false,
-                summary: "Optionally gives the Caption Region a fixed fraction of Canvas height; without it the Region hugs its Cue." },
+                summary: "Optionally gives the Caption Region a fixed fraction of the selected Frame's height; without it the Region hugs its Cue." },
               { name: "anchor-x", required: false, values: ["left", "center", "right"], fallback: "left",
                 summary: "Decides which horizontal edge of the Cue box sits on the placement point." },
               { name: "anchor-y", required: false, values: ["top", "center", "bottom"], fallback: "top",
@@ -268,9 +268,9 @@ export const captionFineMarkupSurfaces = [
               { name: "loop-intensity", required: false, fallback: "1",
                 summary: "Scales how far the looping motion carries." },
               { name: "lead-frames", required: false, fallback: "0",
-                summary: "Makes the Cue visible this many Frames before its first semantic Word without moving any Word timing." },
+                summary: "Makes the Cue visible this many Frames before its first timed unit without moving any unit timing." },
               { name: "tail-frames", required: false, fallback: "0",
-                summary: "Keeps the Cue visible this many Frames after its last semantic Word without extending any Word timing." },
+                summary: "Keeps the Cue visible this many Frames after its last timed unit without extending any unit timing." },
               { name: "handoff", required: false, values: ["cut", "overlap"], fallback: "cut",
                 summary: "Chooses whether adjacent Cue visibility envelopes meet without overlap or may coexist." },
             ] },
@@ -286,7 +286,7 @@ export const captionFineMarkupSurfaces = [
                 summary: "Chooses the single face this fallback contributes." },
             ] },
         ],
-        example: `<fonts:Stack id="caption-font" family="inter" weight="800" style="normal"/>
+        example: `<fontsource:Face id="caption-font" package="@fontsource-variable/inter" weight="800" style="normal"/>
 <caption-fine:Style id="primary-caption" recipe={recipes.caption.primary} font={caption-font}/>`,
         notes: [
           "Referencing a font stack in `font` and writing `<Fallback>` children are both allowed; the stack's faces come first.",
@@ -298,22 +298,25 @@ export const captionFineMarkupSurfaces = [
       },
     },
     {
-      name: "track", tag: "Track", mode: "structured", outputs: [captionFineTypes.schedule, compositionTypes.visualTrack, captionTypes.program, captionTypes.timedProjection, captionTypes.header, captionTypes.filter, temporalTypes.instantSpec, temporalTypes.windowSpec, temporalTypes.instant, temporalTypes.window],
+      name: "caption", tag: "Caption", mode: "structured", outputs: [captionFineTypes.schedule, compositionTypes.visualTrack, captionTypes.program, captionTypes.header, captionTypes.filter],
       vocabulary: {
-        summary: "Joins the authored CaptionDocument against the Timeline and renders it as one ordinary peer VisualTrack.",
-        appearance: "One block of caption text wrapped into lines inside a rounded Cue box, placed at a Recipe-chosen point on the Canvas and spanning a fraction of its width. Cues follow the speech one after another, each arriving and leaving with its own motion, and the Words of a Cue either stand there together from its first Frame or uncover as they are spoken. As the speech advances, the Word being spoken, or every Word up to it, is repainted in the active Paint, snapping at the Word boundary or sweeping across the glyphs, and it may take a rule beneath it, a rounded highlight capsule behind it and a brief pop at the moment it becomes the spoken one. That capsule either stands alone on each Atom or grows as one continuous run over everything already read, following the Words across line breaks.\n\nEvery Cue uses the ordered exact font stack its Style names, with fallback faces supplying glyphs for other scripts. Emphasis varies by timed unit through the active Paint. Lines follow the common flow, so a line cannot be given a separate face, colour or weight of its own. A caption whose lines are set in different typefaces is outside what this Track can draw.",
+        summary: "Renders an authored CaptionDocument at its already resolved CaptionTiming as one ordinary peer VisualTrack.",
+        appearance: "One block of caption text wrapped into lines inside a rounded Cue box, placed at a Recipe-chosen point in the selected Frame and spanning a fraction of its width. Cues follow the speech one after another, each arriving and leaving with its own motion, and the Words of a Cue either stand there together from its first Frame or uncover as they are spoken. As the speech advances, the Word being spoken, or every Word up to it, is repainted in the active Paint, snapping at the Word boundary or sweeping across the glyphs, and it may take a rule beneath it, a rounded highlight capsule behind it and a brief pop at the moment it becomes the spoken one. That capsule either stands alone on each Atom or grows as one continuous run over everything already read, following the Words across line breaks.\n\nEvery Cue uses the ordered exact font stack its Style names, with fallback faces supplying glyphs for other scripts. Emphasis varies by timed unit through the active Paint. Lines follow the common flow, so a line cannot be given a separate face, colour or weight of its own. A caption whose lines are set in different typefaces is outside what this Caption can draw.",
         preview: previewImage("Track.png"),
         attributes: [
           { name: "id", kind: "identifier", required: true,
-            summary: "Names this Track so its rendered output can be placed in a Film." },
-          { name: "document", kind: "reference", required: true, accepts: [narrativeTypes.captionDocument],
-            summary: "Chooses the Script-owned CaptionDocument." },
-          { name: "timeline", kind: "reference", required: true, accepts: [timelineTypes.track],
-            summary: "Chooses the continuous Timeline whose Word anchors give every Cue its time." },
-          { name: "regions", kind: "reference", required: false, accepts: [spatialTypes.regionTimeline],
+            summary: "Names this Caption so its rendered visual contribution can be placed in a Film." },
+          { name: "document", kind: "reference", required: true, accepts: [captionTypes.document],
+            summary: "Chooses the source-neutral CaptionDocument." },
+          { name: "timing", kind: "reference", required: true, accepts: [captionTypes.timing],
+            summary: "Chooses resolved absolute timing for this CaptionDocument." },
+          ...temporalContextAttributeVocabulary,
+          { name: "within", kind: "reference", required: true, accepts: [spatialTypes.frame],
+            summary: "Chooses the resolved picture-plane Frame used by Recipe x, y, width and height." },
+          { name: "regions", kind: "reference", required: false, accepts: [regionEvidenceTypes.evidence],
             summary: "Optionally follows external, frame-exact regions whose ids equal Script Roles, placing a Cue at its measured speaker region's top center and hiding it on null Frames." },
         ],
-        children: [{ tag: "Use", cardinality: "many", summary: "Presents complete Cues inside a time window. Later matching Uses replace earlier ones.", attributes: [
+        children: [{ tag: "Use", cardinality: "many", summary: "Presents matching complete Cues. A Window can narrow its scope; later matching Uses replace earlier ones.", attributes: [
           { name: "id", kind: "identifier", required: false, summary: "Optional occurrence identity." },
           { name: "style", kind: "reference", required: true, accepts: [captionTypes.style], summary: "Complete Caption Style, including Hidden." },
           { name: "role", kind: "literal", required: false, summary: "Optional speaker filter, independent of the time window." },
@@ -322,17 +325,17 @@ export const captionFineMarkupSurfaces = [
         ports: [
           { name: "schedule", type: captionFineTypes.schedule,
             summary: "The visible Cue schedule consumed by the renderer and other declared tools." },
-          { name: "track", type: compositionTypes.visualTrack,
+          { name: "visual", type: compositionTypes.visualTrack,
             summary: "The rendered Caption as one self-contained VisualTrack." },
         ],
-        example: `<caption-fine:Track id="captions" document={story.caption} timeline={speech.timeline}>
+        example: `<caption-fine:Caption id="captions" document={story.caption} timing={story-captions} timeline={film.timeline} within={vertical.bounds}>
   <caption-fine:Use style={primary-caption}/>
-  <caption-fine:Use during={story.selection.answer} style={answer-caption}/>
-</caption-fine:Track>`,
+  <caption-fine:Use during={answer} style={answer-caption}/>
+</caption-fine:Caption>`,
         notes: [
-          "Use without time attributes covers the whole Timeline. Role filters content without changing the window.",
-          "Script Cue breaks organize text; Use windows change presentation without cutting Cues or restarting word timing. A hidden Use still replaces earlier presentation.",
-          "Without regions, Recipe x/y placement is unchanged. With regions, a measured region overrides x/y for that Frame; a null Frame on that Role track hides the Cue, while a missing Role track retains authored x/y.",
+          "Use without time attributes applies to every matching Cue in the CaptionDocument. Role filters content without changing a Window.",
+          "Script authors complete Cues; Use windows change presentation without cutting those Cues or restarting Unit timing. A hidden Use still replaces earlier presentation.",
+          "Without regions, Recipe x/y placement is unchanged. With regions, a measured region overrides x/y for that Frame; a null Frame in that Role series hides the Cue, while a missing Role series retains authored x/y.",
           "The tracked point replaces Recipe x/y while width and the Recipe anchor still decide the Caption box geometry; anchor-x=center and anchor-y=bottom place the box immediately above the measured region.",
         ],
       },
@@ -348,9 +351,9 @@ export const captionFineManifest: ModuleManifest = {
     { module: captionModuleRef },
     compositionDependency,
     mediaDependency,
-    narrativeDependency,
+    spatialDependency,
     timelineDependency,
-    spatialDependency, temporalDependency,
+    regionEvidenceDependency, temporalDependency,
   ],
   types: [{ name: captionFineTypes.schedule.name }],
   capabilities: [],
@@ -358,9 +361,9 @@ export const captionFineManifest: ModuleManifest = {
     {
       name: captionFineProducers.schedule.name,
       inputs: [
-        { name: "caption", type: captionTypes.timedProjection },
+        { name: "timing", type: captionTypes.timing },
         { name: "program", type: captionTypes.program },
-        { name: "document", type: narrativeTypes.captionDocument },
+        { name: "document", type: captionTypes.document },
       ],
       outputs: [{ name: "schedule", type: captionFineTypes.schedule }],
       needs: [],
@@ -370,8 +373,9 @@ export const captionFineManifest: ModuleManifest = {
       inputs: [
         { name: "schedule", type: captionFineTypes.schedule },
         { name: "program", type: captionTypes.program },
-        { name: "document", type: narrativeTypes.captionDocument },
-        { name: "timeline", type: timelineTypes.track },
+        { name: "document", type: captionTypes.document },
+        { name: "timeline", type: timelineTypes.timeline },
+        { name: "within", type: spatialTypes.frame },
       ],
       outputs: [{ name: "track", type: compositionTypes.visualTrack }],
       needs: [],
@@ -381,9 +385,10 @@ export const captionFineManifest: ModuleManifest = {
       inputs: [
         { name: "schedule", type: captionFineTypes.schedule },
         { name: "program", type: captionTypes.program },
-        { name: "document", type: narrativeTypes.captionDocument },
-        { name: "timeline", type: timelineTypes.track },
-        { name: "regions", type: spatialTypes.regionTimeline },
+        { name: "document", type: captionTypes.document },
+        { name: "timeline", type: timelineTypes.timeline },
+        { name: "within", type: spatialTypes.frame },
+        { name: "regions", type: regionEvidenceTypes.evidence },
       ],
       outputs: [{ name: "track", type: compositionTypes.visualTrack }],
       needs: [],

@@ -24,22 +24,23 @@ These roles can be organized into files that suit the component's size:
 | Value and Style helpers | Validate inputs, apply documented defaults and decode the accepted Recipe properties |
 | Schedule and drawing | Project events and draw the scene at each frame |
 | Activation | Publish the contributions the selected package offers |
-| Studio Companion | Describe timeline entities and editable properties for Studio |
+| Studio Companion | Describe timeline Items and editable properties for Studio |
 
-The [Author SDK](https://github.com/hypit-ai/hypit/blob/main/packages/author-kit/README.md)
-and included example own the exact object shapes. A small component can keep related roles together;
+The [Author Package guide](./author-packages.md) and included example route each exact object shape to
+its owning API. A small component can keep related roles together;
 a larger component benefits from separating reusable scheduling, styling and drawing logic.
 
 ## Design around relationships
 
-For spoken work, accept Selections and Moments for behavior tied to the words. Their projection
-provides exact windows and instants after the performance exists. For an authored animation,
-seconds or frames can express the reading rhythm. A duration such as `12f` can describe the length
-of a transition in either case.
+For spoken work, an upstream Narrative Projection turns selected semantic identities into named
+absolute Windows and Instants after the performance exists. A component accepts those same absolute
+types for behavior tied to the words. For an authored animation, Timeline declarations can produce
+them directly from seconds or frames. A duration such as `12f` can still describe the component's
+local transition length.
 
 Media presentation, spatial layout and time each have their own inputs. A normalized clip supplies
-sampleable media; a Timeline can supply the prepared performance and its source positions.
-A Frame can locate the scene, while its internal HTML/CSS or element tree coordinates videos,
+sampleable media; a Window states when the occurrence contributes; a separate source-time relation
+states which part of moving media is sampled. A Frame can locate the scene, while its internal HTML/CSS or element tree coordinates videos,
 text, masks and graphics. Group content that shares behavior. Independent contributions can stay
 as peer Tracks with their own paint order.
 

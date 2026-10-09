@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseStructuredElement } from "@hypit/markup";
 import type { SurfaceResolvedReference } from "@hypit/markup";
-import { svsRecipeType } from "@hypit/svs";
+import { formatRecipeValue, parseRecipe, recipeType } from "@hypit/recipe";
 
 import {
   bindText,
@@ -15,8 +15,20 @@ import {
   sealTextBindings,
   sealTextTemplate,
   textTypes,
+  textTemplateFromRecipes,
   verifyTextTemplate,
 } from "@hypit/text";
+
+test("Text Templates keep sheet closing text inside authored prompt text", () => {
+  const prompt = "Show the literal </sheet> tag in the video";
+  const source = `<sheet version="1">
+    text-template.demo {}
+    text-template.demo.block.example { kind: fixed; order: 0; text: ${formatRecipeValue(prompt)}; }
+  </sheet>`;
+  const recipes = parseRecipe("template.svs", source).recipes.map((recipe) => recipe.value);
+  const template = textTemplateFromRecipes(recipes, "demo");
+  assert.equal(renderText(template, sealTextBindings({})).value, prompt);
+});
 
 test("text programs compose nested templates, choices, lists and transforms", () => {
   const template = sealTextTemplate({
@@ -194,7 +206,7 @@ test("Text Render projects only declared SVS Recipe properties and lets explicit
       record: { value: { kind: "inline", value: template } } as unknown as NonNullable<SurfaceResolvedReference["record"]>,
     }],
     ["recipes.shot", {
-      path: "recipes.shot", ref: { kind: "record", id: "recipes.shot" }, type: svsRecipeType,
+      path: "recipes.shot", ref: { kind: "record", id: "recipes.shot" }, type: recipeType,
       record: { value: { kind: "inline", value: {
 
         path: "recipes.shot",

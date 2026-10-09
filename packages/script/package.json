@@ -1,22 +1,35 @@
 {
   "name": "@hypit/script",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./studio": "./src/studio.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
-    "@hypit/narrative": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/text": "workspace:*",
-    "@hypit/markup": "workspace:*"
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/core": "workspace:*"
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*",
+    "@hypit/caption": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/speech-estimate": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/narrative": "workspace:*",
+    "@hypit/narrative-caption": "workspace:*",
+    "@hypit/narrative-temporal": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/text": "workspace:*"
   }
 }

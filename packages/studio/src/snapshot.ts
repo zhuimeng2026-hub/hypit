@@ -1,41 +1,43 @@
 import { composeParameterDeclarations } from "./parameters.js";
 /**
- * Turn a built programme into what the panels read.
+ * Turn the resolved Studio projection into what the panels read.
  *
- * The Timeline owns the work range. Companions project selectable entities onto
+ * The Timeline owns the work range. Companions project selectable Items onto
  * that range without extending it or requiring component-specific editor code.
  */
 import { relative } from "node:path";
 
-import type { MarkupSurfaceRegistryLike } from "@hypit/markup";
-import { compositionTypes } from "@hypit/composition";
-import { programSpaceFrameCount } from "@hypit/program-space";
-import { sameModule, sameType } from "@hypit/protocol";
+import type { MarkupSurfaceRegistryLike } from "@hypit/hypit/markup";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { timelineFrameCount } from "@hypit/hypit/timeline";
+import { temporalTypes } from "@hypit/hypit/temporal";
+import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { sameModule, sameType } from "@hypit/hypit/protocol";
 
 import type {
   CandidateProvenance,
-  Clip,
+  StudioItem,
   StudioSnapshot,
   Range,
-  ScriptMap,
-  SemanticTimeline,
-  Track,
+  TemporalDomainView,
+  StudioTrack,
 } from "./shared.js";
 import type { Placement } from "./observe.js";
-import type { Preview } from "./programme.js";
+import type { StudioProjection } from "./projection.js";
 import {
-  sealStudioClip,
+  sealStudioItem,
 } from "./studio-registry.js";
 import type { StudioCompanionRegistry } from "./studio-registry.js";
-import type { StudioEntityDraft } from "./studio-registry.js";
-import { inspectorFieldsForBindings, resolveTimelineEditHandles, sourceBindingsForDraft, temporalBindingDeclarations } from "./parameters.js";
+import type { StudioItemDraft } from "./studio-registry.js";
+import { inspectorFieldsForBindings, resolveTimelineEditHandles, sourceBindingsForDraft } from "./parameters.js";
 import type { StudioSourceFile } from "./parameters.js";
+import { temporalAuthorBindings } from "./temporal-inverse.js";
 
 type Present = {
   readonly id: string;
   readonly subjectId?: string;
   readonly span: { readonly startFrame: number; readonly endFrameExclusive: number };
-  readonly stacking: { readonly order: number };
+  readonly z: number;
 };
 
 /** Sound is placed in samples rather than frames, in the canonical 48 kHz. */
@@ -63,7 +65,7 @@ function spans(
       ...(present.subjectId === undefined ? {} : { subjectId: present.subjectId }),
       startFrame: present.span.startFrame,
       endFrameExclusive: present.span.endFrameExclusive,
-      stackOrder: present.stacking.order,
+      stackOrder: present.z,
     }));
   }
   const perSecond = frameRate.numerator / frameRate.denominator;
@@ -94,65 +96,68 @@ function authored(placements: readonly Placement[]): readonly Located[] {
   return found;
 }
 
-function scriptMap(
-  maps: Preview["source"]["observations"]["sourceMaps"],
-  built: Preview,
-  narrativeId: string,
-): ScriptMap | undefined {
-  const candidates = maps.filter((map, index) => map.narrativeId === narrativeId
-    && maps.findIndex((other) => other.narrativeId === map.narrativeId
-      && other.sourcePath === map.sourcePath
-      && other.range.start === map.range.start
-      && other.range.end === map.range.end) === index);
-  if (candidates.length > 1) {
-    throw new Error(`Studio Narrative id ${narrativeId} is declared by more than one Script in the Source closure.`);
-  }
-  const found = candidates[0];
-  if (found === undefined) return undefined;
-  const selections = found.selections;
-  const segments = found.segments;
-  const moments = found.moments;
-  return {
-    companion: found.companion,
-    narrativeId: found.narrativeId,
-    sourcePath: found.sourcePath,
-    range: found.range,
-    content: found.content,
-    // A Segment is the outermost range a Script declares; a Selection written
-    // inside one is a level down, and one inside that another.
-    segments: segments.map((segment) => ({ ...segment, depth: 0 })),
-    selections: selections.map((selection) => ({
-      ...selection,
-      depth: depthOf(selection, selections),
-    })),
-    moments,
-    // A Script says where a word is written; the timings say when it is said.
-    tokens: found.tokens.flatMap((token) => {
-      const placed = built.tokens.find((item) => item.id === token.id);
-      const startFrame = placed === undefined ? undefined : built.anchors.get(placed.startAnchorId);
-      const endFrame = placed === undefined ? undefined : built.anchors.get(placed.endAnchorId);
-      if (startFrame === undefined || endFrame === undefined) return [];
-      return [{ id: token.id, range: token.range, startFrame, endFrame }];
-    }),
+/** Package Companions project their own temporal facts onto Studio's absolute ruler. */
+function temporalDomains(
+  registry: StudioCompanionRegistry,
+  built: StudioProjection,
+): readonly TemporalDomainView[] {
+  const provenance: CandidateProvenance = {
+    output: built.timingOutput?.name ?? "Timeline",
+    ...(built.timingOutput?.ref === undefined ? {} : { outputRef: built.timingOutput.ref }),
+    ...(built.timingCandidateId === undefined ? {} : { candidateId: built.timingCandidateId }),
+    origin: built.timingCandidateOrigin,
+    status: "resolved",
+    errors: [],
   };
+  return built.source.observations.temporalDomains.flatMap((source) => {
+    const projected = registry.projectTemporalDomain({ source, values: built.temporalDomainValues, timeline: built.timeline });
+    return projected.filter((view) => view.timelineId === built.timeline.id).map((view) => ({ ...view, companion: source.companion,
+      presentation: registry.temporalDomainPresentation(source.companion), provenance,
+      source: { path: source.sourcePath, content: source.content } }));
+  });
 }
 
-/**
- * Project the compiled Narrative into the frame domain that the preview is
- * already using. No frontend timing is invented here: if an anchor is absent
- * from the built Timeline, the corresponding item is simply not drawable yet.
- */
-function semanticTimeline(
+/** All package-declared absolute author values share one read-only Timeline row. */
+function temporalDeclarationDomain(
   registry: StudioCompanionRegistry,
-  built: Preview,
-  script: ScriptMap | undefined,
-): SemanticTimeline | undefined {
-  if (built.narrativeId === undefined) return undefined;
-  if (script === undefined) throw new Error("Timeline's Script has no Studio source mapping.");
-  const projected = registry.projectScript({ source: script, anchors: built.anchors,
-    values: built.source.compiled.program.records.flatMap(record => record.value.kind === "inline"
-      ? [{ id: record.id, type: record.type, value: record.value.value }] : []),
-  });
+  built: StudioProjection,
+  source: { readonly path: string; readonly text: string },
+): TemporalDomainView {
+  const values = new Map(built.temporalValues.map((item) => [item.id, item] as const));
+  const declarations = built.source.observations.placements.flatMap((placement) =>
+    registry.projectTemporalDeclarations(placement).map((draft) => ({ placement, draft })));
+  const anchors: TemporalDomainView["anchors"][number][] = [];
+  const items: TemporalDomainView["items"][number][] = [];
+  const seen = new Set<string>();
+  for (const { placement, draft } of declarations) {
+    if (seen.has(draft.output)) continue;
+    const found = values.get(draft.output);
+    if (found === undefined) continue;
+    const range = placement.sourcePath === source.path ? draft.range : undefined;
+    if (sameType(found.type, temporalTypes.window)) {
+      const value = found.value as TemporalWindow;
+      if (value.start.timelineId !== built.timeline.id || value.end.timelineId !== built.timeline.id) continue;
+      const startAnchorId = `${draft.output}:start`;
+      const endAnchorId = `${draft.output}:end`;
+      anchors.push({ id: startAnchorId, kind: "window-start", frame: value.span.startFrame },
+        { id: endAnchorId, kind: "window-end", frame: value.span.endFrameExclusive });
+      items.push({ kind: "span", appearance: "block", id: draft.output, laneId: "declarations",
+        label: draft.label ?? draft.id, startAnchorId, endAnchorId,
+        startFrame: value.span.startFrame, endFrameExclusive: value.span.endFrameExclusive,
+        ...(range === undefined ? {} : { range }) });
+      seen.add(draft.output);
+      continue;
+    }
+    if (!sameType(found.type, temporalTypes.instant)) continue;
+    const value = found.value as TemporalInstant;
+    if (value.timelineId !== built.timeline.id) continue;
+    const anchorId = `${draft.output}:point`;
+    anchors.push({ id: anchorId, kind: "instant", frame: value.frame });
+    items.push({ kind: "point", appearance: "marker", id: draft.output, laneId: "declarations",
+      label: draft.label ?? draft.id, anchorId, frame: value.frame,
+      ...(range === undefined ? {} : { range }) });
+    seen.add(draft.output);
+  }
   const provenance: CandidateProvenance = {
     output: built.timingOutput?.name ?? "Timeline",
     ...(built.timingOutput?.ref === undefined ? {} : { outputRef: built.timingOutput.ref }),
@@ -162,30 +167,20 @@ function semanticTimeline(
     errors: [],
   };
   return {
-    spaceId: built.space.id,
-    narrativeId: built.narrativeId,
-    // The generic ruler presentation is independent of the authored Timeline id.
-    presentation: registry.semanticTimelinePresentation(),
-    // Preserve the Companion's ordered anchors, including coincident boundaries.
-    ...projected,
+    id: "absolute-declarations",
+    companion: "studio#absolute-declarations",
+    timelineId: built.timeline.id,
+    presentation: { family: "temporal", tone: "teal", label: "Windows & Instants", icon: "timeline" },
+    lanes: [{ id: "declarations", label: "Windows & Instants", heightPx: 26 }],
+    anchors,
+    items,
+    editItems: [],
     provenance,
+    source: { path: source.path, content: { start: 0, end: source.text.length } },
   };
 }
 
-/** The element an output belongs to: `take-opening.video` is `take-opening`. */
-function depthOf(
-  selection: Omit<ScriptMap["selections"][number], "depth">,
-  all: readonly Omit<ScriptMap["selections"][number], "depth">[],
-): number {
-  let depth = 1;
-  for (const other of all) {
-    if (other.id === selection.id) continue;
-    if (other.open.start < selection.open.start && other.close.end > selection.close.end) depth += 1;
-  }
-  return depth;
-}
-
-export function snapshot(registry: StudioCompanionRegistry, built: Preview, input: {
+export function snapshot(registry: StudioCompanionRegistry, built: StudioProjection, input: {
   readonly revision: number;
   readonly path: string;
   readonly text: string;
@@ -198,9 +193,8 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
   readonly surfaces: MarkupSurfaceRegistryLike;
 }): StudioSnapshot {
   const located = authored(built.source.observations.placements);
-  const script = built.narrativeId === undefined ? undefined : scriptMap(built.source.observations.sourceMaps, built, built.narrativeId);
-  const semantic = semanticTimeline(registry, built, script);
-  const tracks: Track[] = [];
+  const domains = [...temporalDomains(registry, built), temporalDeclarationDomain(registry, built, input)];
+  const tracks: StudioTrack[] = [];
   for (const item of built.tracks) {
     const projectedSpans = spans(item.value, input.frameRate);
     const binding = registry.bindTrack(item);
@@ -209,7 +203,7 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
         candidate.id === item.trace.authoredId
         && sameModule(candidate.module, item.trace.module!)
         && candidate.surface === item.trace.surface);
-    const generic = (): readonly StudioEntityDraft[] => projectedSpans.map((span) => {
+    const generic = (): readonly StudioItemDraft[] => projectedSpans.map((span) => {
       const identity = span.subjectId ?? span.id;
       const where = located.find((candidate) => candidate.id === identity);
       return {
@@ -223,32 +217,38 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
         stackOrder: span.stackOrder,
       };
     });
-    const drafts = registry.projectTrack({
+    const companionContext = {
       track: item,
       ...(placement === undefined ? {} : { placement }),
       ...(item.surfacePreview === undefined ? {} : { surfacePreview: item.surfacePreview }),
       spans: projectedSpans,
       values: built.values,
       temporalBindings: built.temporalBindings.get(item.outputRef) ?? [],
-      semantic,
+      temporalDomains: domains,
       generic,
-    }).map((draft) => {
+    };
+    const drafts = registry.projectTrack(companionContext).map((draft) => {
       const declarations = composeParameterDeclarations({
         placement, draft, placements: built.source.observations.placements, registry,
-        bindings: registry.bindingDeclarations(item, placement, draft.lane, draft.band),
-        inspector: registry.inspectorDeclarations(item, placement, draft.lane, draft.band),
+        bindings: registry.bindingDeclarations(item, draft.lane),
+        inspector: registry.inspectorDeclarations(item, draft.lane),
       });
-      const bindings = sourceBindingsForDraft({
+      const ordinaryBindings = sourceBindingsForDraft({
         root: input.workspaceRoot,
         files: input.sourceFiles,
         placement,
         draft,
-        declarations: [
-          ...declarations.bindings,
-          ...temporalBindingDeclarations(draft.temporal),
-        ],
+        declarations: declarations.bindings,
         placements: built.source.observations.placements,
       });
+      const temporalBindings = draft.temporal === undefined ? [] : temporalAuthorBindings({
+        state: built.state,
+        rootRecord: draft.temporal.record,
+        workspaceRoot: input.workspaceRoot,
+        placements: built.source.observations.placements,
+        files: input.sourceFiles,
+      });
+      const bindings = [...ordinaryBindings, ...temporalBindings];
       const inspector = inspectorFieldsForBindings(
         draft,
         bindings,
@@ -257,7 +257,7 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
       const editHandles = resolveTimelineEditHandles(
         bindings,
         draft.temporal,
-        semantic,
+        domains,
       );
       return {
         draft,
@@ -265,9 +265,34 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
         editHandles,
       };
     });
-    const clips: Clip[] = drafts
+    const inspectorObjects = registry.projectInspectorObjects(companionContext).map(({ label, draft, bindings: declaredBindings, inspector: declaredInspector }) => {
+      const declarations = composeParameterDeclarations({
+        placement,
+        draft,
+        placements: built.source.observations.placements,
+        registry,
+        bindings: declaredBindings,
+        inspector: declaredInspector,
+      });
+      const bindings = sourceBindingsForDraft({
+        root: input.workspaceRoot,
+        files: input.sourceFiles,
+        placement,
+        draft,
+        declarations: declarations.bindings,
+        placements: built.source.observations.placements,
+      });
+      return {
+        id: draft.id.startsWith(`${item.outputRef}:`) ? draft.id : `${item.outputRef}:inspector:${draft.id}`,
+        group: label,
+        title: draft.title,
+        ...(draft.elementRange === undefined ? {} : { elementRange: draft.elementRange }),
+        inspector: inspectorFieldsForBindings(draft, bindings, declarations.inspector),
+      };
+    });
+    const items: StudioItem[] = drafts
       .filter(({ draft }) => draft.lane === undefined)
-      .map(({ draft, inspector, editHandles }) => sealStudioClip(item.outputRef, draft, binding, editHandles, inspector));
+      .map(({ draft, inspector, editHandles }) => sealStudioItem(item.outputRef, draft, binding, editHandles, inspector));
     const provenance: CandidateProvenance = {
       output: item.name,
       outputRef: item.outputRef,
@@ -280,7 +305,8 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
       id: item.outputRef,
       label: item.name,
       row: 0,
-      clips,
+      items,
+      inspectorObjects,
       binding,
       provenance,
     });
@@ -291,8 +317,9 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
         id: `${item.outputRef}::studio::${attachment.attachmentId}`,
         label: attachment.label ?? attachment.attachmentId ?? item.name,
         row: 0,
-        clips: attachedDrafts.map(({ draft, inspector, editHandles }) =>
-          sealStudioClip(item.outputRef, draft, attachment, editHandles, inspector)),
+        items: attachedDrafts.map(({ draft, inspector, editHandles }) =>
+          sealStudioItem(item.outputRef, draft, attachment, editHandles, inspector)),
+        inspectorObjects: [],
         binding: attachment,
         provenance,
       });
@@ -300,11 +327,11 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
   }
   // Root lanes retain Film's authored organizational order. A Present's z is
   // local compositing data and cannot define the order of a Track containing
-  // independently stacked items. Studio-only detail lanes stay beside the
-  // root that produced them in this list.
+  // independently stacked items. Companion-declared Attachment Tracks stay
+  // beside the root Track that produced them in this list.
   const rows = tracks.map((track, row) => ({ ...track, row }));
 
-  const frameCount = programSpaceFrameCount(built.space);
+  const frameCount = timelineFrameCount(built.timeline);
   return {
     revision: input.revision,
     source: {
@@ -319,17 +346,18 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
       })),
     },
     run: input.run,
-    ...(script === undefined ? {} : { script }),
-    space: {
-      canvasWidth: input.canvas.width,
-      canvasHeight: input.canvas.height,
+    canvas: {
+      width: input.canvas.width,
+      height: input.canvas.height,
       clearColor: input.canvas.clearColor,
+    },
+    timeline: {
       frameRate: input.frameRate,
       frameCount,
       durationSec: frameCount * input.frameRate.denominator / input.frameRate.numerator,
     },
     tracks: rows,
-    ...(semantic === undefined ? {} : { semantic }),
+    temporalDomains: domains,
     preview: input.preview,
     provenance: {
       picture: "resolved",
@@ -338,6 +366,6 @@ export function snapshot(registry: StudioCompanionRegistry, built: Preview, inpu
   };
 }
 
-function note(_built: Preview): string {
+function note(_built: StudioProjection): string {
   return "Composition and timing are resolved from the selected Run Source.";
 }

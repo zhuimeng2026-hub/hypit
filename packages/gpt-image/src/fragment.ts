@@ -1,11 +1,11 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGraphFragment } from "@hypit/elaborator";
-import { generationProducers } from "@hypit/generation";
-import { imageTransformProducers, imageTransformTypes } from "@hypit/image-transform";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { ExactModelMediaInput, ExactModelTextInput } from "@hypit/model-kit";
-import type { FragmentOperation } from "@hypit/elaborator";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { generationProducers } from "@hypit/hypit/generation";
+import { imageTransformProducers, imageTransformTypes } from "@hypit/image-operations";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
+import type { ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
+import type { FragmentOperation } from "@hypit/hypit/author";
+import { textTypes } from "@hypit/hypit/text";
 
 import { gptImageEndpoints } from "./index.js";
 
@@ -49,7 +49,7 @@ export function createGptImageCleanFragment(
     if (binding === undefined) throw new Error(`gpt-image-2 has no media port ${item.port}`);
     const inputNames = exactModelMediaInputNames(item.name);
     inputs.push({ name: inputNames.binding, type: binding.type });
-    inputs.push({ name: inputNames.artifact, type: artifactTypes.blob });
+    inputs.push({ name: inputNames.artifact, type: blobTypes.blob });
     const id = `bind:${String(index + 1).padStart(4, "0")}:${item.port}`;
     operations.push({
       id,
@@ -94,7 +94,7 @@ export function createGptImageCleanFragment(
     operations,
     exports: [{
       name: "image",
-      type: artifactTypes.blob,
+      type: blobTypes.blob,
       root: operation("clean-image"),
     }],
   });

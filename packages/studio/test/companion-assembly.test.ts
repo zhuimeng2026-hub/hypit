@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { compositionTypes } from "@hypit/composition";
-import { createStudioTrackCompanionHostFacet } from "@hypit/studio-adapter";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 
 import { loadStudioCompanionRegistry } from "../src/companion-assembly.js";
 
@@ -10,12 +10,11 @@ test("a Source-selected package contributes its Companion without a second Studi
   const module = { name: "@project/cards", version: "1" } as const;
   const registry = await loadStudioCompanionRegistry({
     distributionPackageRoot: process.cwd(),
-    distributionPackages: [],
     sourcePackages: [{
       specifier: "@project/cards",
       contribution: {
-        format: "hypit.node-package@1",
-        hostFacets: [createStudioTrackCompanionHostFacet([{
+        format: "hypit.package@1",
+        facets: [createStudioTrackCompanionFacet([{
           id: "cards",
           role: "track",
           family: "cards",

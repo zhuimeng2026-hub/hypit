@@ -5,8 +5,8 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { modulePackageAbi } from "@hypit/protocol";
-import { createAuthorFrontendHostFacet } from "@hypit/elaborator";
-import { createRunFrontendHostFacet, runFragmentHostAbi } from "@hypit/run";
+import { createAuthorFrontendFacet } from "@hypit/author";
+import { createRunFrontendFacet, runFragmentFacetAbi } from "@hypit/run";
 import { sourceFrontendPackageAbi } from "@hypit/source";
 
 import { discoverSourcePackages } from "../src/source-discovery.js";
@@ -20,7 +20,7 @@ test("third-party Frontends discover same-named ABI requirements through physica
     const packages = [
       {
         specifier: "@physical/run-suite",
-        contribution: { format: "hypit.node-package@1" as const, hostFacets: [createRunFrontendHostFacet({
+        contribution: { format: "hypit.package@1" as const, facets: [createRunFrontendFacet({
           id: "@logical/run@1",
           discover: () => ({
             author: { source: "./main.story" },
@@ -31,7 +31,7 @@ test("third-party Frontends discover same-named ABI requirements through physica
       },
       {
         specifier: "@physical/story-suite",
-        contribution: { format: "hypit.node-package@1" as const, hostFacets: [createAuthorFrontendHostFacet({
+        contribution: { format: "hypit.package@1" as const, facets: [createAuthorFrontendFacet({
           id: "@logical/story@1",
           discover: () => ({
             modules: ["@logical/shared@1"],
@@ -42,7 +42,7 @@ test("third-party Frontends discover same-named ABI requirements through physica
       },
       {
         specifier: "@physical/module-suite",
-        contribution: { format: "hypit.node-package@1" as const, modules: [{
+        contribution: { format: "hypit.package@1" as const, modules: [{
           manifest: {
             format: "hypit.module@1" as const,
             name: "@logical/shared",
@@ -54,8 +54,8 @@ test("third-party Frontends discover same-named ABI requirements through physica
       },
       {
         specifier: "@physical/fragment-suite",
-        contribution: { format: "hypit.node-package@1" as const, hostFacets: [{
-          abi: runFragmentHostAbi,
+        contribution: { format: "hypit.package@1" as const, facets: [{
+          abi: runFragmentFacetAbi,
           offers: ["@logical/shared@1"],
           implementation: {},
         }] },
@@ -74,7 +74,7 @@ test("third-party Frontends discover same-named ABI requirements through physica
     ]);
     assert.deepEqual(discovered.logical, [
       { abi: modulePackageAbi, name: "@logical/shared@1" },
-      { abi: runFragmentHostAbi, name: "@logical/shared@1" },
+      { abi: runFragmentFacetAbi, name: "@logical/shared@1" },
       { abi: sourceFrontendPackageAbi, name: "@logical/run@1" },
       { abi: sourceFrontendPackageAbi, name: "@logical/story@1" },
       { abi: sourceFrontendPackageAbi, name: "@unknown/child@1" },

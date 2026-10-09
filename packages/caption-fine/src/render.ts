@@ -1,7 +1,8 @@
-import type { Timeline } from "@hypit/timeline";
-import { assertCaptionProgramForDocument } from "@hypit/caption";
-import type { CaptionProgram } from "@hypit/caption";
-import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/composition";
+import { assertTimelineIdentity, timelineFrameCount } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/hypit/timeline";
+import { assertCaptionProgramForDocument } from "@hypit/hypit/caption";
+import type { CaptionProgram } from "@hypit/hypit/caption";
+import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/hypit/composition";
 import type {
   VisualAnimation,
   VisualBoxElement,
@@ -13,16 +14,17 @@ import type {
   VisualTextElement,
   VisualTextPaintLayer,
   VisualTrack,
-} from "@hypit/composition";
-import type { CaptionAlignmentUnit, CaptionDocument, CaptionDisplayWord } from "@hypit/narrative";
-import { assertProgramSpaceIdentity, programSpaceFrameCount } from "@hypit/program-space";
-import { assertSpatialRegionTimeline } from "@hypit/spatial";
-import type { CanvasSpace, SpatialFrame, SpatialRegionTimeline } from "@hypit/spatial";
+} from "@hypit/hypit/composition";
+import type { CaptionDocument, CaptionDisplayWord, CaptionUnit } from "@hypit/hypit/caption";
+import { assertRegionEvidence } from "@hypit/hypit/region-evidence";
+import type { RegionEvidence } from "@hypit/hypit/region-evidence";
+import { assertSpatialFrame } from "@hypit/hypit/spatial";
+import type { SpatialFrame } from "@hypit/hypit/spatial";
 
 import { assertFineCaptionParameters, FINE_CAPTION_FAMILY } from "./style.js";
 import { assertFineCaptionSchedule } from "./schedule.js";
 import { uniformGap, wordGaps } from "./spacing.js";
-import { browserProgram } from "@hypit/hyperframes";
+import { htmlVisual } from "@hypit/hypit/html-program";
 import { joinedBoxSetup } from "./joined-box.js";
 import type {
   FineCaptionActiveUnderline,
@@ -598,13 +600,12 @@ function anchorTransform(parameters: FineCaptionParameters): string | undefined 
 function trackedPlacementAnimation(
   parameters: FineCaptionParameters,
   frames: readonly (SpatialFrame | null)[],
-  canvas: CanvasSpace,
 ): VisualAnimation {
   if (frames.length === 0) throw new Error("Fine Caption tracked placement has no Frames");
   const anchor = anchorTransform(parameters);
   const transform = (frame: SpatialFrame | null): string => {
-    const xPx = frame === null ? parameters.placement.x * canvas.widthPx : frame.xPx + frame.widthPx / 2;
-    const yPx = frame === null ? parameters.placement.y * canvas.heightPx : frame.yPx;
+    const xPx = frame === null ? 0 : frame.xPx + frame.widthPx / 2;
+    const yPx = frame === null ? 0 : frame.yPx;
     return `translate(${compactNumber(xPx)}px,${compactNumber(yPx)}px)${anchor === undefined ? "" : ` ${anchor}`}`;
   };
   const keyframes: VisualKeyframe[] = frames.map((frame, atFrame) => ({
@@ -624,7 +625,7 @@ function trackedPlacementAnimation(
   return { keyframes };
 }
 
-function structuralRowStarts(atoms: readonly CaptionAlignmentUnit[], maxWordsPerLine?: number): ReadonlySet<number> {
+function structuralRowStarts(atoms: readonly CaptionUnit[], maxWordsPerLine?: number): ReadonlySet<number> {
   const starts = new Set<number>();
   let wordsOnRow = 0;
   for (const [index, atom] of atoms.entries()) {
@@ -643,7 +644,7 @@ function structuralRowStarts(atoms: readonly CaptionAlignmentUnit[], maxWordsPer
  * owner: as soon as the next authored unit starts, the previous one stops.
  */
 function exclusiveActivationFrames(
-  atoms: readonly CaptionAlignmentUnit[],
+  atoms: readonly CaptionUnit[],
   atomFrames: ReadonlyMap<string, { readonly start: number; readonly end: number }>,
 ): ReadonlyMap<string, { readonly start: number; readonly end: number }> {
   return new Map(atoms.map((atom, index) => {
@@ -662,15 +663,15 @@ function exclusiveActivationFrames(
 }
 
 function cueElements(
-  atoms: readonly CaptionAlignmentUnit[],
+  atoms: readonly CaptionUnit[],
   atomFrames: ReadonlyMap<string, { readonly start: number; readonly end: number }>,
   parameters: FineCaptionParameters,
   wordText: ReadonlyMap<string, CaptionDisplayWord>,
   durationFrames: number,
   styleId: string,
+  within: SpatialFrame,
   trackedPlacement?: {
     readonly frames: readonly (SpatialFrame | null)[];
-    readonly canvas: CanvasSpace;
   },
 ): VisualElement[] {
   type UnorderedVisualElement = Omit<VisualBoxElement, "order"> | Omit<VisualTextElement, "order"> | Omit<VisualProgramElement, "order">;
@@ -682,7 +683,7 @@ function cueElements(
   };
   const placementAnimation = trackedPlacement === undefined
     ? undefined
-    : trackedPlacementAnimation(parameters, trackedPlacement.frames, trackedPlacement.canvas);
+    : trackedPlacementAnimation(parameters, trackedPlacement.frames);
   const transform = placementAnimation === undefined
     ? anchorTransform(parameters)
     : (() => {
@@ -730,14 +731,18 @@ function cueElements(
       { name: "display", value: "flex" },
       { name: "justify-content", value: parameters.layout.textAlign === "left" ? "flex-start"
         : parameters.layout.textAlign === "right" ? "flex-end" : "center" },
-      { name: "left", value: placementAnimation === undefined ? `${compactNumber(parameters.placement.x * 100)}%` : "0px" },
+      { name: "left", value: placementAnimation === undefined
+        ? `${compactNumber(within.xPx + parameters.placement.x * within.widthPx)}px`
+        : "0px" },
       { name: "position", value: "absolute" },
-      { name: "top", value: placementAnimation === undefined ? `${compactNumber(parameters.placement.y * 100)}%` : "0px" },
+      { name: "top", value: placementAnimation === undefined
+        ? `${compactNumber(within.yPx + parameters.placement.y * within.heightPx)}px`
+        : "0px" },
       ...(parameters.placement.height === undefined ? [] : [
-        { name: "height", value: `${compactNumber(parameters.placement.height * 100)}%` },
+        { name: "height", value: `${compactNumber(parameters.placement.height * within.heightPx)}px` },
       ] as const),
       ...(transform === undefined ? [] : [{ name: "transform", value: transform }] as const),
-      { name: "width", value: `${compactNumber(parameters.placement.width * 100)}%` },
+      { name: "width", value: `${compactNumber(parameters.placement.width * within.widthPx)}px` },
     ],
     ...(placementAnimation === undefined ? {} : { animation: placementAnimation }),
   });
@@ -801,7 +806,7 @@ function cueElements(
   });
 
   if (parameters.activeBox.mode === "trail" && parameters.activeBox.continuity === "joined") {
-    // Fine owns this drawing program. The renderer only executes its existing browser-program
+    // Fine owns this drawing program. The renderer only executes its existing HtmlVisual
     // format; it learns nothing about captions, activation units or their layout rules.
     push({
       id: "joined-boxes", parent: "cue", kind: "program",
@@ -809,7 +814,7 @@ function cueElements(
         { name: "position", value: "absolute" }, { name: "inset", value: "0" },
         { name: "padding", value: `${compactNumber(parameters.cueBox.paddingYPx)}px ${compactNumber(parameters.cueBox.paddingXPx)}px` },
       ],
-      program: browserProgram({
+      program: htmlVisual({
         html: "{{joined-layout}}" + atoms.map((_, index) => `{{joined-box-${index + 1}}}`).join(""),
         setup: joinedBoxSetup,
         css: ":scope { pointer-events: none; }",
@@ -1077,19 +1082,22 @@ export function renderFineCaption(
   program: CaptionProgram,
   document: CaptionDocument,
   timeline: Timeline,
-  regions?: SpatialRegionTimeline,
+  within: SpatialFrame,
+  regions?: RegionEvidence,
 ): VisualTrack {
   assertFineCaptionSchedule(schedule);
   assertCaptionProgramForDocument(program, document);
   if (schedule.documentId !== document.id) throw new Error("Fine Caption received another CaptionDocument");
 
-  assertProgramSpaceIdentity(timeline);
-  if (schedule.spaceId !== timeline.id || schedule.narrativeId !== document.narrativeId) {
-    throw new Error("Fine Caption inputs belong to different Timelines or Narratives");
+  assertTimelineIdentity(timeline);
+  assertSpatialFrame(within);
+  if (schedule.timelineId !== timeline.id) {
+    throw new Error("Fine Caption inputs belong to different Timelines");
   }
   const styles = new Map(program.styles.map((style) => [style.id, style]));
   const wordText = new Map(document.words.map((word) => [word.id, word]));
   const atomById = new Map(document.units.map((atom) => [atom.id, atom]));
+  const cueById = new Map(document.cues.map((cue) => [cue.id, cue]));
   for (const style of styles.values()) {
     if (style.rendering === null) continue;
     if (style.rendering.family !== FINE_CAPTION_FAMILY) {
@@ -1097,15 +1105,18 @@ export function renderFineCaption(
     }
     assertFineCaptionParameters(style.rendering.parameters as unknown as FineCaptionParameters);
   }
-  const totalFrames = programSpaceFrameCount(timeline);
-  const regionTracks = regions === undefined ? undefined : (() => {
-    assertSpatialRegionTimeline(regions);
-    if (regions.frameCount !== totalFrames) {
-      throw new Error(`Fine Caption regions cover ${regions.frameCount} Frames but Timeline has ${totalFrames}`);
+  const totalFrames = timelineFrameCount(timeline);
+  const regionSeriesById = regions === undefined ? undefined : (() => {
+    assertRegionEvidence(regions);
+    const regionFrameCount = regions.series[0]!.frames.length;
+    if (regions.timelineId !== timeline.id || regionFrameCount !== totalFrames) {
+      throw new Error(`Fine Caption regions do not cover Timeline ${timeline.id}'s ${totalFrames} Frames`);
     }
-    return new Map(regions.tracks.map((track) => [track.id, track]));
+    return new Map(regions.series.map((series) => [series.id, series]));
   })();
-  const presents = schedule.cues.flatMap((cue) => {
+  const presents = schedule.cues.flatMap((cue, order) => {
+    const authoredCue = cueById.get(cue.cueId);
+    if (authoredCue === undefined) throw new Error(`Fine Caption Schedule references unknown authored Cue ${cue.cueId}`);
     const atoms = cue.units.map((timing) => atomById.get(timing.unitId));
     if (atoms.some((atom) => atom === undefined)) throw new Error(`Fine Caption Cue ${cue.id} references unknown Atom`);
     const resolvedAtoms = atoms.map((atom) => atom!);
@@ -1118,16 +1129,13 @@ export function renderFineCaption(
     const endFrameExclusive = Math.min(totalFrames, Math.max(startFrame + 1, measuredEnd));
     if (startFrame >= totalFrames || endFrameExclusive <= startFrame) return [];
     const durationFrames = endFrameExclusive - startFrame;
-    const trackedPlacement = regionTracks === undefined ? undefined : (() => {
-      const role = resolvedAtoms[0]?.role;
-      if (role === undefined || resolvedAtoms.some((atom) => atom.role !== role)) {
-        throw new Error(`Fine Caption Cue ${cue.id} must contain exactly one Script Role to follow regions`);
-      }
-      const track = regionTracks.get(role);
-      if (track === undefined) return undefined;
+    const trackedPlacement = regionSeriesById === undefined ? undefined : (() => {
+      const role = authoredCue.role;
+      if (role === undefined) throw new Error(`Fine Caption Cue ${cue.id} must have one Script Role to follow regions`);
+      const series = regionSeriesById.get(role);
+      if (series === undefined) return undefined;
       return {
-        frames: track.frames.slice(startFrame, endFrameExclusive),
-        canvas: regions!.canvas,
+        frames: series.frames.slice(startFrame, endFrameExclusive),
       };
     })();
     const atomFrames = new Map(cue.units.map((atom) => [atom.unitId, {
@@ -1136,14 +1144,15 @@ export function renderFineCaption(
     }]));
     return [{
       id: cue.id,
+      order,
+      z: parameters.stackingOrder,
       span: { startFrame, endFrameExclusive },
       visibility: cue.visibility,
-      stacking: { order: parameters.stackingOrder, tieBreak: `${program.id}:${cue.id}` },
-      elements: cueElements(resolvedAtoms, atomFrames, parameters, wordText, durationFrames, cue.styleId, trackedPlacement),
+      elements: cueElements(resolvedAtoms, atomFrames, parameters, wordText, durationFrames, cue.styleId, within, trackedPlacement),
     }];
   });
   const track = sealVisualTrack({
-    programSpaceId: timeline.id,
+    timelineId: timeline.id,
     visualIr: "hypit.visual-ir@1",
     id: program.id,
     presents,

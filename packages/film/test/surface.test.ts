@@ -1,8 +1,6 @@
-import { sealTimeline } from "@hypit/timeline";
+import { sealTimeline, timelineDependency, timelineTypes } from "@hypit/timeline";
 import { compositionComponent, spatialComponent, videoContractManifests } from "../../../test/support/video-domain.js";
-import { registerTypeValidatorFacets } from "@hypit/component-kit";
-import { programSpaceDependency, programSpaceTypes, sealProgramSpace } from "@hypit/program-space";
-import { timelineDependency, timelineProducers, timelineTypes } from "@hypit/timeline";
+import { registerTypeValidatorFacets } from "@hypit/admission";
 import { compositionDependency, compositionTypes, sealAudioTrack, sealVisualTrack } from "@hypit/composition";
 import type { Track } from "@hypit/composition";
 import assert from "node:assert/strict";
@@ -10,13 +8,14 @@ import test from "node:test";
 import { fixtureResource } from "../../../test/fixture-resource.js";
 import { timelineFixture } from "../../../test/timeline-fixture.js";
 
-import { createResolvedClosure, sealBuildRequest, start } from "@hypit/core";
+import { createResolvedClosure, sealBuildRequest, start } from "@hypit/kernel";
 import {
   AuthorFrontendRegistry,
-  compileSourceClosure,
   resolveCompiledSourceExport,
-} from "@hypit/elaborator";
-import type { AuthorSourceUnit } from "@hypit/elaborator";
+} from "@hypit/author";
+import { compileSourceClosure } from "@hypit/compiler";
+import type { ResolvedSource } from "@hypit/source";
+import { resolveSelfDescribedTextSource } from "@hypit/source/text";
 import {
   decodeFilmSurface,
   filmManifest,
@@ -26,7 +25,7 @@ import {
   filmTypes,
 } from "@hypit/film";
 import type { ModuleManifest } from "@hypit/protocol";
-import { svsFrontend, svsRecipeType } from "@hypit/svs";
+import { recipeFrontend, recipeType } from "@hypit/recipe";
 import {
   decodeCanvasSurface,
   spatialManifest,
@@ -39,13 +38,13 @@ import {
   createMarkupAuthorFrontend,
 } from "@hypit/markup";
 import type { StructuredElement, SurfaceResolvedReference } from "@hypit/markup";
-import { createRecordAdmitter, TypeValidatorRegistry } from "@hypit/validation";
+import { createRecordAdmitter, TypeValidatorRegistry } from "@hypit/admission";
 
 const fixtureModule = { name: "example.film-fixture", version: "1" } as const;
 const fixtureSurfaceDigest = fixtureResource("example.film-fixture/inputs-surface@1");
 const fixtureSurface = {
   name: "inputs", tag: "Inputs", mode: "structured",
-  outputs: [timelineTypes.track, compositionTypes.visualTrack, compositionTypes.audioTrack],
+  outputs: [timelineTypes.timeline, compositionTypes.visualTrack, compositionTypes.audioTrack],
 } as const;
 const fixtureManifest: ModuleManifest = {
   format: "hypit.module@1",
@@ -60,16 +59,15 @@ const fixtureManifest: ModuleManifest = {
   producers: [],
 };
 
-const space = sealTimeline({ items: [], id: "test-space", durationSec: 2,
-  frameRate: { numerator: 30, denominator: 1 },
+const space = sealTimeline({ id: "test-space", frameCount: 60, frameRate: { numerator: 30, denominator: 1 },
 });
 const semantic = timelineFixture(space);
-const visual = sealVisualTrack({ programSpaceId: "test-space",
+const visual = sealVisualTrack({ timelineId: "test-space",
   visualIr: "hypit.visual-ir@1",
   id: "visual",
   presents: [],
 });
-const audio = sealAudioTrack({ programSpaceId: "test-space",
+const audio = sealAudioTrack({ timelineId: "test-space",
   id: "audio",
   clips: [],
 });
@@ -80,13 +78,13 @@ const closure = createResolvedClosure([
   filmManifest,
 ]);
 
-function source(id: string, text: string): AuthorSourceUnit {
-  const frontend = id.endsWith(".svs") ? "@hypit/svs@1" : "@hypit/markup@1";
-  return {
+function source(id: string, text: string): ResolvedSource {
+  const frontend = id.endsWith(".svs") ? "@hypit/recipe@1" : "@hypit/markup@1";
+  return resolveSelfDescribedTextSource({
     id,
     name: id.split("/").at(-1) ?? id,
     text: `<?svml using="${frontend}"?>\n${text}`,
-  };
+  });
 }
 
 function validatorRegistry(): TypeValidatorRegistry {
@@ -106,7 +104,7 @@ async function compileFilm(options: { readonly styles?: string; readonly tracks?
   const surfaces = new MarkupSurfaceRegistry();
   surfaces.registerStructured({ module: fixtureModule, declaration: fixtureSurface, handler: ({ element }) => ({
     records: [
-      { id: "semantic", type: timelineTypes.track, value: { kind: "inline", value: semantic }, range: element.range },
+      { id: "semantic", type: timelineTypes.timeline, value: { kind: "inline", value: semantic }, range: element.range },
       { id: "visual", type: compositionTypes.visualTrack, value: { kind: "inline", value: visual }, range: element.range },
       { id: "audio", type: compositionTypes.audioTrack, value: { kind: "inline", value: audio }, range: element.range },
     ],
@@ -132,7 +130,7 @@ async function compileFilm(options: { readonly styles?: string; readonly tracks?
       return fixtureModule;
     },
   }));
-  frontends.register(svsFrontend);
+  frontends.register(recipeFrontend);
 
   return await compileSourceClosure({
     entry: source("/project/main.svml", `<svml>
@@ -142,7 +140,7 @@ async function compileFilm(options: { readonly styles?: string; readonly tracks?
       <import as="recipes" source="./recipes.svs"/>
       <fixture:Inputs/>
       <space:Canvas id="vertical" width="1080" height="1920"/>
-      <film:Film id="main" canvas={vertical} timeline={semantic} appearance={recipes.film.vertical}>
+      <film:Film id="main" canvas={vertical.canvas} timeline={semantic} appearance={recipes.film.vertical}>
         ${options.tracks ?? '<film:Track source={visual}/><film:Track source={audio}/>'}
       </film:Film>
     </svml>`),
@@ -195,11 +193,11 @@ test("Film rejects a repeated Track reference during check, before executing its
 test("Film distinguishes component output ports and resolves duplicate aliases", async () => {
   const range = { source: "main.svml", start: 0, end: 1 };
   const refs = new Map<string, SurfaceResolvedReference>();
-  for (const [path, type] of [["canvas", spatialTypes.canvas], ["timeline", timelineTypes.track]] as const) {
+  for (const [path, type] of [["canvas", spatialTypes.canvas], ["timeline", timelineTypes.timeline]] as const) {
     refs.set(path, { path, type, ref: { kind: "record", id: path } });
   }
-  refs.set("appearance", { path: "appearance", type: svsRecipeType,
-    ref: { kind: "record", id: "appearance" }, record: { id: "appearance", type: svsRecipeType,
+  refs.set("appearance", { path: "appearance", type: recipeType,
+    ref: { kind: "record", id: "appearance" }, record: { id: "appearance", type: recipeType,
       value: { kind: "inline", value: { path: "film", properties: { background: "#000000" } } } } });
   for (const [path, component, output, type] of [
     ["board.visual", "board", "visual", compositionTypes.visualTrack],

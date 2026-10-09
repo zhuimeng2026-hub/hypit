@@ -1,17 +1,22 @@
 {
   "name": "@hypit/credential-store-env",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": ["dist", "README.md"],
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@hypit/runtime-local": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/hypit": "workspace:*",
     "@hypit/runtime": "workspace:*",
-    "@hypit/runtime-kit": "workspace:*"
+    "@hypit/runtime-local": "workspace:*"
   }
 }

@@ -1,10 +1,9 @@
-import { captionFineStudioTrackCompanions } from "@hypit/caption-fine-studio";
-import { createStudioTrackCompanionHostFacet } from "@hypit/hypit/studio-adapter";
-import {
-  createMarkupSurfaceHostFacet,
-  sealGraphFragment,
-  canonicalize,
-} from "@hypit/hypit/author-kit";
+import { captionFineStudioTrackCompanions } from "@hypit/caption-fine/studio";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { canonicalize } from "@hypit/hypit/protocol";
 import {
   captionFineManifest,
   captionFineModuleRef,
@@ -96,11 +95,7 @@ const handler = (ctx) => {
     })),
   };
 };
-export const hypitPackage = {
-  format: "hypit.node-package@1",
-  modules: [{ manifest }],
-  components: [
-    {
+const producers = {
       producers: [
         {
           producer,
@@ -121,18 +116,21 @@ export const hypitPackage = {
           }),
         },
       ],
-    },
-  ],
-  hostFacets: [
-    createStudioTrackCompanionHostFacet(
+};
+export const hypitPackage = {
+  format: "hypit.package@1",
+  modules: [{ manifest }],
+  facets: [
+    createProducerPackageFacet(producers),
+    createStudioTrackCompanionFacet(
       captionFineStudioTrackCompanions.map((companion) => ({
         ...companion,
         output: { ...companion.output, modules: [module] },
       })),
     ),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module,
-      declaration: captionFineMarkupSurfaces.find((s) => s.name === "track"),
+      declaration: captionFineMarkupSurfaces.find((s) => s.name === "caption"),
       handler,
     }),
   ],

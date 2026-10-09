@@ -5,32 +5,29 @@
 
 import type {
   Range,
-  StudioEntityDisplay,
+  StudioItemDisplay,
   StudioIcon,
   StudioEditHandle,
   StudioLaneDescription,
-  StudioTrackBand,
   StudioMaterialPreview,
   StudioInspectorField,
   StudioInspectorDomain,
-  StudioSemanticAnchor,
-  StudioSemanticSegment,
-  StudioSemanticTimeline,
-  StudioSemanticToken,
+  StudioTemporalDomainAnchor,
+  StudioTemporalDomainItem,
+  StudioTemporalDomainView,
   StudioTemporalLineage,
-  StudioTemporalPhase,
   StudioTemporalProjection,
   StudioTemporalSource,
   StudioTimelineGesture,
   StudioTimelinePresentation,
   StudioTimelineTone,
   StudioTrackFamily,
-} from "@hypit/studio-adapter";
-import type { CanonicalValue } from "@hypit/protocol";
+} from "@hypit/studio-companion";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
 
 export type {
   Range,
-  StudioEntityDisplay,
+  StudioItemDisplay,
   StudioIcon,
   StudioEditHandle,
   StudioLaneDescription,
@@ -38,13 +35,12 @@ export type {
   StudioInspectorField,
   StudioInspectorDomain,
   StudioTemporalLineage,
-  StudioTemporalPhase,
   StudioTemporalProjection,
   StudioTemporalSource,
   StudioTimelinePresentation,
   StudioTimelineTone,
   StudioTrackFamily,
-} from "@hypit/studio-adapter";
+} from "@hypit/studio-companion";
 
 export type CandidateOrigin = "run" | "source" | "none";
 export type CandidateStatus = "resolved" | "unresolved";
@@ -64,7 +60,6 @@ export type StudioTrackBinding = {
   readonly companion: string;
   /** Studio-local partition key for an attached projection. */
   readonly attachmentId?: string;
-  readonly bands?: readonly Omit<StudioTrackBand, "bindings" | "inspector">[];
   readonly lane: StudioLaneDescription;
   readonly authoredTag?: string;
   readonly references: readonly { readonly name: string; readonly type: string }[];
@@ -90,18 +85,17 @@ export type CandidateProvenance = {
  * measured from the rendered picture rather than restated here, because motion
  * moves it and only the picture knows where it ended up.
  */
-export type Clip = {
-  /** Studio identity. Output-qualified so sibling Track clips cannot collide. */
+export type StudioItem = {
+  /** Studio identity. Output-qualified so sibling Track Items cannot collide. */
   readonly id: string;
-  /** Renderer identity, present only when this clip paints a Visual Present. */
+  /** Renderer identity, present only when this Item paints a Visual Present. */
   readonly presentId?: string;
   /** The authored id this Present is named after, when it names one. */
   readonly authoredId: string;
   readonly selectionGroup?: string;
-  readonly band?: string;
   /** The Script marker that placed it, when something said put it there. */
   readonly markerId?: string;
-  readonly display: StudioEntityDisplay;
+  readonly display: StudioItemDisplay;
   readonly startFrame: number;
   readonly endFrameExclusive: number;
   /** Where that authored tag was written. */
@@ -109,75 +103,39 @@ export type Clip = {
   readonly stackOrder: number;
   readonly presentation: StudioTimelinePresentation;
   readonly temporal?: StudioTemporalLineage;
-  /** Rendering identities implementing this author entity; optional for non-visual entities. */
+  /** Rendering identities implementing this author Item; optional for non-visual Items. */
   readonly renderIds: readonly string[];
   /** Companion-selected writable fields; hidden source bindings never cross into this surface. */
   readonly inspector: readonly StudioInspectorField[];
   readonly editHandles: readonly StudioEditHandle[];
 };
 
-export type Track = {
+export type StudioInspectorObject = {
+  readonly id: string;
+  /** Package-owned grouping label, such as Presentation Rules. */
+  readonly group: string;
+  readonly title: string;
+  readonly elementRange?: Range;
+  readonly inspector: readonly StudioInspectorField[];
+};
+
+export type StudioTrack = {
   /** Exact LogicalOutput ref; labels are not identities. */
   readonly id: string;
   readonly label: string;
   /** Render order in the timeline; 0 is the top row. */
   readonly row: number;
-  readonly clips: readonly Clip[];
+  readonly items: readonly StudioItem[];
+  /** Track-owned author objects that are rules or parameters, not timeline occurrences. */
+  readonly inspectorObjects: readonly StudioInspectorObject[];
   readonly binding: StudioTrackBinding;
   /** Which resolved Run candidate produced this Track, or why it did not. */
   readonly provenance: CandidateProvenance;
 };
 
-export type ScriptMap = {
-  readonly companion: string;
-  readonly narrativeId: string;
-  readonly sourcePath: string;
-  readonly range: Range;
-  readonly content: Range;
-  readonly selections: readonly {
-    readonly id: string;
-    readonly startAnchorId: string;
-    readonly endAnchorId: string;
-    /** How many Selections enclose this one. Nesting is what depth means. */
-    readonly depth: number;
-    readonly open: Range;
-    readonly close: Range;
-  }[];
-  readonly segments: readonly {
-    readonly id: string;
-    /** Always 0: a Segment is the outermost range the Script declares. */
-    readonly depth: number;
-    readonly range: Range;
-  }[];
-  readonly moments: readonly {
-    readonly id: string;
-    readonly anchorId: string;
-    readonly range: Range;
-  }[];
-  /** Spoken words placed on the timeline by the selected semantic Candidate. */
-  readonly tokens: readonly {
-    readonly id: string;
-    readonly range: Range;
-    readonly startFrame: number;
-    readonly endFrame: number;
-  }[];
-};
-
-/** A semantic boundary that can be addressed by the timeline without guessing. */
-export type SemanticAnchorKind =
-  | "segment-start"
-  | "segment-end"
-  | "token-start"
-  | "token-end";
-
-export type SemanticAnchor = StudioSemanticAnchor;
-
-export type SemanticSegment = StudioSemanticSegment;
-
-export type SemanticToken = StudioSemanticToken;
-
-/** The semantic timebase projected from the compiled Narrative and its anchors. */
-export type SemanticTimeline = StudioSemanticTimeline;
+export type TemporalDomainAnchor = StudioTemporalDomainAnchor;
+export type TemporalDomainItem = StudioTemporalDomainItem;
+export type TemporalDomainView = StudioTemporalDomainView;
 
 export type StudioSourceView = {
   /** Workspace-relative path. It is also the exact source write target. */
@@ -267,23 +225,23 @@ export type StudioSnapshot = {
     readonly targets: readonly string[];
     readonly satisfactions: readonly { readonly output: string; readonly candidate: string }[];
   };
-  readonly script?: ScriptMap;
-  readonly space: {
-    readonly canvasWidth: number;
-    readonly canvasHeight: number;
+  /** The resolved picture plane. It is a preview snapshot, not another authored Canvas. */
+  readonly canvas: {
+    readonly width: number;
+    readonly height: number;
     readonly clearColor: string;
+  };
+  /** The resolved playback domain. It is derived from the authored Timeline. */
+  readonly timeline: {
     readonly frameRate: { readonly numerator: number; readonly denominator: number };
     readonly frameCount: number;
     readonly durationSec: number;
   };
-  readonly tracks: readonly Track[];
-  /**
-   * The special Studio lane. This is not another VisualTrack: it is the
-   * Narrative's segment/word geometry projected onto the same frame domain.
-   */
-  readonly semantic?: SemanticTimeline;
+  readonly tracks: readonly StudioTrack[];
+  /** Package-contributed temporal views projected onto the same absolute ruler. */
+  readonly temporalDomains: readonly TemporalDomainView[];
   /** The Tracks, compiled into the document the renderer photographs. */
-  readonly preview: { readonly kind: "hyperframes"; readonly srcdoc: string };
+  readonly preview: { readonly kind: "html-program"; readonly srcdoc: string };
   readonly provenance: {
     readonly picture: "resolved";
     /** What the badges above are standing for, in one sentence. */
@@ -296,29 +254,27 @@ export type StudioMutation =
   | {
       readonly type: "timeline.adjust";
       readonly revision: number;
-      readonly entityId: string;
+      readonly itemId: string;
       readonly gesture: StudioTimelineGesture;
       readonly target:
         | {
             readonly kind: "instant";
             readonly frame: number;
-            readonly semantic?:
-              | { readonly kind: "selection"; readonly startAnchorId: string; readonly endAnchorId: string }
-              | { readonly kind: "moment"; readonly anchorId: string };
+            readonly domain?: import("@hypit/studio-companion").StudioTemporalDomainEditTarget;
           }
         | {
             readonly kind: "window";
             readonly startFrame: number;
             readonly endFrameExclusive: number;
-            readonly semantic?:
-              | { readonly kind: "selection"; readonly startAnchorId: string; readonly endAnchorId: string }
-              | { readonly kind: "moment"; readonly anchorId: string };
+            readonly domain?: import("@hypit/studio-companion").StudioTemporalDomainEditTarget;
           };
     }
   | {
       readonly type: "parameter.adjust";
       readonly revision: number;
-      readonly entityId: string;
+      readonly owner:
+        | { readonly kind: "item"; readonly itemId: string }
+        | { readonly kind: "track-object"; readonly trackId: string; readonly objectId: string };
       readonly parameterId: string;
       readonly value: CanonicalValue;
     };

@@ -1,20 +1,15 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
-import type { GenerationMediaPort, GenerationMediaRole, GenerationPortValue } from "@hypit/generation";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationMediaPort, GenerationMediaRole, GenerationPortValue } from "@hypit/hypit/generation";
 import {
   createExactModelPrimaryGenerationFragment,
   exactModelMediaInputNames,
   exactModelTextInputName,
-} from "@hypit/model-kit";
-import type { ExactModelEndpoint } from "@hypit/model-kit";
-import type {
-  MarkupAttributeValue,
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceResolvedReference,
-} from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+} from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint } from "@hypit/hypit/generation/model";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 
 import { pixverseEndpointsByModel } from "./index.js";
 import type { PixverseModel } from "./index.js";
@@ -91,7 +86,7 @@ function media(
   role: GenerationMediaRole,
   resolve: (path: string) => SurfaceResolvedReference | undefined,
 ): SurfaceResolvedReference {
-  const artifact = ref(element, name, artifactTypes.blob, resolve);
+  const artifact = ref(element, name, blobTypes.blob, resolve);
   if (artifact.record !== undefined) {
     assert(artifact.record.value.kind === "blob" && artifact.record.value.mediaType.startsWith(`${role}/`),
       `${element.name}.${name} must reference ${role} media`);

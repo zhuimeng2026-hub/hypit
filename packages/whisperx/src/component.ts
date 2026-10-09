@@ -1,8 +1,9 @@
-import { plannedNeedInputs } from "@hypit/component-kit";
-import type { ComponentPackage } from "@hypit/component-kit";
-import type { SpeechEvidenceAudio } from "@hypit/speech";
-import type { CanonicalValue, StoredValue } from "@hypit/protocol";
-import { canonicalize } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import { plannedNeedInputs } from "@hypit/hypit/producer";
+import type { CanonicalValue, StoredValue } from "@hypit/hypit/protocol";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { SpeechEvidenceAudio } from "@hypit/hypit/speech-evidence";
 
 import { whisperXRequestForEvidenceAudio } from "./evidence.js";
 import { whisperXCapabilities, whisperXProducers } from "./manifest.js";
@@ -58,4 +59,4 @@ export const whisperXComponent = {
       };
     },
   }],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

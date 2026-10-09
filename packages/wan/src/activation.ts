@@ -1,11 +1,15 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
 import { wanComponent, wanDefinition, wanManifest, wanModuleRef, wanMarkupSurfaces } from "./index.js";
 import { decodeWanImageSurface, decodeWanProImageSurface } from "./surface.js";
-export const hypitPackage = { format: "hypit.node-package@1" as const, modules: [{ manifest: wanManifest }], components: [wanComponent], hostFacets: [
-  wanDefinition.hostFacet,
-  createMarkupSurfaceHostFacet({ module: wanModuleRef,
+export const hypitPackage = { format: "hypit.package@1" as const, modules: [{ manifest: wanManifest }], facets: [
+  createProducerPackageFacet(wanComponent),
+  createAdmissionPackageFacet(wanComponent),
+  wanDefinition.facet,
+  createMarkupSurfaceFacet({ module: wanModuleRef,
     declaration: wanMarkupSurfaces.find((item) => item.name === "image")!, handler: decodeWanImageSurface }),
-  createMarkupSurfaceHostFacet({ module: wanModuleRef,
+  createMarkupSurfaceFacet({ module: wanModuleRef,
     declaration: wanMarkupSurfaces.find((item) => item.name === "pro-image")!, handler: decodeWanProImageSurface }),
 ] };
 export default hypitPackage;

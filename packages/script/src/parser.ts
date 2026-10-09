@@ -505,7 +505,7 @@ export function parseScript(
       }
       const marker = parseMarker(raw, index);
       if (!marker) {
-        if (raw[index] === "@") fail("SCRIPT_MARKER", "Unescaped @ must begin a delimited @{...} marker; migrate bare markers from 0.1 explicitly.", absoluteStart + index);
+        if (raw[index] === "@") fail("SCRIPT_MARKER", "Unescaped @ must begin a delimited @{...} marker.", absoluteStart + index);
         index += 1;
         continue;
       }
@@ -614,7 +614,7 @@ export function parseScript(
       offset += marker.length;
       continue;
     }
-    if (source[offset] === "@") fail("SCRIPT_MARKER", "Unescaped @ must begin a delimited @{...} marker; migrate bare markers from 0.1 explicitly.", offset);
+    if (source[offset] === "@") fail("SCRIPT_MARKER", "Unescaped @ must begin a delimited @{...} marker.", offset);
 
     if (source[offset] === "<" && current) {
       const end = findUnescaped(source, ">", offset + 1);
@@ -760,11 +760,11 @@ export function parseScript(
 
   const segmentById = new Map(segments.map((segment) => [segment.id, segment]));
   /**
-   * Resolve one marker to the exact `2m + 2n + 2` anchor its affinity names. Token and
+   * Resolve one marker to the exact `2m + 2n` anchor its affinity names. Token and
    * Segment cuts are equal citizens: a marker with nothing to its left inside a
    * Segment snaps to that Segment's own start, never across into the previous
-   * Segment, whose end may sit at a different time. At the Script body's outer
-   * cuts, affinity distinguishes the Program boundary from its first/last Segment.
+   * Segment, whose end may sit at a different time. The Script body's outer cuts
+   * are the first Segment start and last Segment end; Script owns no Timeline bounds.
    */
   const anchorForBoundary = (boundary: RawMarkerBoundary, affinity: Affinity): string => {
     if (segments.length === 0) fail("SCRIPT_ANCHOR_UNRESOLVED", "Script declares no Segment to anchor markers to.");
@@ -782,10 +782,10 @@ export function parseScript(
     // Outside or between Segments: structuralPosition counts the Segments already closed.
     if (affinity === "left") {
       const previous = segments[boundary.structuralPosition - 1];
-      return previous ? previous.endAnchorId : "program:start";
+      return previous ? previous.endAnchorId : segments[0]!.startAnchorId;
     }
     const next = segments[boundary.structuralPosition];
-    return next ? next.startAnchorId : "program:end";
+    return next ? next.startAnchorId : segments.at(-1)!.endAnchorId;
   };
   const anchored = <T extends { readonly affinity: Affinity; readonly boundary: RawMarkerBoundary }>(
     edge: T,
@@ -795,7 +795,6 @@ export function parseScript(
   });
 
   const anchors: SemanticAnchor[] = [
-    { id: "program:start", kind: "program-start" },
     ...segments.flatMap((segment) => [
       { id: segment.startAnchorId, kind: "segment-start" as const, segmentId: segment.id },
       ...tokens.slice(segment.tokenStart, segment.tokenEndExclusive).flatMap((token) => [
@@ -804,22 +803,19 @@ export function parseScript(
           kind: "token-start" as const,
           segmentId: segment.id,
           tokenId: token.id,
-          segmentTokenIndex: token.segmentTokenIndex,
         },
         {
           id: token.endAnchorId,
           kind: "token-end" as const,
           segmentId: segment.id,
           tokenId: token.id,
-          segmentTokenIndex: token.segmentTokenIndex,
         },
       ]),
       { id: segment.endAnchorId, kind: "segment-end" as const, segmentId: segment.id },
     ]),
-    { id: "program:end", kind: "program-end" },
   ];
-  if (anchors.length !== 2 * tokens.length + 2 * segments.length + 2) {
-    fail("SCRIPT_ANCHOR_CARDINALITY", "Semantic anchor cardinality is not 2M + 2N + 2.");
+  if (anchors.length !== 2 * tokens.length + 2 * segments.length) {
+    fail("SCRIPT_ANCHOR_CARDINALITY", "Semantic anchor cardinality is not 2M + 2N.");
   }
   return {
 
@@ -847,10 +843,7 @@ export function parseScript(
       regions: captionRegions,
       breaks: captionBreaks,
     },
-    semanticIndex: {
-
-      anchors,
-    },
+    anchors,
     serializations: {
       dialogue: dialogueTurns.join("\n"),
       speech: speechSegments.join("\n"),

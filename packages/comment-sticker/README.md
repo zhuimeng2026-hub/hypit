@@ -1,8 +1,7 @@
 # `@hypit/comment-sticker`
 
-The Track Surface accepts `timeline={program.timeline}`. The same Timeline supports authored
-positions and, where prepared Takes supply evidence, Script Selections and Moments. Shared `at`
-inputs accept a Moment or a time such as `2s`; `at` with `for` produces a Window where required.
+The Track Surface accepts `timeline={program.timeline}`. Each Sticker consumes an already declared
+absolute Window; semantic or other domain coordinates are projected upstream.
 
 An author package for timed social-comment cards. It publishes an ordinary `VisualTrack` containing
 the cards' independently timed appearances.
@@ -11,7 +10,7 @@ The author surface keeps the three independent concerns visible:
 
 - `SpatialFrame` owns placement and size;
 - an SVS Recipe plus an exact `FontStackRef` owns appearance and local motion;
-- the shared Temporal projection owns when an item exists.
+- a named absolute Window owns when an item exists.
 
 ```xml
 <import as="copy" from="@hypit/text@1"/>
@@ -21,7 +20,7 @@ The author surface keeps the three independent concerns visible:
 
 <comment:Style id="social-comment" recipe={styles.comment} font={fonts.ui}/>
 
-<comment:Track id="comments" canvas={video.canvas} timeline={speech.timeline}>
+<comment:Track id="comments" timeline={speech.timeline}>
   <comment:Sticker
     id="opening-comment"
     comment={comment-copy}
@@ -29,7 +28,7 @@ The author surface keeps the three independent concerns visible:
     style={social-comment}
     author={comment-author}
     meta="Featured comment"
-    during="program"
+    during={speech.window}
   />
 </comment:Track>
 ```
@@ -39,3 +38,6 @@ ordinary graph `Text` references; `comment={...}` is exclusive with body text. T
 one package-owned content value through explicit Text edges before temporal placement. `avatar` is
 an independent Artifact edge. Metadata is never fabricated: if `meta` is absent, no metadata row
 is rendered. Sound effects remain a separate Audio Track.
+
+The same installed package contributes its Studio Companion. Runtime behavior and editor projection
+therefore share one owner and version; there is no separate Studio package to install.

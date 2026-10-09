@@ -11,14 +11,16 @@
     "activation": "./src/activation.ts"
   },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
+    "@hypit/producer": "workspace:*",
+    "@hypit/author": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/markup": "workspace:*",
-    "@hypit/svs": "workspace:*"
+    "@hypit/admission": "workspace:*"
   },
   "devDependencies": {
-    "@hypit/core": "workspace:*",
-    "@hypit/validation": "workspace:*"
+    "@hypit/compiler": "workspace:*",
+    "@hypit/source": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/admission": "workspace:*"
   }
 }

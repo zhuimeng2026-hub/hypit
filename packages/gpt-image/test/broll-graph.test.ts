@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { fixtureResource } from "../../../test/fixture-resource.js";
 
-import { artifactManifest, artifactTypes } from "@hypit/artifact";
+import { blobManifest, blobTypes } from "@hypit/blob";
 import {
   createResolvedClosure,
   link,
@@ -10,8 +10,8 @@ import {
   sealCompiledGraph,
   sealRecord,
   start,
-} from "@hypit/core";
-import { elaborateAuthorGraph } from "@hypit/elaborator";
+} from "@hypit/kernel";
+import { elaborateAuthorGraph } from "@hypit/author";
 import {
   generationManifest,
   sealGenerationMediaBinding,
@@ -21,17 +21,18 @@ import {
   createGptImageCleanFragment,
   gptImage2Ports,
   gptImageCleanManifest,
+  gptImageCleanupProgram,
   gptImageEndpoints,
   gptImageManifest,
   sealGptImage2Draft,
 } from "@hypit/gpt-image";
-import { gptImageDenoiseV1, imageTransformManifest, imageTransformTypes } from "@hypit/image-transform";
-import { exactModelMediaInputNames } from "@hypit/model-kit";
+import { imageOperationsManifest, imageTransformTypes } from "@hypit/image-operations";
+import { exactModelMediaInputNames } from "@hypit/generation/model";
 import { mediaManifest } from "@hypit/media";
 import { narrativeManifest } from "@hypit/narrative";
-import { programSpaceManifest } from "@hypit/program-space";
+import { timelineManifest } from "@hypit/timeline";
+import { temporalManifest } from "@hypit/temporal";
 import type { CanonicalValue, ResourceId, ModuleManifest, StoredValue, TypeRef } from "@hypit/protocol";
-import { rasterManifest } from "@hypit/raster";
 import { createProvidedCandidate } from "@hypit/run";
 import {
   createSeedanceAssembledGenerationFragment,
@@ -39,9 +40,8 @@ import {
   seedanceManifest,
   seedancePorts,
 } from "@hypit/seedance";
-import { speechManifest } from "@hypit/speech";
 import { spatialManifest } from "@hypit/spatial";
-import { svsManifest } from "@hypit/svs";
+import { recipeManifest } from "@hypit/recipe";
 import { textManifest } from "@hypit/text";
 
 const image = (name: string) => ({
@@ -53,19 +53,18 @@ const image = (name: string) => ({
 
 function fixture() {
   const manifests: ModuleManifest[] = [
-    artifactManifest,
+    blobManifest,
     textManifest,
     generationManifest,
-    rasterManifest,
-    imageTransformManifest,
+    imageOperationsManifest,
     gptImageManifest,
     gptImageCleanManifest,
     narrativeManifest,
     mediaManifest,
-    programSpaceManifest,
+    temporalManifest,
+    timelineManifest,
     spatialManifest,
-    svsManifest,
-    speechManifest,
+    recipeManifest,
     seedanceManifest,
   ];
   const closure = createResolvedClosure(manifests);
@@ -81,10 +80,10 @@ function fixture() {
     readonly value: StoredValue;
   }> = [];
   const add = (id: string, type: TypeRef, value: StoredValue) => records.push({ id, type, value });
-  add("person", artifactTypes.blob, image("person"));
-  add("product", artifactTypes.blob, image("product"));
+  add("person", blobTypes.blob, image("person"));
+  add("product", blobTypes.blob, image("product"));
   add("cleanup", imageTransformTypes.program, {
-    kind: "inline", value: gptImageDenoiseV1 as unknown as CanonicalValue,
+    kind: "inline", value: gptImageCleanupProgram as unknown as CanonicalValue,
   });
 
   const gptFragments = {
@@ -204,7 +203,7 @@ test("an explicitly selected holding-image Candidate prunes only that branch", (
   const { program, graph } = fixture();
   const candidate = createProvidedCandidate({
     id: "approved-holding",
-    type: artifactTypes.blob,
+    type: blobTypes.blob,
     value: image("approved-holding"),
   });
   const realized = sealCompiledGraph({

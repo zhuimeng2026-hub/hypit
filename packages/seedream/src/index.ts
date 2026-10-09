@@ -1,9 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type { SurfaceAttributeVocabulary } from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const seedreamModuleRef = { name: "@hypit/seedream", version: "1" } as const;
 
@@ -94,7 +94,7 @@ const seedreamAttributes: readonly SurfaceAttributeVocabulary[] = [
 
 const seedreamImagePort = {
   name: "image",
-  type: artifactTypes.blob,
+  type: blobTypes.blob,
   summary: "The primary generated image, addressed as `<id>.image`.",
 } as const;
 
@@ -133,7 +133,7 @@ export const seedreamMarkupSurfaces = [{
           kind: "reference",
           required: true,
           summary: "The Artifact supplied as a reference picture, which must carry image media.",
-          accepts: [artifactTypes.blob],
+          accepts: [blobTypes.blob],
         }],
       }],
       ports: [seedreamImagePort],

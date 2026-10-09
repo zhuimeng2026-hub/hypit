@@ -4,6 +4,17 @@ Thin Hypit Runtime Provider for a HypiHub deployment. It is an optional default 
 paid generation and WhisperX alignment requests. Select it for a chosen HypiHub account, with OAuth
 or an API key in the configured Credential Store; other Providers remain ordinary Profile choices.
 
+The implementation uses only the public `@hypit/hypit/*` Provider APIs. Its one cross-package
+contract is an explicit peer on `@hypit/whisperx`, whose capability identity, request validation and
+wire-response interpretation it implements remotely. Compatible published releases use an ordinary
+SemVer range; the consuming project's npm/pnpm lockfile fixes the installed pair. Hypit performs no
+Provider download, version resolution or Build-time upgrade. The Provider reads its own package
+version for its User-Agent and does not inherit the Hypit Distribution version.
+
+The official Distribution currently obtains this Provider as a default npm dependency because its
+starter Runtime Profile selects HypiHub. The Profile selection and the npm dependency are separate:
+another Distribution may omit it, and a project may install a compatible version explicitly.
+
 `doctor` is read-only. If a stored OAuth access token needs refresh, it reports that account access
 and refresh validity remain unchecked; it does not rotate credentials or conclude that their Store
 is read-only. Authorized execution and pricing reads retain the normal refresh-and-persist path.
@@ -83,10 +94,8 @@ For moving portraits, [Volcengine Matting](../volcengine-matting/README.md) maps
 Both formats carry transparency. The source video uses the same upload transport as other video
 references; the returned job uses the same polling and asset collection lifecycle. The selected
 account's `/v1/models` establishes availability. The processed video enters ordinary Normalize,
-then either semantic alignment for a Script performance or Media Track for B-roll.
-
-[Background Removal](../background-removal/README.md) declares a separate single-image capability.
-This Provider does not currently implement it; select a project Provider for that operation.
+then a Visual Clip or another ordinary media consumer; add semantic alignment separately when a
+Script relationship needs positions inside that performance.
 
 Runtime Profile example:
 
@@ -96,7 +105,7 @@ Runtime Profile example:
   "dataRoot": ".hypit/runtimes/local",
   "credentials": {
     "platform": {
-      "use": "@hypit/credential-store-platform"
+      "use": "@hypit/credential-store-local"
     }
   },
   "endpoints": {
@@ -219,8 +228,11 @@ admission budgets. Each accepts `concurrency` and `rate: { limit, periodMs }`, s
 These limits count lifecycle actions; Provider-specific upload parts and HTTP requests remain inside
 those actions. Synchronous speech and transcription retain their ordinary request capacity.
 
-A submission, polling or collection error ends the local attempt. Known job IDs and credential
-references remain available in Result receipts; a timeout with no ID is recorded as such. A job can
+A submission or collection error ends the local attempt. During polling, transport failures and HTTP
+429/5xx preserve the same job handle and schedule another read; a standard `Retry-After` is honored,
+but the wake time never passes the original `operationTimeoutMs` deadline. Credential, response and
+other non-retryable errors still end the attempt. Known job IDs and credential references remain
+available in Result receipts; a timeout with no ID is recorded as such. A job can
 be inspected at `/jobs/<id>` and its generated assets at `/jobs/<id>/assets` on the selected API base.
 The next production attempt uses a new Run and Build. Runtime bindings never switch from a user's
 own Provider to HypiHub after a key, quota or transport failure.

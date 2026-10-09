@@ -1,0 +1,25 @@
+{
+  "name": "@hypit/fontsource",
+  "version": "0.1.1",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "hypit": {
+    "activation": "./src/activation.ts"
+  },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:*"
+  }
+}

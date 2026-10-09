@@ -1,18 +1,17 @@
-import { sealTimeline } from "@hypit/timeline";
+import { sealTimeline, timelineTypes } from "@hypit/timeline";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { videoContractManifests } from "../../../test/support/video-domain.js";
 import { fixtureResource } from "../../../test/fixture-resource.js";
-import { timelineFixture } from "../../../test/timeline-fixture.js";
+import { narrativeProjectionFixture, timelineFixture } from "../../../test/timeline-fixture.js";
 import { projectMomentInstantFixture, projectSegmentWindow, projectSelectionWindow } from "../../../test/temporal-fixture.js";
 
-import { createResolvedClosure } from "@hypit/core";
+import { createResolvedClosure } from "@hypit/kernel";
 import type { FontArtifactRef, SynchronizedMedia } from "@hypit/media";
 import { mediaTypes } from "@hypit/media";
-import type { NarrativeExcerpt, NarrativeMomentRef, NarrativeSelectionRef } from "@hypit/narrative";
-import { sealProgramSpace } from "@hypit/program-space";
-import { sealCanvasSpace, sealSpatialFrame } from "@hypit/spatial";
-import type { SvsRecipe } from "@hypit/svs";
+import type { NarrativeSegmentRef, NarrativeMomentRef, NarrativeSelectionRef } from "@hypit/narrative";
+import { sealCanvas, sealSpatialFrame } from "@hypit/spatial";
+import type { Recipe } from "@hypit/recipe";
 
 import {
   appendColumnItem,
@@ -78,12 +77,10 @@ import type {
   TierBoardItemSpec,
   TopThreeItemSpec,
 } from "@hypit/ranking";
-import { narrativeTypes } from "@hypit/narrative";
-import { timelineTypes } from "@hypit/timeline";
 import { spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
+import { recipeType } from "@hypit/recipe";
 import { sealText, textManifest, textTypes } from "@hypit/text";
-import { temporalProducers } from "@hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 import type { TemporalWindow } from "@hypit/temporal";
 import type {
   StructuredElement,
@@ -92,20 +89,20 @@ import type {
   MarkupAttributeValue,
 } from "@hypit/markup";
 
-const space = sealTimeline({ items: [], id: "test-space", durationSec: 8,
-  frameRate: { numerator: 30, denominator: 1 },
+const space = sealTimeline({ id: "test-space", frameCount: 240, frameRate: { numerator: 30, denominator: 1 },
 });
-const canvas = sealCanvasSpace({
+const canvas = sealCanvas({
   widthPx: 1080, heightPx: 1920,
-  origin: "top-left", xDirection: "right", yDirection: "down", pixelAspect: "square",
 });
+const canvasBounds = { xPx: 0, yPx: 0, widthPx: canvas.widthPx, heightPx: canvas.heightPx };
 const frame = sealSpatialFrame({
   xPx: 40, yPx: 80, widthPx: 720, heightPx: 560,
 });
 const tierFrame = sealSpatialFrame({
   xPx: 40, yPx: 360, widthPx: 720, heightPx: 280,
 });
-const timeline = timelineFixture(space, {
+const semanticOptions = {
+  narrativeId: "script",
   segments: [
     { id: "opening", frameCount: 10 },
     { id: "ranking", frameCount: 220 },
@@ -126,7 +123,9 @@ const timeline = timelineFixture(space, {
     { identity: "terminal", frame: 190 },
     { identity: "outer-end", frame: 230 },
   ],
-});
+} as const;
+const timeline = timelineFixture(space, semanticOptions);
+const narrativeProjection = narrativeProjectionFixture(timeline, semanticOptions);
 const outer: NarrativeSelectionRef = {
   narrativeId: "script",
   id: "ranking-window",
@@ -138,7 +137,7 @@ const terminal: NarrativeMomentRef = {
   id: "ranking-complete",
   anchorId: "terminal",
 };
-const rankingSegment: NarrativeExcerpt = { narrativeId: "script", kind: "segment", id: "ranking", tokenStart: 0, tokenEndExclusive: 1 };
+const rankingSegment: NarrativeSegmentRef = { narrativeId: "script", kind: "segment", id: "ranking", tokenStart: 0, tokenEndExclusive: 1 };
 const selection = (id: string, startAnchorId: string, endAnchorId: string): NarrativeSelectionRef => ({
   narrativeId: "script", id, startAnchorId, endAnchorId,
 });
@@ -152,7 +151,7 @@ const font: FontArtifactRef = {
   weight: 700,
   style: "normal",
 };
-const recipe = (path: string, properties: SvsRecipe["properties"] = {}): SvsRecipe => ({
+const recipe = (path: string, properties: Recipe["properties"] = {}): Recipe => ({
   path, properties,
 });
 const image = (id: string) => ({ kind: "blob" as const, resource: fixtureResource(`ranking-image:${id}`), size: 64, mediaType: "image/png" });
@@ -187,7 +186,7 @@ function appendTriggeredRankingCandidate(
   semantic: typeof timeline, moment: NarrativeMomentRef,
 ) {
   return appendProjectedTriggeredRankingCandidate(set, spec, projectMomentInstantFixture({
-    itemId: spec.id, semantic, moment,
+    itemId: spec.id, semantic, narrative: narrativeProjection, moment,
     projection: { ref: "moment.cue" },
   }));
 }
@@ -205,12 +204,12 @@ function buildRankingSchedule(input: {
     items: input.items,
     timeline: space,
     outer: projectSelectionWindow({
-      itemId: input.outer.id, subjectId: input.header.id, semantic: input.semantic, selection: input.outer,
+      itemId: input.outer.id, subjectId: input.header.id, semantic: input.semantic, narrative: narrativeProjection, selection: input.outer,
       projection: { start: { ref: "selection.start" }, end: { ref: "selection.end" } },
     }),
     candidates: input.candidates,
     terminal: projectMomentInstantFixture({
-      itemId: input.terminal.id, subjectId: input.header.id, semantic: input.semantic, moment: input.terminal,
+      itemId: input.terminal.id, subjectId: input.header.id, semantic: input.semantic, narrative: narrativeProjection, moment: input.terminal,
       projection: { ref: "moment.cue" },
     }),
   });
@@ -221,7 +220,7 @@ function appendProjectedColumnWindow(
   semantic: typeof timeline, selection: NarrativeSelectionRef,
 ) {
   return appendColumnWindow(set, spec, projectSelectionWindow({
-    itemId: spec.id, semantic, selection,
+    itemId: spec.id, semantic, narrative: narrativeProjection, selection,
     projection: { start: { ref: "selection.start" }, end: { ref: "selection.end" } },
   }));
 }
@@ -231,14 +230,14 @@ function appendProjectedTierWindow(
   semantic: typeof timeline, selectionValue: NarrativeSelectionRef,
 ) {
   return appendTierBoardWindow(set, spec, projectSelectionWindow({
-    itemId: spec.id, semantic, selection: selectionValue,
+    itemId: spec.id, semantic, narrative: narrativeProjection, selection: selectionValue,
     projection: { start: { ref: "selection.start" }, end: { ref: "selection.end" } },
   }));
 }
 
-function projectColumnSegmentOuterWindow(semantic: typeof timeline, segment: NarrativeExcerpt, subjectId: string): TemporalWindow {
+function projectColumnSegmentOuterWindow(semantic: typeof timeline, segment: NarrativeSegmentRef, subjectId: string): TemporalWindow {
   return projectSegmentWindow({
-    itemId: `${segment.id}:outer`, subjectId, semantic, segment,
+    itemId: `${segment.id}:outer`, subjectId, semantic, narrative: narrativeProjection, segment,
     projection: { start: { ref: "segment.start" }, end: { ref: "segment.end" } },
   });
 }
@@ -274,7 +273,7 @@ function tierSchedule(
   values: readonly TierBoardItemSpec[],
   windows: Readonly<Record<string, NarrativeSelectionRef>>,
   outerWindow = projectSelectionWindow({
-    itemId: outer.id, subjectId: owner.id, semantic: timeline, selection: outer,
+    itemId: outer.id, subjectId: owner.id, semantic: timeline, narrative: narrativeProjection, selection: outer,
     projection: { start: { ref: "selection.start" }, end: { ref: "selection.end" } },
   }),
 ): TierBoardSchedule {
@@ -325,7 +324,7 @@ test("variant Style decoders reject unknown Recipes and keep exact fonts and ind
   }), font), /exactly three/u);
 });
 
-test("TierBoard separates its board Frame from the Canvas stage and holds drop Items until the final curved glide", () => {
+test("TierBoard separates its board Frame from the outer placement Frame and holds drop Items until the final curved glide", () => {
   const owner = header("tier-board", "tiers");
   const semantic = [
     tierSpec("late", "s", "drop"),
@@ -338,7 +337,7 @@ test("TierBoard separates its board Frame from the Canvas stage and holds drop I
   let set = createTierBoardItemSet();
   for (const item of semantic) set = appendTierBoardItem(set, item, image(item.id));
   const value = tierSchedule(owner, semantic, { early, late });
-  const program = buildTierBoardProgram(owner, canvas, tierFrame, value, style, set);
+  const program = buildTierBoardProgram(owner, canvasBounds, tierFrame, value, style, set);
   const track = renderTierBoard(space, program);
   assert.deepEqual(value.entries.map((entry) => entry.itemId), ["preset", "early", "late"]);
   assert.deepEqual(program.items.map((item) => item.id), ["preset", "early", "late"]);
@@ -410,7 +409,7 @@ test("Column consumes explicit disjoint reveal windows without changing them", (
     "early-rank-five": early,
     "overlap-rank-two": middle,
   }, outerWindow);
-  const program = buildColumnProgram(owner, canvas, frame, value, style, set);
+  const program = buildColumnProgram(owner, canvasBounds, frame, value, style, set);
   const track = renderColumn(space, program);
   assert.deepEqual(program.items.map((item) => [item.id, item.rank]), [
     ["late-rank-one", 1], ["overlap-rank-two", 2], ["preset-rank-three", 3], ["early-rank-five", 5],
@@ -440,7 +439,7 @@ test("Column rejects overlapping or out-of-bounds reveal windows", () => {
   const outerWindow = projectColumnSegmentOuterWindow(timeline, rankingSegment, owner.id);
   let windows = createColumnWindowSet();
   const projected = projectSelectionWindow({
-    itemId: "one", semantic: timeline, selection: early,
+    itemId: "one", semantic: timeline, narrative: narrativeProjection, selection: early,
     projection: { start: { ref: "selection.start" }, end: { ref: "selection.end" } },
   });
   windows = appendColumnWindow(windows, values[0]!, {
@@ -476,7 +475,7 @@ test("TopThree accepts one to three optional-image Items and removes active acce
 });
 
 const sound = (id: string): SynchronizedMedia => ({
-  timeline: { frameRate: { numerator: 30, denominator: 1 }, frameCount: 3 },
+  frameDomain: { frameRate: { numerator: 30, denominator: 1 }, frameCount: 3 },
   audio: {
     artifact: { kind: "blob", resource: fixtureResource(`ranking-sound:${id}`), size: 128, mediaType: "audio/wav" },
   },
@@ -515,7 +514,7 @@ test("each component owns a distinct event law", () => {
 
 });
 
-test("all three author Surfaces preserve explicit semantic, spatial, font, image and optional sound graph edges", async () => {
+test("all three author Surfaces preserve absolute temporal, spatial, font, image and optional sound graph edges", async () => {
   createResolvedClosure([...videoContractManifests, textManifest, rankingManifest]);
   const range = { source: "ranking.svml", start: 0, end: 1 };
   const ref = (path: string): MarkupAttributeValue => ({ kind: "reference", path });
@@ -526,16 +525,15 @@ test("all three author Surfaces preserve explicit semantic, spatial, font, image
     record: { value: { kind: "inline", value } } as never,
   });
   const references = new Map<string, SurfaceResolvedReference>([
-    ["semantic", plain("semantic", timelineTypes.track)],
-    ["canvas", plain("canvas", spatialTypes.canvas)],
+    ["semantic", plain("semantic", timelineTypes.timeline)],
     ["frame", plain("frame", spatialTypes.frame)],
-    ["outer", plain("outer", narrativeTypes.selection)],
-    ["ranking-segment", plain("ranking-segment", narrativeTypes.excerpt)],
-    ["tier-reveal", plain("tier-reveal", narrativeTypes.selection)],
-    ["column-reveal", plain("column-reveal", narrativeTypes.selection)],
-    ["moment-one", plain("moment-one", narrativeTypes.moment)],
-    ["moment-two", plain("moment-two", narrativeTypes.moment)],
-    ["terminal", plain("terminal", narrativeTypes.moment)],
+    ["outer", plain("outer", temporalTypes.window)],
+    ["ranking-segment", plain("ranking-segment", temporalTypes.window)],
+    ["tier-reveal", plain("tier-reveal", temporalTypes.window)],
+    ["column-reveal", plain("column-reveal", temporalTypes.window)],
+    ["moment-one", plain("moment-one", temporalTypes.instant)],
+    ["moment-two", plain("moment-two", temporalTypes.instant)],
+    ["terminal", plain("terminal", temporalTypes.instant)],
     ["icon-1", plain("icon-1", mediaTypes.blobArtifact)],
     ["icon-2", plain("icon-2", mediaTypes.blobArtifact)],
     ["appear", plain("appear", mediaTypes.synchronized)],
@@ -549,7 +547,7 @@ test("all three author Surfaces preserve explicit semantic, spatial, font, image
     ["top-style", rankingTypes.topThreeStyle, decodeTopThreeStyleSurface, {}],
   ] as const;
   for (const [id, type, handler, properties] of styleCases) {
-    references.set(`${id}-recipe`, inlineReference(`${id}-recipe`, svsRecipeType, recipe(id, properties)));
+    references.set(`${id}-recipe`, inlineReference(`${id}-recipe`, recipeType, recipe(id, properties)));
     const result = await handler({
       sourceName: "ranking.svml",
       element: node(`ranking:${type.name.replace(/Style$/u, "Style")}`, { id, recipe: ref(`${id}-recipe`), font: ref("font") }),
@@ -564,11 +562,11 @@ test("all three author Surfaces preserve explicit semantic, spatial, font, image
   }
   const cases = [
     [decodeTierBoardSurface, node("ranking:TierBoard", {
-      id: "tier", timeline: ref("semantic"), canvas: ref("canvas"), frame: ref("frame"), during: "program",
+      id: "tier", timeline: ref("semantic"), within: ref("frame"), frame: ref("frame"), during: ref("outer"),
       style: ref("tier-style"),
     }, [node("ranking:TierItem", { id: "tier-one", tier: "s", entry: "drop", icon: ref("icon-1"), during: ref("ranking-segment") })])],
     [decodeColumnSurface, node("ranking:Column", {
-      id: "column", timeline: ref("semantic"), canvas: ref("canvas"), frame: ref("frame"), during: ref("ranking-segment"),
+      id: "column", timeline: ref("semantic"), within: ref("frame"), frame: ref("frame"), during: ref("ranking-segment"),
       style: ref("column-style"),
       "appear-sound": ref("appear"), "move-sound": ref("move"),
     }, [
@@ -592,19 +590,8 @@ test("all three author Surfaces preserve explicit semantic, spatial, font, image
     assert.ok(fragment.exports.some((output) => output.name === "program"));
     assert.ok(fragment.exports.some((output) => output.name === "visual"));
     assert.ok(fragment.inputs.some((input) => input.name === "frame"));
-    const temporalSubjects = new Set(result.records.flatMap((record) =>
-      record.value.kind === "inline"
-        && typeof record.value.value === "object"
-        && record.value.value !== null
-        && "subjectId" in record.value.value
-        ? [String((record.value.value as { readonly subjectId: unknown }).subjectId)]
-        : []));
-    assert.ok(temporalSubjects.has(String(element.attributes.id)));
-    for (const child of element.children) {
-      if (child.kind === "element" && child.attributes.id !== undefined && child.attributes.preset !== "true") {
-        assert.ok(temporalSubjects.has(String(child.attributes.id)));
-      }
-    }
+    assert.equal(result.fragments.some((fragment) => fragment.operations.some((operation) =>
+      operation.producer.module.name === "@hypit/narrative-temporal")), false);
   }
   const programTier = await decodeTierBoardSurface({
     sourceName: "ranking.svml", element: cases[0][1],
@@ -613,10 +600,10 @@ test("all three author Surfaces preserve explicit semantic, spatial, font, image
   });
   const tierFragment = programTier.fragments.find((candidate) => candidate.exports.some((output) => output.name === "visual"))!;
   assert.equal(tierFragment.inputs.find((input) => input.name === "outer")?.type.name, "TemporalWindow");
-  assert.ok(programTier.fragments.some((fragment) => fragment.operations.some((operation) =>
-    operation.producer.name === temporalProducers.projectProgramInstant.name)));
-  assert.ok(programTier.fragments.some((fragment) => fragment.operations.some((operation) =>
-    operation.producer.name === temporalProducers.projectSegmentInstant.name)));
+  assert.equal(programTier.fragments.some((fragment) => fragment.operations.some((operation) =>
+    operation.producer.module.name === "@hypit/temporal")), false);
+  assert.equal(programTier.fragments.some((fragment) => fragment.operations.some((operation) =>
+    operation.producer.module.name === "@hypit/narrative-temporal")), false);
   const column = await decodeColumnSurface({
     sourceName: "ranking.svml", element: cases[1][1],
     resolveReference: (path) => references.get(path),
@@ -658,14 +645,13 @@ test("Ranking author Surfaces fail closed on impossible image and sound combinat
   const ref = (path: string): MarkupAttributeValue => ({ kind: "reference", path });
   const plain = (path: string, type: SurfaceResolvedReference["type"]): SurfaceResolvedReference => ({ path, ref: { kind: "record", id: path }, type });
   const references = new Map<string, SurfaceResolvedReference>([
-    ["semantic", plain("semantic", timelineTypes.track)],
-    ["canvas", plain("canvas", spatialTypes.canvas)],
-    ["frame", plain("frame", spatialTypes.frame)], ["outer", plain("outer", narrativeTypes.selection)],
+    ["semantic", plain("semantic", timelineTypes.timeline)],
+    ["frame", plain("frame", spatialTypes.frame)], ["outer", plain("outer", temporalTypes.window)],
     ["icon", plain("icon", mediaTypes.blobArtifact)],
     ["style", plain("style", rankingTypes.tierStyle)], ["style.sound", plain("style.sound", rankingTypes.soundStyle)],
     ["move", plain("move", mediaTypes.synchronized)],
   ]);
-  const common = { id: "bad", timeline: ref("semantic"), canvas: ref("canvas"), frame: ref("frame"), during: ref("outer"), style: ref("style") };
+  const common = { id: "bad", timeline: ref("semantic"), within: ref("frame"), frame: ref("frame"), during: ref("outer"), style: ref("style") };
   const context = (element: StructuredElement) => ({
     sourceName: "ranking.svml", element, resolveReference: (path: string) => references.get(path),
     resolveAsset: async () => { throw new Error("no asset resolution expected"); },

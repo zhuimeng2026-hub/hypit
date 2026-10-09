@@ -1,4 +1,4 @@
-import { canonicalStringify } from "@hypit/protocol";
+import { canonicalStringify } from "@hypit/hypit/protocol";
 
 import { ScriptSyntaxError } from "./error.js";
 import { narrativeValue } from "./narrative.js";

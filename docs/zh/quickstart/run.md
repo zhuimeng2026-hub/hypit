@@ -44,7 +44,6 @@ my-video/
   packages/                 作品需要时创建的项目本地 Author 包
   output/                   显式导出给人或其他工具的副本
   hypit.runtime.json        执行环境
-  hypit.results.json        可选的 Result 仓库选择
   .hypit/                   自动产生的本地 Runtime 与 Result 数据
 ```
 
@@ -62,13 +61,13 @@ Run Source 与 Runtime Profile 不会悄悄改写视频。创作性的模型选�
 每个 `.svrun` 文件都以其处理指令开头：
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 ```
 
 ### 最简 Run Source
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 
 <svrun version="1">
   <author source="./main.svml"/>
@@ -101,10 +100,10 @@ Target 表达这次 Build 的最终意图，通常是成片或另一个真正的
 
 Hypit 没有隐式缓存。复用结果是显式的运行图编写：把某个旧 Build Result 里的一个具名 Output 声明为零输入 Candidate，再通过 Satisfaction 边连接到当前输出。
 
-生成图片或 Take 一完成，就能在下一份 `.svrun` 中用 `build-record` 与 `satisfy` 显式复用，并在启动付费下游工作前检查 plan。
+生成图片或视频一完成，就能在下一份 `.svrun` 中用 `build-record` 与 `satisfy` 显式复用，并在启动付费下游工作前检查 plan。
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 
 <svrun version="1">
   <author source="./main.svml"/>
@@ -171,7 +170,7 @@ Hypit 永远不会猜测两个名字代表同一份作者意图。每次执行 `
 | `output` | 要满足的逻辑输出 |
 | `candidate` | 由 `build-record`、`file`、`value` 或 Fragment 导出声明的 Candidate 标识符 |
 
-Planner 会同时读取完整 Author Graph 与 Run Graph：裁剪所选 Candidate 替代掉的默认 Operation，同时保留该 Candidate 自身仍然消费的 Author Output。这是一次新的 Build，而非旧 Build 的延续。复用生成视频时，归一化和语义准备仍在下游；复用已经准备好的 SemanticTake 时，也保留这些结果。字幕、MG 和渲染只在仍被所选路线需要时计算。选择哪个 Output，取决于哪些内容应该保留不变。
+Planner 会同时读取完整 Author Graph 与 Run Graph：裁剪所选 Candidate 替代掉的默认 Operation，同时保留该 Candidate 自身仍然消费的 Author Output。这是一次新的 Build，而非旧 Build 的延续。复用生成视频时，归一化以及作品确实需要的对齐仍在下游；分别复用规范化媒体、局部时间域和 NarrativeAlignment 时，会保留这些事实，但不会冻结之后的 Timeline 放置或呈现。字幕、MG 和渲染只在仍被所选路线需要时计算。选择哪些 Output，取决于哪些内容应该保留不变。
 
 Core 不再给 Candidate 标注 `exact` 或 `substitute`。选择 Candidate 本身就是这次运行的明确实现决定。系统校验类型兼容性，但不猜测创作等价性，也不把这种判断作为冗余元信息沿整条图传播。
 
@@ -180,7 +179,7 @@ Core 不再给 Candidate 标注 `exact` 或 `substitute`。选择 Candidate 本�
 本地文件就是最简单的零输入 Candidate：
 
 ```svml
-<file id="approved-opening" type="@hypit/artifact@1#BlobArtifact" from="./approved-opening.mp4" media-type="video/mp4"/>
+<file id="approved-opening" type="@hypit/blob@1#Blob" from="./approved-opening.mp4" media-type="video/mp4"/>
 <satisfy output="opening-shot.video" candidate="approved-opening"/>
 ```
 
@@ -203,8 +202,9 @@ hypit paths
 
 `runtime use` 只写入 `.hypit/runtime`，不会启动 Worker、创建 Runtime 数据或修改已安装
 包。Profile 结构和完整边界见 [Runtime](../guide/runtime.md)。
-CLI 必须先确定项目：显式 `--workspace` 直接给出边界；否则使用当前目录向上的最近
-`package.json`，普通创作目录没有该文件时就以当前目录为边界。随后只读取这个项目自己的
+CLI 必须先确定项目：显式 `--project` 直接给出边界；否则向上寻找
+`package.json` 中明确声明 `"hypit": { "project": true }` 的目录。组件包与任意当前目录不会
+静默成为项目。随后只读取这个项目自己的
 `.hypit/runtime`。它不会按约定文件名猜 Profile，也不会从父目录继承另一个项目的选择。
 ## 配置所选凭据
 
@@ -256,10 +256,11 @@ Runtime Profile，把其 Adapter 声明的上游 npm 包安装到机器共享目
 自己的组件和 Provider 仍是普通项目依赖，由项目的包管理器安装。只有 Profile 选择 WhisperX、
 OpenCV 等本地 Python 程序时，才需要先安装 [`uv`](https://docs.astral.sh/uv/)。
 
-作者侧缺少 Fontsource 等上游包时，`check`/`plan` 会给出精确命令，例如：
+官方 Distribution 提供 Fontsource 适配器；具体字体族是项目自己的普通依赖，应通过该项目的包
+管理器加入，例如：
 
 ```bash
-hypit packages install @fontsource-variable/inter@5.3.0
+npm install --save-exact @fontsource-variable/inter@5.3.0
 ```
 
 `hypit runtime up` 管理依赖、后台 Worker 和外部程序；`build` 不做部署准备。
@@ -276,7 +277,7 @@ hypit runtime use hypit.runtime.json
 hypit plan build.svrun
 ```
 
-Workspace 在 Runtime Profile 之前确定；显式 `--workspace` 可以覆盖它，入口 Source 路径和
+项目在 Runtime Profile 之前确定；显式 `--project` 可以覆盖它，入口 Source 路径和
 Runtime 选择都无权改变这条源码边界。`--package-root` 只定位已经安装的
 `node_modules`；`--asset-root` 只额外授权读取素材字节。
 
@@ -290,9 +291,9 @@ output/
 每次 Build 的权威结果位于 `.hypit/results/<UTC-date>/<build-id>/`：`result.json` 记录名字、状态、Target
 和公开 Output，媒体在 `files/`，结构化值在 `values/`。
 
-这是无需配置的默认 Result 仓库。项目根的 `hypit.results.json` 也可以选择 `@hypit/build-result-s3`；历史命令
-与 `.svrun` 中的 `build-record` 会使用同一个仓库。活跃 Build 的临时 Resource 仍由 Runtime 在本地
-私有管理。
+这个项目本地目录就是 Result 仓库；需要长期归档或迁移时，在 Build 完成后显式处理这些文件。
+历史命令与 `.svrun` 中的 `build-record` 使用同一目录。活跃 Build 的临时 Resource 仍由 Runtime
+在本机私有管理。
 
 `status`、`builds` 等只读归档命令不会在状态尚不存在时初始化 Runtime 数据库。
 
@@ -324,7 +325,7 @@ Author/Run Source 通过 import 选择作者包；官方视频 Distribution 已�
 hypit doctor
 ```
 
-Doctor 总会校验项目选择的 Result Repository；存在已选或显式传入的 Runtime Profile 时，还会校验全部
+Doctor 总会校验项目的 Result 仓库；存在已选或显式传入的 Runtime Profile 时，还会校验全部
 Runtime 角色、Endpoint 配置、凭据是否存在和有界环境探测。它不启动 Worker，也不发付费请求。
 
 存在 Profile 时，`doctor` 默认检查整个 Profile，也可以重复 `--endpoint <instance>` 限定服务。
@@ -375,7 +376,7 @@ hypit status <build-id> --watch
 |---|---|
 | `--runtime` | 单次命令的 Runtime Profile 覆盖；通常用 `runtime use` 选择一次即可 |
 | `--package-root` | 存放已安装包的 Host 目录 |
-| `--workspace` | 显式 Source Workspace 覆盖项 |
+| `--project` | 显式项目边界，也是默认的 Source Workspace 根目录 |
 | `--title` | 给这次 Result 一个供人阅读的标题 |
 | `--follow` | 将 Build 进度流式输出到终端 |
 

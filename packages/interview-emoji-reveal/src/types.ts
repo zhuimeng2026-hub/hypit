@@ -1,5 +1,5 @@
-import type { BlobRef } from "@hypit/protocol";
-import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
+import type { BlobRef } from "@hypit/hypit/protocol";
+import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
 
 export type EmojiRevealHeader = { readonly id: string };
 
@@ -44,7 +44,7 @@ export type EmojiRevealSet = { readonly items: readonly EmojiRevealItem[] };
 
 export type EmojiRevealProgram = {
   readonly id: string;
-  readonly programSpaceId: string;
+  readonly timelineId: string;
   readonly outer: TemporalWindow;
   readonly style: EmojiRevealStyle;
   readonly placeholder: BlobRef;

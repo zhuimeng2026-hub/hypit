@@ -1,9 +1,9 @@
-import { audioEnvelopeGainAt } from "@hypit/composition";
+import { audioEnvelopeGainAt } from "@hypit/hypit/composition";
 
 /**
- * Studio's frame driver for a compiled HyperFrames document.
+ * Studio's frame driver for a compiled HTML renderer document.
  *
- * HyperFrames remains the owner of layout and animation. Studio only supplies
+ * HTML renderer remains the owner of layout and animation. Studio only supplies
  * an absolute Program frame, places every timed Present/material at that
  * instant, and waits until a discrete media seek is actually decoded.
  */
@@ -12,27 +12,25 @@ function shim(): string {
 <script>
 (function () {
   var muted = false;
-  var root = document.querySelector('[data-composition-id]');
-  var fpsAttr = (root && root.getAttribute('data-fps')) || '30';
-  var slash = fpsAttr.indexOf('/');
-  var fps = slash === -1
-    ? parseFloat(fpsAttr)
-    : parseFloat(fpsAttr.slice(0, slash)) / parseFloat(fpsAttr.slice(slash + 1));
+  var root = document.querySelector('[data-hypit-program-root]');
+  var numerator = Number(root && root.getAttribute('data-hypit-frame-numerator')) || 30;
+  var denominator = Number(root && root.getAttribute('data-hypit-frame-denominator')) || 1;
+  var fps = numerator / denominator;
   var frameSeconds = 1 / fps;
   var currentSeconds = 0;
   var playing = false;
   var seekRevision = 0;
   if (root) {
-    root.style.width = (root.getAttribute('data-width') || '0') + 'px';
-    root.style.height = (root.getAttribute('data-height') || '0') + 'px';
+    root.style.width = (root.getAttribute('data-hypit-width') || '0') + 'px';
+    root.style.height = (root.getAttribute('data-hypit-height') || '0') + 'px';
   }
 
   var visualClips = [];
   for (var clip of document.querySelectorAll('.hypit-visual-present')) {
     visualClips.push({
       element: clip,
-      start: parseFloat(clip.getAttribute('data-start') || '0') || 0,
-      duration: parseFloat(clip.getAttribute('data-duration') || '0') || 0
+      startFrame: Number(clip.getAttribute('data-hypit-present-start-frame')),
+      endFrame: Number(clip.getAttribute('data-hypit-present-end-frame'))
     });
   }
   // Sampling runs are separate video elements with their own absolute spans.
@@ -44,10 +42,6 @@ function shim(): string {
     var ownDuration = element.getAttribute('data-duration');
     media.push({
       element: element,
-      start: parseFloat(ownStart || (present && present.getAttribute('data-start')) || '0') || 0,
-      duration: parseFloat(ownDuration || (present && present.getAttribute('data-duration')) || '0') || 0,
-      mediaStart: parseFloat(element.getAttribute('data-media-start') || '0') || 0,
-      rate: parseFloat(element.getAttribute('data-playback-rate') || '1') || 1,
       startFrame: Number(element.getAttribute('data-hypit-start-frame')),
       endFrame: Number(element.getAttribute('data-hypit-end-frame')),
       sourceFrame: element.getAttribute('data-hypit-source-frame').split('/').map(BigInt),
@@ -56,9 +50,9 @@ function shim(): string {
     });
   }
   var audioContext;
-  var programmeAudio = [];
+  var programAudio = [];
   for (var element of document.querySelectorAll('.hypit-studio-audio')) {
-    programmeAudio.push({
+    programAudio.push({
       element: element,
       start: parseFloat(element.getAttribute('data-start') || '0') || 0,
       duration: parseFloat(element.getAttribute('data-duration') || '0') || 0,
@@ -68,7 +62,7 @@ function shim(): string {
       phase: parseFloat(element.getAttribute('data-phase') || '0') || 0,
       rate: parseFloat(element.getAttribute('data-playback-rate') || '1') || 1,
       gain: Number(element.getAttribute('data-gain') ?? '1'),
-      presentation: JSON.parse(decodeURIComponent(element.getAttribute('data-presentation') || '%7B%7D'))
+      levelAutomation: JSON.parse(decodeURIComponent(element.getAttribute('data-level-automation') || '%7B%7D'))
     });
   }
 
@@ -93,8 +87,9 @@ function shim(): string {
     }
     var sample = seconds * 48000;
     var now = audioContext.currentTime;
-    var p = record.presentation;
-    var start = record.start * 48000, end = (record.start + record.duration) * 48000;
+    var p = record.levelAutomation;
+    var start = p.mixStartSample ?? record.start * 48000;
+    var end = p.mixEndSampleExclusive ?? (record.start + record.duration) * 48000;
     record.nodes[0].gain.setValueAtTime(record.gain, now);
     scheduleEnvelope(record.nodes[1].gain, p.gainEnvelope, sample, now);
     scheduleEnvelope(record.nodes[2].gain, p.fadeInSamples > 0
@@ -127,54 +122,44 @@ function shim(): string {
     });
   }
 
-  function placeHyperframes(seconds) {
-    var pending = [];
-    var event = new CustomEvent('hf-seek', { detail: {
-      time: seconds,
-      waitUntil: function (promise) { pending.push(Promise.resolve(promise)); }
-    }});
-    window.dispatchEvent(event);
-    var compositionId = root && root.getAttribute('data-composition-id');
-    var timeline = compositionId && window.__timelines && window.__timelines[compositionId];
-    if (timeline) {
-      if (typeof timeline.pause === 'function') timeline.pause();
-      if (typeof timeline.totalTime === 'function') timeline.totalTime(seconds);
-      else if (typeof timeline.seek === 'function') timeline.seek(seconds);
-    }
-    return Promise.all(pending);
+  function placeHTML(frame) {
+    if (!window.__hypitFrameProgram) return Promise.reject(new Error('HTML Program page ABI is missing'));
+    return window.__hypitFrameProgram.applyFrame(frame);
   }
 
   function apply(seconds, scrubbing) {
     currentSeconds = Math.max(0, seconds);
     var revision = ++seekRevision;
     var waits = [];
-    for (var record of visualClips) {
-      var local = currentSeconds - record.start;
-      record.element.style.visibility = local >= 0 && local < record.duration ? 'visible' : 'hidden';
-    }
+    var programFrame = Math.max(0, Math.round(currentSeconds * fps));
     for (var record of media) {
-      var local = currentSeconds - record.start;
-      var programFrame = Math.round(currentSeconds * fps);
       var inside = programFrame >= record.startFrame && programFrame < record.endFrame;
       var element = record.element;
       element.style.visibility = inside ? 'visible' : 'hidden';
-      // Normalized picture Artifacts are deliberately silent. Programme sound
+      // Normalized picture Artifacts are deliberately silent. Program sound
       // comes from the exact AudioTrack below rather than from a video sidecar.
       element.muted = true;
       if (!inside) { element.pause(); continue; }
-      var target = record.mediaStart + (local + frameSeconds / 2) * record.rate;
-      var discrete = scrubbing || programFrame === record.endFrame - 1;
-      if (discrete) {
-        // The renderer floors exact source-frame coordinates. The midpoint of a
-        // programme frame can cross that source boundary at fractional speeds.
-        var a = record.sourceFrame, r = record.sourceRate;
-        var sourceFrame = Number((a[0] * r[1] + BigInt(programFrame - record.startFrame) * r[0] * a[1]) / (a[1] * r[1]));
-        target = (sourceFrame + 0.5) * record.sourceFps[1] / record.sourceFps[0];
+      // A hold remains one compact target interval. Its exact zero source rate
+      // cannot be assigned to HTMLMediaElement.playbackRate, so keep the native
+      // decoder paused at the authored source frame instead.
+      if (record.sourceRate[0] === 0n) {
+        var heldFrame = Number(record.sourceFrame[0] / record.sourceFrame[1]);
+        var heldTarget = (heldFrame + 0.5) * record.sourceFps[1] / record.sourceFps[0];
+        if (Number.isFinite(element.duration) && element.duration > 0) {
+          heldTarget = Math.min(heldTarget, Math.max(0, element.duration - 0.001));
+        }
+        element.pause();
+        waits.push(seekDecoded(element, heldTarget));
+        continue;
       }
+      var a = record.sourceFrame, r = record.sourceRate;
+      var sourceFrame = Number((a[0] * r[1] + BigInt(programFrame - record.startFrame) * r[0] * a[1]) / (a[1] * r[1]));
+      var target = (sourceFrame + 0.5) * record.sourceFps[1] / record.sourceFps[0];
       if (Number.isFinite(element.duration) && element.duration > 0) {
         target = Math.min(target, Math.max(0, element.duration - 0.001));
       }
-      if (discrete) {
+      if (scrubbing || record.sourceRate[0] <= 0n || programFrame === record.endFrame - 1) {
         element.pause();
         waits.push(seekDecoded(element, target));
       } else {
@@ -182,14 +167,14 @@ function shim(): string {
         // only corrects visible drift; making every refresh a media seek is what
         // previously froze the preview between frames.
         if (Math.abs(element.currentTime - target) > 0.08) element.currentTime = target;
-        element.playbackRate = record.rate;
+        element.playbackRate = Number(record.sourceRate[0]) / Number(record.sourceRate[1]) * fps * record.sourceFps[1] / record.sourceFps[0];
         if (element.paused) {
           var started = element.play();
           if (started) started.catch(function () {});
         }
       }
     }
-    for (var record of programmeAudio) {
+    for (var record of programAudio) {
       var local = currentSeconds - record.start;
       var inside = local >= 0 && local < record.duration;
       var element = record.element;
@@ -213,7 +198,7 @@ function shim(): string {
         }
       }
     }
-    waits.push(placeHyperframes(currentSeconds));
+    waits.push(placeHTML(programFrame));
     return Promise.all(waits).then(function () { return revision === seekRevision; });
   }
 
@@ -227,7 +212,7 @@ function shim(): string {
   };
   window.__hypitPlayFrame = function (frame) {
     playing = true;
-    if (programmeAudio.length && !audioContext) audioContext = new AudioContext();
+    if (programAudio.length && !audioContext) audioContext = new AudioContext();
     if (audioContext && audioContext.state === 'suspended') audioContext.resume();
     return apply(frame / fps, false);
   };

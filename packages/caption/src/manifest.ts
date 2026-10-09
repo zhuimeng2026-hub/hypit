@@ -1,25 +1,46 @@
 import { temporalDependency, temporalTypes, temporalWindowSchema } from "@hypit/temporal";
-import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
-import { timelineDependency, timelineTypes } from "@hypit/timeline";
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
 
 export const captionModuleRef = { name: "@hypit/caption", version: "1" } as const;
 export const captionProducers = {
   create: { module: captionModuleRef, name: "create-caption-uses" },
   append: { module: captionModuleRef, name: "append-caption-use" },
-  temporalizeDocument: { module: captionModuleRef, name: "temporalize-caption-document" },
+  appendUnbounded: { module: captionModuleRef, name: "append-unbounded-caption-use" },
 } satisfies Record<string, ProducerRef>;
 export const captionTypes = {
+  document: { module: captionModuleRef, name: "CaptionDocument" },
   header: { module: captionModuleRef, name: "CaptionTrackSpec" },
   filter: { module: captionModuleRef, name: "CaptionContentFilter" },
   style: { module: captionModuleRef, name: "CaptionStyle" },
   program: { module: captionModuleRef, name: "CaptionProgram" },
-  timedProjection: { module: captionModuleRef, name: "TimedCaptionProjection" },
+  timing: { module: captionModuleRef, name: "CaptionTiming" },
 } satisfies Record<string, TypeRef>;
 
 const string = { kind: "string", minLength: 1 } as const;
 const integer = { kind: "number", integer: true, minimum: 0 } as const;
 const object = (fields: Readonly<Record<string, { readonly schema: ValueSchema; readonly optional?: boolean }>>): ValueSchema => ({ kind: "object", fields });
+const captionDisplayWord = object({
+  separatorBefore: { schema: { kind: "string", enum: ["", " "] } },
+  id: { schema: string }, unitId: { schema: string }, text: { schema: string },
+  attributes: { schema: { kind: "array", items: object({
+    name: { schema: string },
+    value: { schema: { kind: "oneOf", variants: [string, { kind: "number" }, { kind: "boolean" }] } },
+  }) } },
+});
+const captionUnit = object({
+  id: { schema: string },
+  wordIds: { schema: { kind: "array", minItems: 1, items: string } },
+});
+const captionCue = object({
+  id: { schema: string }, unitIds: { schema: { kind: "array", minItems: 1, items: string } },
+  role: { schema: string, optional: true },
+});
+export const captionDocumentSchema: ValueSchema = object({
+  id: { schema: string },
+  units: { schema: { kind: "array", items: captionUnit } },
+  words: { schema: { kind: "array", items: captionDisplayWord } },
+  cues: { schema: { kind: "array", items: captionCue } },
+});
 export const captionStyleSchema: ValueSchema = object({
   id: { schema: string },
   rendering: { schema: { kind: "oneOf", variants: [{ kind: "null" }, object({
@@ -31,18 +52,15 @@ export const captionProgramSchema: ValueSchema = object({
   id: { schema: string }, documentId: { schema: string },
   styles: { schema: { kind: "array", items: captionStyleSchema } },
   uses: { schema: { kind: "array", items: object({
-    window: { schema: temporalWindowSchema }, styleId: { schema: string }, role: { schema: string, optional: true },
+    id: { schema: string }, window: { schema: temporalWindowSchema, optional: true },
+    styleId: { schema: string }, role: { schema: string, optional: true },
   }) } },
 });
 const timedUnit = object({ unitId: { schema: string }, startFrame: { schema: integer }, endFrameExclusive: { schema: integer } });
-export const timedCaptionProjectionSchema: ValueSchema = object({
-  spaceId: { schema: string },
-  narrativeId: { schema: string },
+export const captionTimingSchema: ValueSchema = object({
+  timelineId: { schema: string },
   documentId: { schema: string },
-  cues: { schema: { kind: "array", items: object({
-    id: { schema: string }, startFrame: { schema: integer }, endFrameExclusive: { schema: integer },
-    units: { schema: { kind: "array", minItems: 1, items: timedUnit } },
-  }) } },
+  units: { schema: { kind: "array", items: timedUnit } },
 });
 
 export const captionMarkupSurfaces = [{
@@ -57,12 +75,12 @@ export const captionMarkupSurfaces = [{
 
 export const captionManifest: ModuleManifest = {
   format: "hypit.module@1", name: captionModuleRef.name, version: captionModuleRef.version,
-  dependencies: [narrativeDependency, timelineDependency, temporalDependency], types: [
-    { name: captionTypes.header.name }, { name: captionTypes.filter.name },
-    { name: captionTypes.style.name }, { name: captionTypes.program.name }, { name: captionTypes.timedProjection.name },
+  dependencies: [temporalDependency], types: [
+    { name: captionTypes.document.name }, { name: captionTypes.header.name }, { name: captionTypes.filter.name },
+    { name: captionTypes.style.name }, { name: captionTypes.program.name }, { name: captionTypes.timing.name },
   ], capabilities: [], producers: [{
     name: captionProducers.create.name,
-    inputs: [{ name: "document", type: narrativeTypes.captionDocument }, { name: "header", type: captionTypes.header }],
+    inputs: [{ name: "document", type: captionTypes.document }, { name: "header", type: captionTypes.header }],
     outputs: [{ name: "program", type: captionTypes.program }], needs: [],
   }, {
     name: captionProducers.append.name,
@@ -70,11 +88,10 @@ export const captionManifest: ModuleManifest = {
       { name: "style", type: captionTypes.style }, { name: "filter", type: captionTypes.filter }],
     outputs: [{ name: "program", type: captionTypes.program }], needs: [],
   }, {
-    name: captionProducers.temporalizeDocument.name,
-    inputs: [
-      { name: "document", type: narrativeTypes.captionDocument },
-      { name: "timeline", type: timelineTypes.track },
-    ],
-    outputs: [{ name: "caption", type: captionTypes.timedProjection }], needs: [],
+    name: captionProducers.appendUnbounded.name,
+    inputs: [{ name: "program", type: captionTypes.program },
+      { name: "style", type: captionTypes.style }, { name: "filter", type: captionTypes.filter }],
+    outputs: [{ name: "program", type: captionTypes.program }], needs: [],
   }],
 };
+export const captionDependency = { module: captionModuleRef } as const;

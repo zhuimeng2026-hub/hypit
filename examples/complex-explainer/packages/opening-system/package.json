@@ -14,6 +14,9 @@
     "README.md"
   ],
   "dependencies": {
-    "@explainer/visual-language": "file:../visual-language"
+    "@explainer/visual-language": "file:../visual-language",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*",
+    "@hypit/visual-track": "workspace:*"
   }
 }

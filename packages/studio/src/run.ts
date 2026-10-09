@@ -1,13 +1,13 @@
-import type { PlannedBuild } from "@hypit/compiler-node";
-import { NodeRunCompiler } from "@hypit/compiler-node";
-import type { Candidate, OperationNode, Satisfaction, BuildTarget } from "@hypit/protocol";
-import type { ArtifactAttachment } from "@hypit/workspace";
+import type { PlannedBuild } from "@hypit/hypit/compiler";
+import { RunCompiler } from "@hypit/hypit/compiler";
+import type { Candidate, OperationNode, Satisfaction, BuildTarget } from "@hypit/hypit/protocol";
+import type { BlobAttachment } from "@hypit/hypit/workspace";
 import {
-  installRunFragmentHostFacets,
-  runFrontendsFromHostFacets,
+  installRunFragmentFacets,
+  runFrontendsFromFacets,
   RunFragmentRegistry,
   RunFrontendRegistry,
-} from "@hypit/run";
+} from "@hypit/hypit/run";
 
 import type { StudioBuildLibrary } from "./build-library.js";
 import { observedCompiledSource } from "./compile.js";
@@ -31,7 +31,7 @@ export type RunPlan = {
   readonly source: CompiledSource;
   readonly run: RunCompilation;
   readonly targets: readonly string[];
-  readonly attachments: readonly ArtifactAttachment[];
+  readonly attachments: readonly BlobAttachment[];
   readonly plan: (run: RunCompilation, targets: readonly string[]) => PlannedBuild;
 };
 
@@ -45,21 +45,22 @@ export async function loadStudioRun(input: {
   const fragments = new RunFragmentRegistry();
   const frontends = new RunFrontendRegistry();
   for (const contribution of input.domain.contributions) {
-    installRunFragmentHostFacets(contribution.hostFacets ?? [], fragments);
-    for (const frontend of runFrontendsFromHostFacets(contribution.hostFacets ?? [])) {
+    installRunFragmentFacets(contribution.facets ?? [], fragments);
+    for (const frontend of runFrontendsFromFacets(contribution.facets ?? [])) {
       frontends.register(frontend);
     }
   }
   const observer = createObserver(input.domain.surfaces, input.registry);
-  const compiler = new NodeRunCompiler({
+  const compiler = new RunCompiler({
     authorCompiler: input.domain.createCompiler(observer.surfaces),
     fragments,
     frontends,
     ...(input.buildLibrary === undefined ? {} : {
+      locateHistoricalOutput: input.buildLibrary.locateHistoricalOutput,
       resolveHistoricalOutput: input.buildLibrary.resolveHistoricalOutput,
     }),
   });
-  const compiled = await compiler.compileFile(input.run);
+  const compiled = await compiler.compileEntry(input.run);
   const source = await observedCompiledSource(compiled.author, observer.observations());
   const targets = compiled.run.graph.targets.map((target) => target.output);
   return {

@@ -48,7 +48,6 @@ my-video/
   packages/                 project-local Author packages when the work introduces them
   output/                   explicit exports for people and other tools
   hypit.runtime.json        execution environment
-  hypit.results.json        optional Result repository selection
   .hypit/                   generated local Runtime and Result data
 ```
 
@@ -68,13 +67,13 @@ the Author Source or in packages that it explicitly imports.
 Every `.svrun` file begins with its processing instruction:
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 ```
 
 ### Minimal Run Source
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 
 <svrun version="1">
   <author source="./main.svml"/>
@@ -118,7 +117,7 @@ As soon as a generated image or take is accepted, reuse it explicitly in the nex
 `build-record` and `satisfy`, then inspect the plan before starting paid downstream work.
 
 ```svml
-<?svml using="@hypit/run-markup@1"?>
+<?svml using="@hypit/markup/run@1"?>
 
 <svrun version="1">
   <author source="./main.svml"/>
@@ -199,10 +198,11 @@ Connects a Candidate to a Logical Output:
 The Planner reads the complete Author Graph and Run Graph together. It prunes default Operations
 that selected Candidates replace while retaining any Author Outputs the selected Candidate itself
 still consumes. This is a
-new Build, not a continuation of the old one. Reusing generated video leaves normalization and semantic
-preparation downstream; reusing a prepared SemanticTake retains those results too. Caption, MG and
-rendering recompute where they remain on the selected route. Choose the Output whose meaning matches
-what should stay unchanged.
+new Build, not a continuation of the old one. Reusing generated video leaves normalization and
+any required alignment downstream. Reusing normalized media, its local domain and NarrativeAlignment retains those
+facts independently without freezing Timeline placement or presentation. Caption, MG and rendering
+recompute where they remain on the selected route. Choose the Outputs whose meanings match what should
+stay unchanged.
 
 Core does not label a Candidate as “exact” or “substitute”. Choosing a Candidate is the Run
 author's explicit implementation decision for that Build. Type compatibility is checked; creative
@@ -214,7 +214,7 @@ A local file is the simplest zero-input Candidate. The Run Source names the byte
 to one current Logical Output:
 
 ```svml
-<file id="approved-opening" type="@hypit/artifact@1#BlobArtifact" from="./approved-opening.mp4" media-type="video/mp4"/>
+<file id="approved-opening" type="@hypit/blob@1#Blob" from="./approved-opening.mp4" media-type="video/mp4"/>
 <satisfy output="opening-shot.video" candidate="approved-opening"/>
 ```
 
@@ -239,9 +239,9 @@ hypit paths
 to overwrite an existing file, installs nothing, contacts no service and starts no Worker. For an
 existing intentional Profile, use `hypit runtime use <profile>`; that command writes only
 `.hypit/runtime`. See [Runtime](../guide/runtime.md) for the Profile schema and boundaries.
-The CLI resolves the project first: `--workspace` is an explicit boundary; otherwise the nearest
-`package.json` above the current directory is the boundary, falling back to the current directory
-for a plain creative folder. It then reads only that project's `.hypit/runtime`. It never discovers
+The CLI resolves the project first: `--project` is an explicit boundary; otherwise it searches upward
+for a `package.json` whose `hypit.project` field is `true`. A component package or arbitrary current
+directory never silently becomes a project. It then reads only that project's `.hypit/runtime`. It never discovers
 a Profile from a conventional filename or inherits another project's selection from a parent directory.
 
 ## Configure selected credentials
@@ -310,15 +310,16 @@ and Providers remain ordinary project dependencies, installed with that project'
 [`uv`](https://docs.astral.sh/uv/) is only needed first when the Profile selects local Python
 programs such as WhisperX or OpenCV.
 
-When an author package such as Fontsource is missing, `check`/`plan` report the precise command, for
-example:
+The official Distribution supplies the Fontsource adapter. Exact font families are project-owned
+dependencies; add them with that project's package manager, for example:
 
 ```bash
-hypit packages install @fontsource-variable/inter@5.3.0
+npm install --save-exact @fontsource-variable/inter@5.3.0
 ```
 
-`hypit runtime up` manages dependencies, the background Worker and external programs; `build` does
-not perform deployment preparation.
+`hypit runtime up` prepares the selected Runtime's background Worker, external Programs and runtime
+materials; `build` does not perform deployment preparation. npm dependencies are installed beforehand
+by the Distribution or project's package manager.
 
 #### Keeping a real video project outside the Hypit checkout
 
@@ -332,7 +333,7 @@ hypit runtime use hypit.runtime.json
 hypit plan build.svrun
 ```
 
-The Workspace is resolved before the Runtime Profile. Override it explicitly with `--workspace`; the
+The Project is resolved before the Runtime Profile. Override it explicitly with `--project`; the
 entry Source path and Runtime selection never choose it. `--package-root` locates installed packages
 and never widens Source access; `--asset-root` only grants read access to additional asset bytes.
 
@@ -347,11 +348,10 @@ The authoritative result of every Build lives in `.hypit/results/<UTC-date>/<bui
 `result.json` records the name, status, Target and public Outputs, media in `files/`, structured
 values in `values/`.
 
-That is the zero-configuration Result repository. The `output/` directory shown earlier is only a
-convenient destination for explicit exports and is not part of Result storage. A project-owned
-`hypit.results.json` may instead select `@hypit/build-result-s3`; commands and historical
-`build-record` references then use that same repository. Temporary Resources for an active Build
-remain local and private to the Runtime.
+This project-local directory is the Result repository. The `output/` directory shown earlier is only
+a convenient destination for explicit exports and is not part of Result storage. Archive or migrate
+completed Results after the Build when needed. Temporary Resources for an active Build remain local
+and private to the Runtime.
 
 Read-only archive commands such as `status` and `builds` do not initialize the Runtime database when
 state does not exist yet.
@@ -387,7 +387,7 @@ repository. The installed package manager owns their versions.
 hypit doctor
 ```
 
-Doctor always validates the project's selected Result Repository. When a Runtime Profile is selected or
+Doctor always validates the project's Result repository. When a Runtime Profile is selected or
 passed explicitly, it also validates every selected Runtime role, Endpoint configuration, credential
 presence and bounded environment probe. It never starts the Worker or performs a paid request.
 
@@ -448,7 +448,7 @@ A plain `status <build-id>` prints one snapshot. `status --watch` exits when the
 |---|---|
 | `--runtime` | One-command Runtime Profile override; normally select it once with `runtime use` |
 | `--package-root` | Host directory containing the installed packages |
-| `--workspace` | Explicit Source Workspace override |
+| `--project` | Explicit Project boundary; also the default Source Workspace root |
 | `--title` | Optional human-facing Result title |
 | `--follow` | Wait for a Result outcome as an observer; durable execution remains with the Worker |
 
