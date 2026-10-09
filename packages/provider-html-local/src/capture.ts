@@ -188,7 +188,8 @@ export async function captureStagedVisual(input: CaptureInput, controller: Abort
           defaultViewport: { width: document.canvas.width, height: document.canvas.height, deviceScaleFactor: 1 },
           args: ["--no-sandbox", "--disable-dev-shm-usage",
             ...(config.browserGpu === "software" ? ["--disable-gpu"] : []),
-          ] });
+          ],
+          ...(config.protocolTimeoutMs === undefined ? {} : { protocolTimeout: config.protocolTimeoutMs }) });
         sessions.add(session);
         signal.throwIfAborted();
         const page = await session.newPage();
