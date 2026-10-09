@@ -1,9 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const nanoBananaModuleRef = { name: "@hypit/nano-banana", version: "1" } as const;
 export const nanoBananaModels = ["nano-banana-2", "nano-banana-pro"] as const;
@@ -105,7 +105,7 @@ const nanoBananaChildren: readonly SurfaceChildVocabulary[] = [
   { tag: "Reference", cardinality: "many",
     summary: "Attaches one image Artifact as a reference picture.",
     attributes: [
-      { name: "image", kind: "reference", required: true, accepts: [artifactTypes.blob],
+      { name: "image", kind: "reference", required: true, accepts: [blobTypes.blob],
         summary: "Selects the image Artifact this reference contributes." },
     ] },
 ];
@@ -128,7 +128,7 @@ const surface = (
     children: nanoBananaChildren,
     ports: [{
       name: "image",
-      type: artifactTypes.blob,
+      type: blobTypes.blob,
       summary: "The primary generated image, addressed as `<id>.image`.",
     }],
     example,

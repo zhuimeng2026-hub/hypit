@@ -2,11 +2,17 @@
 
 Official raw Script Surface for the Markup Frontend. It parses prose-first named Segment blocks,
 newline-independent Role Cues, Dual Text, Selection and Moment syntax, and lowers them to a
-canonical authored Narrative value with exactly `2M + 2N + 2` semantic anchor identities: both
-ends of every Token and Segment, plus the Script Program's own start and end.
+canonical authored Narrative value with exactly `2M + 2N` semantic anchor identities: both
+ends of every Token and Segment. Script adds no synthetic Narrative or program boundary anchors;
+absolute work boundaries belong to Timeline.
 
 The package is an ordinary statically declared Surface module. Core does not import it and does not
 know that Script, Segment or Narrative exist.
+
+The official video Distribution installs this package as an ordinary default npm dependency. Script
+owns its parser, formatter, source inverse and Studio temporal-domain facet; `@hypit/script/studio`
+exposes that facet for reuse. Packages that need Script-specific parsing depend on this package,
+while consumers of the result depend on the public Narrative, Caption and Text values instead.
 
 ```svml
 <script id="story">
@@ -35,7 +41,8 @@ numbers; capitalization does not distinguish Roles from Segments.
 An empty Segment such as `<empty></empty>` (or `<empty/>`) is valid. `empty` is an ordinary
 author-chosen name, not a reserved keyword. It retains the Segment identity and both boundary anchors
 while contributing no Tokens or spoken text. This supports wordless passages in the same semantic
-model: the associated normalized media, not the empty tag, determines the SemanticTake's duration.
+model: associated prepared media can determine duration, and NarrativeAlignment can supply the
+Segment boundary relation with no word units when another contribution consumes that identity.
 
 The package exports its Manifest, `parseScript`, semantic/source-map projection helpers, a
 semantic-preserving formatter and the raw `decodeScriptSurface` handler. Source ranges and parser
@@ -45,18 +52,18 @@ components without importing Script internals.
 
 The Surface exports one full Narrative plus narrow, immutable views:
 
-- `script.segment.<id>` is a narrow `NarrativeExcerpt` used to associate a generated Take with one Segment;
+- `script.segment.<id>` is a narrow `NarrativeSegmentRef` used to align generated or supplied media with one Segment;
 - `script.segment.<id>.dialogue` is ordinary `Text`: display-independent dialogue, including optional
-  Role cues and right-side Dual Text pronunciation, for a speech-video model;
+  Role annotations and right-side Dual Text pronunciation, for a speech-video model;
 - `script.segment.<id>.speech` is ordinary pronunciation-only `Text` for duration estimation or TTS;
 - `script.caption` is one complete `CaptionDocument`: ordered display Words, N:M Alignment Units,
-  and authored Cue Breaks, empty when the Script has no visible Caption words;
+  and authored Cues, empty when the Script has no visible Caption words;
 - `script.selection.<id>` is a reusable explicit Selection;
 - `script.moment.<id>` is a reusable explicit Moment.
 
-`@hypit/caption` projects `script.selection.<id>` or a Role onto complete Caption Alignment Units;
-it then joins those units to a Timeline for frame timing. Seedance consumes dialogue `Text`,
-Estimate and TTS consume speech `Text`, and semantic preparation consumes the Segment excerpt. None imports
+`@hypit/narrative-caption` relates the separately exported Caption units to Narrative Tokens and
+projects them through explicit Narrative time. Seedance consumes dialogue `Text`,
+Estimate and TTS consume speech `Text`, and optional semantic preparation consumes the Segment excerpt. None imports
 Script's parser AST. Another authoring package may produce the same ordinary Text, Narrative and
 CaptionDocument contracts.
 
@@ -69,15 +76,15 @@ CaptionDocument contracts.
   `<display text | spoken text>`. In `<display text|>`, omitted speech inherits the displayed prose.
 - **Selection marker**: a named semantic range, written `@{name} ... @{/name}`.
 - **Moment marker**: a named semantic point, written `@{name!}`.
-- **CaptionDocument**: the Script-owned caption truth; it contains **Display Words**,
-  **Alignment Units** and **Cue Breaks**. It contains no seconds or frames.
+- **CaptionDocument**: a Caption-owned value produced by Script; it contains **Display Words**,
+  **Alignment Units** and authored **Cues**. It contains no seconds or frames.
 - **Token attribute**: a flat postfix display-word annotation such as `really{emphasis}` or
   `really{emphasis,importance=2,tone=warm}`. Values may be strings, finite numbers or booleans. It
   becomes `CaptionDisplayWord.attributes`; it is not a Selection and does not carry timing.
 
 Within Dual Text, an unescaped `@` belongs to the source of spoken text: the right side when supplied,
 or the shared left side in `<display text|>`. Write `\@` if an at-sign must be shown. An empty display side, such as `< | spoken words>`, keeps the speech
-tokens and omits them from Caption. `||` is an authored Caption Cue Break and must occur between
+tokens and omits them from Caption. `||` ends the current authored Caption Cue and must occur between
 complete Alignment Units.
 
 `<组件化|>` is shorthand for `<组件化|组件化>`, using the same exported Caption Alignment Unit.
@@ -95,8 +102,8 @@ side is invalid. This adds no new public value type or protocol version.
 ## Segments, turns and Cues are different boundaries
 
 A Segment names a structural production passage. It can contain several Role turns and be performed
-by one Take with several edited shots. A Role Cue changes who speaks; it neither creates a character
-asset nor requires another generated Take. `||` changes Caption grouping between complete Alignment
+in one generated clip with several edited shots. A Role Cue changes who speaks; it neither creates a character
+asset nor requires another generated clip. `||` changes Caption grouping between complete Alignment
 Units; it does not split the Segment, cut the picture or end a Selection.
 
 ```svml
@@ -110,7 +117,7 @@ Units; it does not split the Segment, cut the picture or end a Selection.
 ```
 
 Dual Text preserves display spelling while supplying an explicit pronunciation. Its N:M Alignment
-Unit is indivisible for Caption timing and authored Cue Breaks. Roles are lexical speaking cues;
+Unit is indivisible for Caption timing and Cue membership. Roles are lexical speaking cues;
 the Source's model references and action direction bind them to the intended performers.
 
 English words and numbers normally form lexical units; Han characters form individual units, as do
@@ -139,7 +146,7 @@ Script preserves the normalized display spelling independently of speech tokeniz
 whitespace runs become one space; leading/trailing whitespace in a Turn and padding at the edges
 of a Dual Text side are omitted. No language-specific rule removes a Chinese space or inserts a
 space between numeric and Korean/Latin tokens. `是的 就是这样`, `3개월`, `3 개월`, `3D` and `3 D`
-therefore remain distinct as authored. Source newlines are prose formatting, not Caption Cue breaks.
+therefore remain distinct as authored. Source newlines are prose formatting, not Caption Cue separators.
 Use `||` for Cues and a family's layout controls for visual rows.
 
 Each `CaptionDisplayWord.separatorBefore` is `""` or `" "`, relative to the preceding displayed word
@@ -202,36 +209,14 @@ requested boundary needs an interior insertion site.
 Writeback reparses the result to retain the requested bindings and unchanged speech, display and
 Narrative/Caption content. Source offsets remain parser-private; no formatting history is stored.
 
-## Explicit migration from 0.1
-
-The 0.2 parser rejects bare `@name` markers. Preview migration from the repository or installed
-Distribution root, then explicitly write the reviewed result:
-
-```sh
-node packages/script/bin/migrate-0.2.mjs /path/to/film.svml
-node packages/script/bin/migrate-0.2.mjs /path/to/film.svml --write
-```
-
-Use `--body` for a file containing a raw Script body rather than outer SVML. The tool converts
-markers only inside Script bodies, leaves comments and escapes intact, and does not touch provider
-prompt references such as `@image1`. It neither installs anything nor runs during a build.
-
-The tool changes marker spelling, not marker placement. Move a marker that separates a word from
-its attached quote or punctuation to the complete word boundary before using that source.
-
-Review authored whitespace after migration: spaces previously discarded by Chinese/punctuation
-normalization now appear. The tool preserves source spaces rather than guessing the author's intent.
-Regenerate affected Narrative, caption and Build results with the new reader/writer together;
-protocol identities remain `@1`. Existing rendered media is not modified by source migration.
-
 ## Complete authored content and narrow exports
 
-The root `story` Record contains the complete Narrative: speech structure, semantic references and
-its CaptionDocument. `story.caption`, `story.selection.<id>`, Segment excerpts and dialogue/speech
-Text outputs remain explicit narrow exports derived from that content. Caption rendering can read
-the document and Timeline. Timed Uses change its presentation; their semantic references are
-projected through the same Timeline as other components. Word attributes remain in the document
-for families that give those words structural visual roles.
+The root `story` Record contains only the complete Narrative: speech structure and semantic
+references. `story.caption`, `story.caption-binding`, `story.selection.<id>`, Segment excerpts and
+dialogue/speech Text are peer exports derived from the same parse. The binding relates Caption units
+to Narrative Tokens without embedding either value in the other. Caption rendering reads the
+document and already resolved CaptionTiming. Word attributes remain in the document for families
+that give those words structural visual roles.
 
 For content lookup, use the Narrative package's `narrativeTokensForSelection` or
 `narrativeSelectionTokenRange`. These query authored order; Timeline separately locates the same

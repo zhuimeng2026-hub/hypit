@@ -49,8 +49,8 @@ Runtime Profile example:
   "format": "hypit.runtime-local@1",
   "dataRoot": ".hypit/runtimes/local",
   "credentials": {
-    "platform": {
-      "use": "@hypit/credential-store-platform"
+    "local": {
+      "use": "@hypit/credential-store-local"
     }
   },
   "endpoints": {
@@ -58,7 +58,7 @@ Runtime Profile example:
       "use": "@hypit/provider-tokendance",
       "pool": "tokendance.default",
       "config": {
-        "apiKey": { "store": "platform", "key": "tokendance.api-key" },
+        "apiKey": { "store": "local", "key": "tokendance.api-key" },
         "defaultConcurrency": 3,
         "pollIntervalMs": 10000
       }
@@ -73,3 +73,5 @@ Runtime Profile example:
 `operationTimeoutMs` and `actionLimits` bound single HTTP calls, the whole remote task and action
 concurrency. Task and HTTP failures keep TokenDance's `error.code` and message, with any signed URL
 in the message redacted.
+Polling transport failures and HTTP 429/5xx preserve the same task and honor standard `Retry-After`;
+the scheduled wake never passes the original operation deadline. Other errors end the local attempt.

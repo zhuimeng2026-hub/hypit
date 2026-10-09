@@ -2,14 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { compositionTypes } from "@hypit/composition";
 import { audioTrackTypes } from "@hypit/audio-track";
-import { mediaTrackTypes } from "@hypit/media-track";
-import type { StudioTrackCompanionContext } from "@hypit/studio-adapter";
-import { audioTrackStudioTrackCompanions } from "../../audio-track-studio/src/index.js";
-import { mediaTrackStudioTrackCompanions } from "../../media-track-studio/src/index.js";
+import { visualTrackTypes } from "@hypit/visual-track";
+import type { StudioTrackCompanionContext } from "@hypit/studio-companion";
+import { audioTrackStudioTrackCompanions } from "../../audio-track/src/studio.js";
+import { textFineStudioTrackCompanions } from "../../text-fine/src/studio.js";
+import { visualTrackStudioTrackCompanions } from "../../visual-track/src/studio.js";
 
-for (const kind of ["audio", "media"] as const) {
-  test(`${kind} Item titles use explicit author names or exact source references without changing identity`, () => {
-    const sourceType = kind === "audio" ? audioTrackTypes.clipSpec : mediaTrackTypes.itemSpec;
+for (const kind of ["audio", "visual"] as const) {
+  test(`${kind} Clip titles use explicit author names or exact source references without changing identity`, () => {
+    const sourceType = kind === "audio" ? audioTrackTypes.clipSpec : visualTrackTypes.clipSpec;
     const subjects = ["my-chosen-name", "track.item.0002", "track.item.0003"];
     const child = (id: string, index: number) => ({
       ...(index === 0 ? { id } : {}),
@@ -18,16 +19,15 @@ for (const kind of ["audio", "media"] as const) {
       range: { start: index * 10, end: index * 10 + 9 },
       values: [{ type: sourceType, value: { id } }],
     });
-    const program = {
-      items: subjects.map((id, index) => ({
+    const clips = subjects.map((id, index) => ({
         id: `projected.${index}`, subjectId: id,
         window: { startFrame: index * 10, endFrameExclusive: index * 10 + 20 },
         span: { startFrame: index * 10, endFrameExclusive: index * 10 + 20 },
-        stacking: { order: index },
+        order: index, z: index,
         source: { artifact: { resource: "res_audio" } },
         layers: [{ kind: "sample", id: "picture", source: { kind: "still", artifact: { resource: "res_image" } } }],
-      })), sequences: [],
-    };
+      }));
+    const program = { id: `track.${kind}`, clips };
     const context = {
       track: { outputRef: `track.${kind}`, typeRef: kind === "audio" ? compositionTypes.audioTrack : compositionTypes.visualTrack,
         trace: { outputPorts: [{ name: "program", ref: "track.program" }] } },
@@ -35,21 +35,29 @@ for (const kind of ["audio", "media"] as const) {
       values: new Map([["track.program", program]]), spans: [], temporalBindings: [],
     } as unknown as StudioTrackCompanionContext;
     const companion = kind === "audio" ? audioTrackStudioTrackCompanions[0]!
-      : mediaTrackStudioTrackCompanions.find((entry) => entry.id === "visual")!;
-    const entities = companion.project!(context);
-    assert.deepEqual(entities.map((entry) => entry.display.title), ["my-chosen-name", "assets.shared.material", "assets.shared.material"]);
-    assert.deepEqual(entities.map((entry) => entry.authoredId), subjects);
-    assert.equal(new Set(entities.map((entry) => entry.id)).size, 3);
-    assert.deepEqual(entities.map((entry) => entry.elementRange), subjects.map(child).map((entry) => entry.range));
-    assert.deepEqual(entities.map((entry) => [entry.startFrame, entry.endFrameExclusive]), [[0, 20], [10, 30], [20, 40]]);
+      : visualTrackStudioTrackCompanions.find((entry) => entry.id === "visual")!;
+    const items = companion.project!(context);
+    assert.deepEqual(items.map((entry) => entry.display.title), ["my-chosen-name", "assets.shared.material", "assets.shared.material"]);
+    assert.deepEqual(items.map((entry) => entry.authoredId), subjects);
+    assert.equal(new Set(items.map((entry) => entry.id)).size, 3);
+    assert.deepEqual(items.map((entry) => entry.elementRange), subjects.map(child).map((entry) => entry.range));
+    assert.deepEqual(items.map((entry) => [entry.startFrame, entry.endFrameExclusive]), [[0, 20], [10, 30], [20, 40]]);
   });
 }
 
-test("audio playback is one attribute group and gain stays a bounded mixing control", () => {
+test("audio source time stays explicit and gain remains a bounded mixing control", () => {
   const companion = audioTrackStudioTrackCompanions[0]!;
-  const group = companion.bindings!.find(binding => binding.name === "playback-settings")!;
-  assert.deepEqual(group.attributes, ["playback", "min-rate", "max-rate"]);
-  assert.equal(companion.inspector!.find(field => field.binding === group.name)?.domain, "when");
+  const sourceTime = companion.bindings!.find(binding => binding.name === "source-time")!;
+  assert.equal(sourceTime.writable, undefined);
+  assert.equal(companion.inspector!.some(field => field.binding === sourceTime.name), false);
   const gain = companion.inspector!.find(field => field.binding === "gain")!;
   assert.equal(gain.domain, "how"); assert.equal(gain.number?.scale, 100); assert.equal(gain.number?.maximum, 6400);
+});
+
+test("official Companions expose author families without changing terminal facets", () => {
+  assert.equal(visualTrackStudioTrackCompanions[0]?.family, "visual");
+  assert.equal(audioTrackStudioTrackCompanions[0]?.family, "audio");
+  assert.deepEqual(textFineStudioTrackCompanions.map((companion) => companion.family), [
+    "typography", "typography", "typography",
+  ]);
 });

@@ -5,11 +5,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as pause } from "node:timers/promises";
 import test from "node:test";
-import { defineBuild } from "@hypit/core";
-import { FileBuildResultRepository } from "@hypit/build-result";
-import { installDistributionPackageResolution } from "@hypit/package-loader-node";
-import { SqliteRuntimeState } from "@hypit/store-sqlite";
-import { createGreetingBuild, manifest, capabilities, producers, types } from "../../core/test/greeting-fixture.js";
+import { defineBuild } from "@hypit/kernel";
+import { FileBuildResultRepository } from "@hypit/result/node";
+import { installDistributionPackageResolution } from "@hypit/loader/node";
+import { SqliteRuntimeState } from "../src/sqlite-state.js";
+import { createGreetingBuild, manifest, capabilities, producers, types } from "../../kernel/test/greeting-fixture.js";
 import { createRuntimeFromConfig, statePath } from "../src/config.js";
 import { superviseBuilds } from "../src/supervisor.js";
 
@@ -41,27 +41,25 @@ test("isolated Builds load fresh transitive code and Profile choices, share capa
   async function packageAt(directory: string, revision: string) {
     const pkg = join(directory, "node_modules", "fixture-components");
     await mkdir(pkg, { recursive: true });
-    await writeFile(join(directory, "package.json"), JSON.stringify({ private: true }));
+    await writeFile(join(directory, "package.json"), JSON.stringify({ private: true, hypit: { project: true } }));
     await writeFile(join(pkg, "package.json"), JSON.stringify({ name: "fixture-components", version: "1.0.0", type: "module", hypit: { activation: "./activation.ts" } }));
     await writeFile(join(pkg, "revision.ts"), `export const revision: string = ${JSON.stringify(revision)};`);
     await writeFile(join(pkg, "activation.ts"), `
       import { revision } from './revision.js';
       import { access, writeFile, appendFile } from 'node:fs/promises';
       import { setTimeout as pause } from 'node:timers/promises';
-      import { createRuntimeEndpointAdapterFacet } from '@hypit/runtime-kit';
-      import { defineEndpointPackage } from '@hypit/endpoint-kit';
+      import { createRuntimeEndpointAdapterFacet } from '@hypit/runtime-local/extension';
+      import { defineEndpoint } from '@hypit/endpoint';
       const producers = ${JSON.stringify(producers)};
       export default {
-        format: 'hypit.node-package@1', modules: [{ manifest: ${JSON.stringify(manifest)} }],
-        components: [{ producers: [
+        format: 'hypit.package@1', modules: [{ manifest: ${JSON.stringify(manifest)} }],
+        facets: [{ abi: 'hypit.producer-package@1', implementation: { producers: [
           { producer: producers.makePrompt, handler: () => ({ outputs: { prompt: { kind: 'inline', value: revision } }, needs: {} }) },
           { producer: producers.requestText, handler: ({ inputs }) => ({ outputs: {}, needs: { generation: { prompt: inputs.prompt.value.value } } }) },
           { producer: producers.assemble, handler: ({ inputs }) => ({ outputs: { document: { kind: 'inline', value: { text: inputs.generated.value.value, revision } } }, needs: {} }) },
-        ] }],
-        hostFacets: [createRuntimeEndpointAdapterFacet({ use: 'fixture-components', activate(context) {
+        ] } }, createRuntimeEndpointAdapterFacet({ use: 'fixture-components', activate(context) {
           const config = context.config;
-          return { endpoint: defineEndpointPackage({
-            module: { name: 'fixture.provider', version: '1' }, facet: 'generation',
+          return { endpoint: defineEndpoint({
             instance: context.instance, pool: context.pool, defaultConcurrency: 1,
             capabilities: [config.remote ? {
               lifecycle: 'asynchronous', capability: ${JSON.stringify(capabilities.generation)}, returns: ${JSON.stringify(types.generated)},
@@ -105,9 +103,9 @@ test("isolated Builds load fresh transitive code and Profile choices, share capa
     const authored = new Set(initial.program.records.map((record) => record.id));
     await runtime.build({ id,
       definition: defineBuild({ program: initial.program, initialRecords: initial.records.filter((record) => !authored.has(record.id)), plan: initial.plan, targets: initial.targets }),
-      componentPackages: ["fixture-components"],
+      executionPackages: ["fixture-components"],
       catalog: { source: { path: join(directory, "main.svml") }, publishedOutputs: [{ name: "document", ref: { kind: "logical-output", id: "document" } }] },
-      result: { repository: { root: directory, selection: { use: "@hypit/build-result-fs", config: { path: "results" } } } },
+      result: { repository: { root: directory, path: "results" } },
     });
     return id;
   }

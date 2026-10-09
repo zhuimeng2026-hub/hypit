@@ -1,6 +1,6 @@
 {
   "name": "@hypit/grok-imagine",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -10,11 +10,18 @@
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
-    "@hypit/artifact": "workspace:*",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/blob": "workspace:*",
     "@hypit/generation": "workspace:*",
+    "@hypit/hypit": "workspace:*",
     "@hypit/markup": "workspace:*",
-    "@hypit/model-kit": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/text": "workspace:*"
   }

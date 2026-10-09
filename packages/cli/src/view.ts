@@ -4,10 +4,10 @@ import type {
   BuildResultManifest,
   BuildResultRepository,
   RepositoryBuildResultOutputDescription,
-} from "@hypit/build-result";
+} from "@hypit/result";
 import { buildIdCreatedAt } from "@hypit/protocol";
 import type { TypeRef } from "@hypit/protocol";
-import type { BuildView } from "@hypit/runtime-host-node";
+import type { CliBuildView as BuildView } from "./runtime-port.js";
 import { commandHint } from "./command-hint.js";
 import type { CommandScope } from "./command-hint.js";
 
@@ -258,8 +258,8 @@ export async function buildResultView(
     createdAt: buildCreatedAtIso(manifest.id),
     ...(manifest.finishedAt === undefined ? {} : { finishedAt: new Date(manifest.finishedAt).toISOString() }),
     outcome: manifest.outcome ?? "open",
-    source: projectPath(manifest.source.path, options.projectRoot),
-    ...(manifest.run === undefined ? {} : { run: projectPath(manifest.run.path, options.projectRoot) }),
+    source: projectPath(manifest.source.id, options.projectRoot),
+    ...(manifest.run === undefined ? {} : { run: projectPath(manifest.run.id, options.projectRoot) }),
     targetCount: manifest.targets.length,
     targets: manifest.targets,
     outputCount: available.length,

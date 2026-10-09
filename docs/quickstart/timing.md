@@ -1,149 +1,133 @@
 ---
 title: Timing & Assembly
-description: Per-take normalization and alignment, followed by Timeline assembly.
+description: Construct absolute program time, then present media and project optional semantic time explicitly.
 ---
 
-For spoken video, a `Timeline` connects the authored Script to the actual performance. This is
-the natural time source for captions, word-triggered graphics and coverage. Build it in segment-sized pieces:
+Hypit has one program-time axis: `Timeline`. It is only `{ id, frameRate, frameCount }`.
+It contains no clips, words, Tracks or central event registry.
 
-1. normalize each accepted A/V take into one exact frame domain;
-2. align that normalized media with its authored Script Segment to create a self-contained `SemanticTake`;
-3. assemble the Semantic Takes in program order with `time:Timeline`.
+For spoken work, independent facts meet around that axis:
 
-Every Take is already semantic before it enters the Timeline assembly. Pictures can be presented by
-Media Track or a project component independently of this semantic and audio assembly.
+1. Normalize accepted media into `SynchronizedMedia` plus a finite local temporal domain.
+2. Construct Timeline from a DAG of named Instants, Windows and Extents with one required `end`.
+3. When a consumer needs positions inside performed speech, align its Script Segment on the local domain.
+4. Project requested semantic values through the equal-length Window; present ordinary media through independent Visual and Audio sources.
 
-A purely visual animation uses the same Timeline with an explicit end and zero Takes.
-See [an authored film clock](./composition.md#a-film-drawn-entirely-by-components). It can use seconds
-or frames for events; spoken work can use Script Selections and Moments for the same visual behavior.
+This separation is useful: moving a passage changes absolute relationships without changing its media or local
+word evidence; reframing picture does not change audio; a pure animation needs Timeline but no media
+or Script.
 
 ```svml
-<import as="program" from="@hypit/program-space@1"/>
-<import as="pipeline" from="@hypit/media-pipeline@1"/>
+<import as="mediaop" from="@hypit/media-operations@1"/>
 <import as="whisperx" from="@hypit/whisperx@1"/>
+<import as="semantic" from="@hypit/narrative-temporal@1"/>
 <import as="time" from="@hypit/timeline-author@1"/>
-<import as="media-track" from="@hypit/media-track@1"/>
-  <import as="performance" from="@hypit/performance@1"/>
-<import as="space" from="@hypit/spatial@1"/>
-<import as="recipes" source="./recipes.svs"/>
+<import as="media" from="@hypit/media@1"/>
+<import as="visual" from="@hypit/visual-track@1"/>
+<import as="audio" from="@hypit/audio-track@1"/>
 ```
 
-## Normalize each take
+## Normalize local media
 
-Normalization makes video, audio, duration and frame rate one explicit `SynchronizedMedia` fact.
-The Clock is authored once and shared by every Take that will enter the same Timeline.
+The Clock fixes the frame rate shared by the final Timeline and every local domain placed on it:
 
 ```svml
-<program:Clock id="clock" frame-rate="30"/>
-
-<pipeline:Normalize id="opening-media" source={opening-video.video}
+<time:Clock id="clock" frame-rate="30"/>
+<mediaop:Normalize id="opening-media" source={opening-video.video}
   video="primary-moving" audio="default" span-authority="video" clock={clock}/>
-<pipeline:Normalize id="answer-media" source={answer-video.video}
+<mediaop:Normalize id="answer-media" source={answer-video.video}
   video="primary-moving" audio="default" span-authority="video" clock={clock}/>
 ```
 
-Normalization contains no Script meaning and performs no transcription. It only establishes the
-media facts that later semantic alignment can trust.
+Normalization establishes media facts. It contains no Script meaning or program placement.
 
-## Create one SemanticTake per Segment
+## Align meaning when the composition consumes it
 
-`whisperx:SemanticTake` measures one normalized Take and aligns the evidence with exactly one
-authored Segment:
+Timeline construction needs the media Extent, not semantic alignment. Add Alignment when Caption,
+semantic picture changes, sound events or another consumer needs Script positions inside the
+accepted performance:
 
 ```svml
-<whisperx:SemanticTake id="opening-semantic" narrative={story}
-  segment={story.segment.opening} media={opening-media.media} language="en"/>
-<whisperx:SemanticTake id="answer-semantic" narrative={story}
-  segment={story.segment.answer} media={answer-media.media} language="en"/>
+<whisperx:Alignment id="opening-alignment" narrative={story}
+  segment={story.segment.opening} media={opening-media.media}
+  domain={opening-media.domain} language="en"/>
+<whisperx:Alignment id="answer-alignment" narrative={story}
+  segment={story.segment.answer} media={answer-media.media}
+  domain={answer-media.domain} language="en"/>
 ```
 
-For a Segment with spoken words, `language` explicitly names its spoken language, such as `en`,
-`zh` or `ko`. Use a lowercase two- or three-letter code supported by the selected WhisperX service.
-It is passed unchanged; Hypit does not detect or route languages from Script text or audio.
-An empty Segment omits `language` and uses the normalized media boundaries directly.
+Each output is only a `NarrativeAlignment`: Segment and word boundaries measured on that local
+domain. It does not contain media and does not choose a Timeline position. A Segment with no Tokens
+omits `language`; its boundaries are the local domain boundaries and no acoustic request is needed.
 
-Each output contains the normalized media, the Segment identity, every authored word's local frame
-window, and all of that Segment's structural anchors. There are two anchors for the Segment and two
-for each word. Acoustic evidence is an implementation input to this step; downstream components see
-the completed `SemanticTake`, not a second evidence-shaped timing structure.
+## Construct the absolute Timeline
 
-## Assemble the Timeline
-
-`time:Timeline` places prepared Takes sequentially by default, or at authored `at` positions,
-and provides the complete Timeline. Performance and Sound present its pictures and audio separately:
+Timeline authoring is an acyclic construction graph. `end` is required; every named Instant or
+Window is naturally published as an ordinary graph value:
 
 ```svml
-<space:Canvas id="vertical" width="1080" height="1920"/>
-<space:Frame id="speech-frame" within={vertical}
-  left="0%" top="0%" right="100%" bottom="100%"/>
-
-<time:Timeline id="speech" clock={clock}>
-  <time:Take source={opening-semantic.take}/>
-  <time:Take source={answer-semantic.take}/>
+<time:Timeline id="speech" clock={clock} end="answer.end">
+  <time:Window id="opening" from="start" for={opening-media.extent}/>
+  <time:Window id="answer" from="opening.end" for={answer-media.extent}/>
 </time:Timeline>
-<import as="sound" from="@hypit/sound@1"/>
-<sound:Style id="voice-style"/>
-<sound:Track id="voice" timeline={speech.timeline}>
-  <sound:Use style={voice-style}/>
-</sound:Track>
-<performance:Style id="performance-style" frame={speech-frame} appearance={recipes.media.performance}/>
-  <performance:Track id="performance" timeline={speech.timeline} canvas={vertical}>
-    <performance:Use style={performance-style} during="program"/>
-  </performance:Track>
 ```
 
-| Output | Type | Meaning |
-|---|---|---|
-| `{speech.timeline}` | Timeline | Global semantic and frame-domain authority |
-| `{voice.audio}` | AudioTrack | Sound presentation of the placed Takes |
+Each `for={...extent}` uses a resolved unpositioned duration. Generated speech may therefore
+determine Timeline length during ordinary graph evaluation. Use `from="opening.end+2s"` for a gap,
+`from="opening.end-12f"` for overlap, or `latest(a.end,b.end)` for parallel branches. A pure animation
+can simply declare `<time:Timeline id="animation" clock={clock} end="8s"/>`. The Timeline retains no
+media or source-domain identity.
 
-Performance and Sound use the same prepared Takes and source positions.
-Each Take's global frames are its placement start plus its local frames. The first omitted `at` is
-zero; later omitted `at` follows the preceding Take's end. Use `at="previous.end+2s"` for a gap,
-`at="previous.end-12f"` for overlap, or an absolute position. Timeline `end` defaults to the latest
-content end; `end="content.end+2s"` reserves a tail and `end="30s"` declares a fixed extent.
-All positions resolve to exact frames and the extent contains all Takes. Empty Timelines require
-an authored positive end. No placeholder media fills uncovered time.
+## Project meaning independently
 
-## Consume semantic time
-
-Selections, Moments and whole Segments remain authored Script identities. A downstream component
-receives the Timeline once and projects those identities into frames only when it builds its
-deterministic Track:
+Project semantic evidence by pairing each Alignment with its complete local domain and equal-length
+absolute Window:
 
 ```svml
-<media-track:Track id="cards" timeline={speech.timeline} canvas={vertical}>
-  <media-track:Item image={card.image} extent={card-extent}
-    during={story.selection.demo} frame={card-frame}
-    appearance={recipes.media.card} motion={recipes.motion.card}/>
-</media-track:Track>
-
-<caption-fine:Track id="captions"
-  document={story.caption}
-  timeline={speech.timeline}
->
-  <caption-fine:Use style={primary-caption}/>
-</caption-fine:Track>
-
-<film:Film id="main" canvas={vertical}
-  timeline={speech.timeline} appearance={recipes.film.vertical}>
-  <film:Track source={performance.visual}/>
-  <film:Track source={voice.audio}/>
-  <film:Track source={cards.visual}/>
-  <film:Track source={captions.track}/>
-</film:Film>
-
-<render:Video id="final"
-  composition={main.composition} timeline={speech.timeline}/>
+<semantic:Projection id="story-time" narrative={story} timeline={speech.timeline}>
+  <semantic:Map alignment={opening-alignment.alignment}
+    domain={opening-media.domain} window={speech.opening}/>
+  <semantic:Map alignment={answer-alignment.alignment}
+    domain={answer-media.domain} window={speech.answer}/>
+</semantic:Projection>
+<semantic:Window id="proof" projection={story-time} during={story.selection.proof}/>
+<semantic:Instant id="claim" projection={story-time} at={story.moment.claim}/>
 ```
 
-Use `during={story.segment.answer}` for a whole Segment, a Selection for an authored range, a Moment
-for a point event, and `during="program"` for the complete Timeline domain. Components consume
-`timeline={speech.timeline}`.
+The requested outputs `proof` and `claim` are ordinary absolute Window and
+Instant values. Semantic time is one
+optional projection source; direct seconds, frames and named Timeline values remain equally valid.
+Projection reads the exact semantic boundary. Declare a separate absolute relationship such as
+`<time:Instant id="after-claim" timeline={speech.timeline} at={claim} offset="+5f"/>` when an authored
+offset is needed.
+
+## Present picture and audio
+
+```svml
+<visual:Track id="picture" timeline={speech.timeline}>
+  <visual:Clip id="opening" media={opening-media.media} during={speech.opening}
+    frame={speech-frame} z="10" fit="cover"/>
+  <visual:Clip id="answer" media={answer-media.media} during={speech.answer}
+    frame={speech-frame} z="10" fit="cover"/>
+</visual:Track>
+
+<audio:Track id="mix" timeline={speech.timeline}>
+  <audio:Clip id="opening" source={opening-media.media} during={speech.opening}/>
+  <audio:Clip id="answer" source={answer-media.media} during={speech.answer}/>
+</audio:Track>
+```
+
+Visual and Audio Clips are peer occurrences. The same normalized media can feed both, but selecting its picture never makes its audio
+audible automatically.
 
 ```text
-prepared Takes → Timeline → Performance / project scene → visual ─┐
-                         ├→ Caption / semantic graphics → visual ┤
-                         └→ Sound → audio ───────────────────────┤
-                                                                Film
+SynchronizedMedia + Window ──────────────────────────────→ Visual / Audio occurrence
+
+NarrativeAlignment + LocalDomain + Window ──────────────→ absolute Instants / Windows
+
+Instant / Window / TemporalExtent DAG ───────────────────→ Timeline
 ```
+
+Components ultimately consume Timeline plus absolute Instants or Windows. A domain projection
+publishes those values upstream; general component Surfaces do not accept Script objects or carry
+the projector.

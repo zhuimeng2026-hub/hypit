@@ -1,10 +1,9 @@
-import { programSpaceTypes } from "@hypit/program-space";
+import { timelineTypes } from "@hypit/timeline";
 import assert from "node:assert/strict";
 import test from "node:test";
 
 import { compositionTypes } from "@hypit/composition";
-import { timelineTypes } from "@hypit/timeline";
-import type { StudioFilmCompanion, StudioPlacement } from "@hypit/studio-adapter";
+import type { StudioFilmCompanion, StudioPlacement } from "@hypit/studio-companion";
 
 import type { CompiledSource } from "../src/compile.js";
 import type { RunPlan } from "../src/run.js";
@@ -15,7 +14,7 @@ const filmModule = { name: "@example/film", version: "1" } as const;
 const companion: StudioFilmCompanion = {
   id: "film",
   match: { module: filmModule, surface: "film", outputType: compositionTypes.composition },
-  timeSources: [{ attribute: "semantic", type: timelineTypes.track }, { attribute: "space", type: programSpaceTypes.programSpace }],
+  timeSources: [{ attribute: "semantic", type: timelineTypes.timeline }, { attribute: "space", type: timelineTypes.timeline }],
   tracks: { childSurface: "Track", sourceAttribute: "source", types: [compositionTypes.visualTrack] },
 };
 
@@ -29,7 +28,7 @@ function placement(id: string): StudioPlacement {
 
 test("Studio rejects a Run that reaches two distinct Film compositions", () => {
   const source = {
-    observations: { placements: [placement("one"), placement("two")], sourceMaps: [] },
+    observations: { placements: [placement("one"), placement("two")], temporalDomains: [] },
     served: new Map(),
     exports: ["one", "two"].map((id) => ({
       name: `${id}.composition`, ref: `${id}.composition`, type: "Composition", typeRef: compositionTypes.composition,

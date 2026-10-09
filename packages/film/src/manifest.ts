@@ -1,12 +1,10 @@
-import { timelineTypes } from "@hypit/timeline";
-import type { Timeline } from "@hypit/timeline";
-import { temporalContextAttributeVocabulary } from "@hypit/temporal-markup";
-import { audioTrackSchema, compositionDependency, compositionTypes, visualTrackSchema } from "@hypit/composition";
-
-import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
-import { timelineDependency } from "@hypit/timeline";
-import { spatialDependency, spatialTypes } from "@hypit/spatial";
-import { svsManifest, svsModuleRef, svsRecipeType } from "@hypit/svs";
+import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
+import { audioTrackSchema, compositionDependency, compositionTypes, visualTrackSchema } from "@hypit/hypit/composition";
+import { spatialDependency, spatialTypes } from "@hypit/hypit/spatial";
+import { recipeManifest, recipeModuleRef, recipeType } from "@hypit/hypit/recipe";
+import { temporalContextAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { timelineTypes, timelineDependency } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/hypit/timeline";
 
 export const filmModuleRef = { name: "@hypit/film", version: "1" } as const;
 export const filmTypes = {
@@ -57,10 +55,10 @@ export const filmMarkupSurfaces = [{
           summary: "Names the Film component and the Composition binding it publishes." },
         { name: "canvas", kind: "reference", required: true,
           accepts: [spatialTypes.canvas],
-          summary: "Selects the CanvasSpace that decides the Composition's dimensions." },
+          summary: "Selects the Canvas that decides the Composition's dimensions." },
         ...temporalContextAttributeVocabulary,
         { name: "appearance", kind: "reference", required: true,
-          accepts: [svsRecipeType],
+          accepts: [recipeType],
           summary: "Selects the SVS Recipe that decides the clear color behind every Track.",
           recipe: [
             { name: "background", required: true,
@@ -81,10 +79,10 @@ export const filmMarkupSurfaces = [{
           summary: "The assembled Composition, addressed as `<id>.composition`." },
       ],
       example: [
-        '<film:Film id="main" canvas={vertical} timeline={speech.timeline} appearance={recipes.film.vertical}>',
+        '<film:Film id="main" canvas={vertical.canvas} timeline={speech.timeline} appearance={recipes.film.vertical}>',
         "  <film:Track source={performance.visual}/>",
         "  <film:Track source={voice.audio}/>",
-        "  <film:Track source={captions.track}/>",
+        "  <film:Track source={captions.visual}/>",
         "</film:Film>",
       ].join("\n"),
       notes: [
@@ -104,7 +102,7 @@ export const filmManifest: ModuleManifest = {
     timelineDependency,
     spatialDependency,
     compositionDependency,
-    { module: svsModuleRef },
+    { module: recipeModuleRef },
   ],
   types: [
     { name: filmTypes.program.name },
@@ -122,7 +120,7 @@ export const filmManifest: ModuleManifest = {
       name: filmProducers.appendVisualTrack.name,
       inputs: [
         { name: "set", type: filmTypes.trackSet },
-        { name: "timeline", type: timelineTypes.track },
+        { name: "timeline", type: timelineTypes.timeline },
         { name: "track", type: compositionTypes.visualTrack },
       ],
       outputs: [{ name: "set", type: filmTypes.trackSet }],
@@ -132,7 +130,7 @@ export const filmManifest: ModuleManifest = {
       name: filmProducers.appendAudioTrack.name,
       inputs: [
         { name: "set", type: filmTypes.trackSet },
-        { name: "timeline", type: timelineTypes.track },
+        { name: "timeline", type: timelineTypes.timeline },
         { name: "track", type: compositionTypes.audioTrack },
       ],
       outputs: [{ name: "set", type: filmTypes.trackSet }],
@@ -143,7 +141,7 @@ export const filmManifest: ModuleManifest = {
       inputs: [
         { name: "program", type: filmTypes.program },
         { name: "canvas", type: spatialTypes.canvas },
-        { name: "timeline", type: timelineTypes.track },
+        { name: "timeline", type: timelineTypes.timeline },
         { name: "set", type: filmTypes.trackSet },
       ],
       outputs: [{ name: "composition", type: compositionTypes.composition }],

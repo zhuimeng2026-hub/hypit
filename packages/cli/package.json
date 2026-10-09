@@ -8,28 +8,24 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@hypit/build-result": "workspace:*",
-    "@hypit/build-result-kit": "workspace:*",
-    "@hypit/compiler-node": "workspace:*",
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/core": "workspace:*",
-    "@hypit/driver-node": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/package-loader-node": "workspace:*",
-    "@hypit/project-context-node": "workspace:*",
+    "@hypit/result": "workspace:*",
+    "@hypit/compiler": "workspace:*",
+    "@hypit/producer": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/executor": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/loader": "workspace:*",
+    "@hypit/project": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/run": "workspace:*",
     "@hypit/runtime": "workspace:*",
-    "@hypit/runtime-host-node": "workspace:*",
     "@hypit/source": "workspace:*",
-    "@hypit/validation": "workspace:*",
+    "@hypit/admission": "workspace:*",
     "@hypit/workspace": "workspace:*",
     "typescript": "5.9.3"
   },
   "devDependencies": {
-    "@hypit/runtime-local": "workspace:*",
     "@hypit/markup": "workspace:*",
-    "@hypit/run-markup": "workspace:*",
-    "@hypit/workspace-fs-node": "workspace:*"
+    "@hypit/runtime-local": "workspace:*"
   }
 }

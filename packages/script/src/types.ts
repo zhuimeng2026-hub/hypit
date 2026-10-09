@@ -1,7 +1,9 @@
-import type { CanonicalValue, SourceRange, StoredValue, TypeRef } from "@hypit/protocol";
-import type { CaptionWordAttribute, Narrative, NarrativeMoment, NarrativeSegment, NarrativeSelection, NarrativeToken, NarrativeTurn } from "@hypit/narrative";
+import type { CanonicalValue, SourceRange, StoredValue, TypeRef } from "@hypit/hypit/protocol";
+import type { CaptionWordAttribute } from "@hypit/hypit/caption";
+import type { Narrative, NarrativeMoment, NarrativeSegment, NarrativeSelection, NarrativeToken, NarrativeTurn } from "@hypit/hypit/narrative";
 
-export type { CaptionWordAttribute, Narrative, SemanticAnchor } from "@hypit/narrative";
+export type { CaptionWordAttribute } from "@hypit/hypit/caption";
+export type { Narrative, SemanticAnchor } from "@hypit/hypit/narrative";
 
 export type Affinity = "left" | "right";
 
@@ -78,9 +80,9 @@ export type ParsedCaptionRegion = {
 
 export type ParsedNarrative = Omit<
   Narrative,
-  "id" | "segments" | "tokens" | "turns" | "selections" | "moments" | "caption"
+  "id" | "segments" | "tokens" | "turns" | "selections" | "moments"
 > & {
-  /** Exact Script body range, used only for source-preserving Program-boundary edits. */
+  /** Exact Script body range, used for source-preserving edits and comparisons. */
   readonly sourceRange: SourceRange;
   readonly segments: readonly ParsedSegment[];
   readonly tokens: readonly ParsedToken[];

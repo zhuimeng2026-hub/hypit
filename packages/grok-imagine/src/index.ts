@@ -1,14 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type {
-  SurfaceAttributeVocabulary,
-  SurfaceChildVocabulary,
-  SurfacePortVocabulary,
-  SurfaceVocabulary,
-} from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary, SurfacePortVocabulary, SurfaceVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const grokImagineModuleRef = { name: "@hypit/grok-imagine", version: "1" } as const;
 export const grokImagineModels = ["grok-imagine-video", "grok-imagine-video-1.5-preview"] as const;
@@ -122,13 +117,13 @@ const grokImagineVideoChildren: readonly SurfaceChildVocabulary[] = [
   { tag: "Reference", cardinality: "many",
     summary: "Attaches one image Artifact the model generates from.",
     attributes: [
-      { name: "image", kind: "reference", required: true, accepts: [artifactTypes.blob],
+      { name: "image", kind: "reference", required: true, accepts: [blobTypes.blob],
         summary: "Selects the image Artifact this reference contributes." },
     ] },
 ];
 
 const grokImagineVideoPortVocabulary: readonly SurfacePortVocabulary[] = [
-  { name: "video", type: artifactTypes.blob,
+  { name: "video", type: blobTypes.blob,
     summary: "The generated video Artifact." },
 ];
 

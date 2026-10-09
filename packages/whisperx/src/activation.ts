@@ -1,18 +1,20 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 import {
-  decodeWhisperXSemanticTakeSurface, whisperXComponent,
+  decodeWhisperXAlignmentSurface, whisperXComponent,
   whisperXManifest, whisperXModuleRef,
   whisperXMarkupSurfaces,
 } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: whisperXManifest }],
-  components: [whisperXComponent],
-  hostFacets: [createMarkupSurfaceHostFacet({
+  facets: [
+    ...[whisperXComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),createMarkupSurfaceFacet({
     module: whisperXModuleRef,
-    declaration: whisperXMarkupSurfaces.find((item) => item.name === "semantic-take")!,
-    handler: decodeWhisperXSemanticTakeSurface,
+    declaration: whisperXMarkupSurfaces.find((item) => item.name === "alignment")!,
+    handler: decodeWhisperXAlignmentSurface,
   })],
 };
 export default hypitPackage;

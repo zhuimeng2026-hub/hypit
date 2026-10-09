@@ -4,26 +4,34 @@
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "hypit": { "activation": "./src/activation.ts" },
-  "dependencies": {
-    "@hypit/artifact": "workspace:*",
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/composition": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/media": "workspace:*",
-    "@hypit/narrative": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/program-space": "workspace:*",
-    "@hypit/timeline": "workspace:*",
-    "@hypit/spatial": "workspace:*",
-    "@hypit/svs": "workspace:*",
-    "@hypit/temporal": "workspace:*",
-    "@hypit/temporal-markup": "workspace:*",
-    "@hypit/text": "workspace:*",
-    "@hypit/markup": "workspace:*"
+  "exports": {
+    ".": "./src/index.ts",
+    "./studio": "./src/studio.ts"
+  },
+  "files": [
+    "dist",
+    "preview",
+    "README.md"
+  ],
+  "hypit": {
+    "activation": "./src/activation.ts"
+  },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/hyperframes": "workspace:*"
+    "@hypit/blob": "workspace:*",
+    "@hypit/html-program": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*",
+    "@hypit/markup": "workspace:*",
+    "@hypit/media": "workspace:*",
+    "@hypit/spatial": "workspace:*",
+    "@hypit/recipe": "workspace:*",
+    "@hypit/temporal": "workspace:*",
+    "@hypit/text": "workspace:*",
+    "@hypit/timeline": "workspace:*",
+    "typescript": "5.9.3"
   }
 }

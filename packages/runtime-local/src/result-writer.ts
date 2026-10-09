@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { BuildMachine } from "@hypit/core";
-import { isStreamingResourceStore } from "@hypit/runtime";
+import { BuildMachine } from "@hypit/hypit/kernel";
+import { isStreamingResourceStore } from "@hypit/hypit/runtime";
 import type {
-  BuildExecutionSnapshot,
   BuildSnapshot,
   OperationSnapshot,
-} from "@hypit/runtime";
-import type { CommandResult } from "@hypit/protocol";
-import type { BuildResultWriter } from "@hypit/build-result";
+} from "@hypit/hypit/runtime";
+import type { BuildExecutionSnapshot } from "./execution.js";
+import type { CommandResult } from "@hypit/hypit/protocol";
+import type { BuildResultWriter } from "@hypit/hypit/result";
 
 import type {
   CreateLocalResultWriterOptions,
@@ -55,7 +55,7 @@ export function createLocalResultWriter(
   const owner = randomUUID();
   const openWriter = async (execution: BuildExecutionSnapshot): Promise<{
     readonly writer: BuildResultWriter;
-    readonly manifest: import("@hypit/build-result").BuildResultManifest;
+    readonly manifest: import("@hypit/hypit/result").BuildResultManifest;
     close(): Promise<void>;
   }> => {
     const opened = await options.openBuildResultRepository(execution.result);
@@ -79,7 +79,7 @@ export function createLocalResultWriter(
   const acceptStoredResults = async (build: string): Promise<BuildSnapshot> => {
     const snapshot = await options.buildStore.read(build);
     assert(snapshot !== undefined, `Build ${build} has no durable execution state`);
-    const machine = new BuildMachine(snapshot.definition, snapshot.facts);
+    const machine = BuildMachine.fromMaterialized(snapshot.definition, snapshot.state);
     const accept = async (event: CommandResult): Promise<void> => {
       if (!machine.view().outstanding.some((command) => command.id === event.command)) return;
       const fact = machine.evaluate(event);
@@ -102,7 +102,7 @@ export function createLocalResultWriter(
 
   const syncResult = async (
     execution: BuildExecutionSnapshot,
-    state: import("@hypit/protocol").BuildState,
+    state: import("@hypit/hypit/protocol").BuildState,
   ): Promise<void> => {
     const result = await openWriter(execution);
     try {

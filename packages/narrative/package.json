@@ -11,7 +11,8 @@
     "activation": "./src/activation.ts"
   },
   "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/protocol": "workspace:*"
+    "@hypit/producer": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/admission": "workspace:*"
   }
 }

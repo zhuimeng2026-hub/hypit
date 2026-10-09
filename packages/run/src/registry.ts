@@ -1,4 +1,4 @@
-import type { GraphFragment } from "@hypit/elaborator";
+import type { GraphFragment } from "@hypit/author";
 
 import type { RunFragmentPackage, RunFragmentRegistryLike } from "./types.js";
 

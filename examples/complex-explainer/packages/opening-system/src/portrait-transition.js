@@ -1,27 +1,23 @@
 import { palette } from "@explainer/visual-language";
-import { performanceMedia } from "./performance-media.js";
-import {
-  assertAttributes,
-  assertEmptyElement,
-  textAttribute,
-  canonicalize,
-  sealGraphFragment,
-  createMarkupSurfaceHostFacet,
-  sameType,
-} from "@hypit/hypit/author-kit";
-import { performanceStyle, performanceTypes } from "@hypit/hypit/performance";
+import { placedVisualMedia } from "./placed-visual-media.js";
+import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { canonicalize, sameType } from "@hypit/hypit/protocol";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { presenterStyle, presenterTypes } from "./presenter.js";
 import { sealVisualTrack, compositionTypes } from "@hypit/hypit/composition";
 import { timelineTypes } from "@hypit/hypit/timeline";
 import { spatialTypes } from "@hypit/hypit/spatial";
 import { temporalTypes } from "@hypit/hypit/temporal";
-import { browserProgram } from "@hypit/hypit/hyperframes";
+import { htmlVisual } from "@hypit/hypit/html-program";
 const styles = (o) =>
   Object.entries(o).map(([name, value]) => ({ name, value }));
 export function installPortraitTransition(module, manifest, component) {
+  const types = presenterTypes(module);
   const inputs = [
-      { name: "timeline", type: timelineTypes.track },
-      { name: "canvas", type: spatialTypes.canvas },
+      { name: "timeline", type: timelineTypes.timeline },
+      { name: "within", type: spatialTypes.frame },
       { name: "window", type: temporalTypes.window },
+      { name: "sources", type: types.sources },
       { name: "from", type: spatialTypes.frame },
       { name: "to", type: spatialTypes.frame },
     ],
@@ -55,11 +51,11 @@ export function installPortraitTransition(module, manifest, component) {
   component.producers.push({
     producer,
     handler: ({ inputs }) => {
-      const { timeline, canvas, window, from, to } = Object.fromEntries(
+      const { timeline, within, window, sources, from, to } = Object.fromEntries(
           Object.entries(inputs).map(([k, r]) => [k, r.value.value]),
         ),
-        { clips, children } = performanceMedia(timeline, window);
-      const program = browserProgram({
+        { clips, children } = placedVisualMedia(timeline, window, sources.sources);
+      const program = htmlVisual({
         html:
           '<div class="viewport"><div class="inner">' +
           children.map((v) => "{{" + v.id + "}}").join("") +
@@ -82,14 +78,15 @@ export function installPortraitTransition(module, manifest, component) {
       const id = window.subjectId,
         visual = sealVisualTrack({
           id,
-          programSpaceId: timeline.id,
+          timelineId: timeline.id,
           visualIr: "hypit.visual-ir@1",
           presents: children.length
             ? [
                 {
                   id,
+                  order: 0,
+                  z: 60,
                   span: window.span,
-                  stacking: { order: 60, tieBreak: id },
                   elements: [
                     {
                       id: "scene",
@@ -98,9 +95,10 @@ export function installPortraitTransition(module, manifest, component) {
                       program,
                       style: styles({
                         position: "absolute",
-                        inset: 0,
-                        width: canvas.widthPx + "px",
-                        height: canvas.heightPx + "px",
+                        left: within.xPx + "px",
+                        top: within.yPx + "px",
+                        width: within.widthPx + "px",
+                        height: within.heightPx + "px",
                       }),
                     },
                     ...children,
@@ -115,13 +113,13 @@ export function installPortraitTransition(module, manifest, component) {
       };
     },
   });
-  return createMarkupSurfaceHostFacet({
+  return createMarkupSurfaceFacet({
     module,
     declaration: {
       name: "portrait-transition",
       tag: "PortraitTransition",
       mode: "structured",
-      outputs: [performanceTypes.style],
+      outputs: [types.style],
       vocabulary: {
         summary:
           "A continuous full-frame performance move into the project's circular presenter inset.",
@@ -158,10 +156,10 @@ export function installPortraitTransition(module, manifest, component) {
         records: [
           {
             id: textAttribute(element, "id"),
-            type: performanceTypes.style,
+            type: types.style,
             value: {
               kind: "inline",
-              value: canonicalize(performanceStyle(fragment, bindings)),
+              value: canonicalize(presenterStyle(fragment, bindings)),
             },
             range: element.range,
           },

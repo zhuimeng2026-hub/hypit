@@ -78,7 +78,7 @@ Role Cues produce different text projections:
 The dialogue `Text` includes Role Cue prefixes. Speech `Text` and the CaptionDocument strip them.
 Prompt programs feeding `seedance:ReferenceVideo` may use `{story.segment.dialogue.dialogue}` (with labels).
 Script emits `{story.caption}` as one CaptionDocument containing Display Words, N:M Alignment Units
-and authored Cue Breaks. It contains no seconds or frames.
+and authored Cues. It contains no seconds or frames.
 
 ## Dual Text
 
@@ -126,9 +126,9 @@ Here the left side also supplies speech, so markers can be written and moved the
 still owns its own markers. The explicit or shared speech must contain a spoken word; a form such
 as `<API|...>` supplies no timed correspondence and is invalid.
 
-`||` is the **Caption Cue Break** syntax. It records a boundary between complete Alignment Units;
+`||` is the **Caption Cue separator**. It ends the current Cue after a complete Alignment Unit;
 it cannot appear inside Dual Text or split an N:M unit. Cue timing is still obtained later by
-joining the CaptionDocument to the Timeline.
+projecting its peer NarrativeCaptionBinding through explicit Narrative time.
 
 ### Spaces and spelling
 
@@ -156,11 +156,12 @@ Caption Style; attributes do not split, wrap or retime a Dual Alignment Unit.
 
 ### CaptionDocument vocabulary
 
-`CaptionDocument` is the Script-owned caption truth. Its named parts are:
+`CaptionDocument` is a Caption-owned display value that Script can produce from the same source. Its named parts are:
 
 - **Display Word** — one rendered lexical surface, including display punctuation;
 - **Alignment Unit** — the smallest display-to-speech correspondence, including N:M Dual Text;
-- **Cue Break** — an authored boundary after a complete Alignment Unit, written `||`.
+- **Cue** — one ordered group of complete Alignment Units. Segment and Role boundaries end Cues;
+  `||` explicitly ends the current Cue inside a turn.
 
 Punctuation is not a speech token and never receives its own timing window. Closing punctuation after
 a Dual Text attaches to the preceding Display Word (`<test | now>. here` displays as `test. here`),
@@ -225,8 +226,8 @@ Selection markers are zero-width and never appear in any text projection. They c
 `NarrativeSelection` with `startAnchorId` and `endAnchorId`. Script itself contains no seconds or
 frame numbers — timing comes from Timeline alignment.
 
-Other components reference Selections via `{story.selection.problem}` to bind visual content to
-semantic moments in the narrative.
+A Narrative Projection declaration references `{story.selection.problem}` and publishes a named
+absolute Window. Components consume that Window without understanding Script identities.
 
 ## Moments
 
@@ -247,7 +248,8 @@ Moments are named time **points** (not ranges):
 Each Moment name occurs once and compiles into one `NarrativeMoment` with an `anchorId`. Selection
 and Moment share the same name namespace — the same id cannot be used for both.
 
-Other components reference Moments via `{story.moment.ranking}`.
+A Narrative Projection declaration references `{story.moment.ranking}` and publishes a named
+absolute Instant. Components consume that Instant without understanding Script identities.
 
 ## Comments and escaping
 
@@ -308,5 +310,6 @@ This Script declares:
 - Three Selections: `whole` (entire Script), `problem`, `solution`, `emphasis`
 - One Moment: `ranking` (marks the instant "After the first recap")
 
-Downstream components reference these by name: `{story.segment.hook.dialogue}` for generation,
-`{story.selection.problem}` for B-roll timing, `{story.moment.ranking}` for a visual card reveal.
+Downstream graph nodes reference these by name: `{story.segment.hook.dialogue}` supplies generation
+text, while Narrative Projection declarations reveal `{story.selection.problem}` for B-roll timing
+and `{story.moment.ranking}` for a visual card event.

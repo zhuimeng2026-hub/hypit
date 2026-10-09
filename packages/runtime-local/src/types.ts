@@ -1,40 +1,44 @@
-import type { Awaitable, ComponentPackage } from "@hypit/component-kit";
-import type { EndpointPackage } from "@hypit/endpoint-kit";
-import type { LoadedComponentPackage } from "@hypit/package-loader-node";
-import type { BuildResultRepositoryLocation, BuildResultRepositoryOpened } from "@hypit/build-result-kit";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { Awaitable, ProducerPackage } from "@hypit/hypit/producer";
+import type { EndpointInstance } from "@hypit/hypit/endpoint";
+import type { LoadedPackage } from "@hypit/hypit/loader";
+import type { BuildResultRepository } from "@hypit/hypit/result";
 import type {
   ResourceStore,
-  BuildCompletion,
-  BuildCatalog,
   BuildStore,
-  BuildExecutionStore,
-  BuildExecutionSnapshot,
   CredentialStore,
   OperationStore,
-} from "@hypit/runtime";
+} from "@hypit/hypit/runtime";
+import type { BuildCatalog } from "./catalog.js";
+import type { BuildCompletion, BuildExecutionStore, BuildExecutionSnapshot, BuildResultRepositoryLocation } from "./execution.js";
 import type {
   RuntimeHostControl,
   RuntimeHostBuildSubmission,
   RuntimeHostCredentialControl,
   RuntimeHostExecution,
   RuntimeHostResultControl,
-} from "@hypit/runtime-host-node";
+} from "./host-api.js";
+
+type BuildResultRepositoryOpened = {
+  readonly repository: BuildResultRepository;
+  readonly close?: () => void | Promise<void>;
+};
 
 export type CreateLocalRuntimeOptions = {
   /** Already assigned by the local coordinator. Embeddings omit this and start fresh work. */
   readonly executionBuild?: string;
-  readonly executionContext?: import("@hypit/protocol").CanonicalValue;
+  readonly executionContext?: import("@hypit/hypit/protocol").CanonicalValue;
   readonly executionLogs?: import("./log.js").LocalExecutionLogs;
   readonly buildStore: BuildStore;
   /** Host presentation metadata only; never part of Core state. */
   readonly buildCatalog: BuildCatalog;
   readonly operationStore: OperationStore;
   /** Durable receipt boundary: one immediate Command is never invoked twice for one Build. */
-  readonly commandExecutionStore: import("@hypit/runtime").CommandExecutionStore;
-  readonly executionStore: import("@hypit/runtime").BuildExecutionStore;
+  readonly commandExecutionStore: import("@hypit/hypit/runtime").CommandExecutionStore;
+  readonly executionStore: BuildExecutionStore;
   readonly removeActiveBuild: (build: string) => Awaitable<BuildCompletion>;
   /** Atomic submission boundary: external preparation is never a claimable partial Build. */
-  readonly submissionStore: import("@hypit/runtime").PendingBuildStore;
+  readonly submissionStore: import("./submission.js").PendingBuildStore;
   readonly resourceStore: ResourceStore;
   /** Optional Build-local transient byte area used by Provider execution and Result writing. */
   readonly resourceStoreForBuild?: (build: string) => ResourceStore;
@@ -42,10 +46,13 @@ export type CreateLocalRuntimeOptions = {
   readonly clearBuildResources?: (build: string) => Awaitable<void>;
   readonly openBuildResultRepository: (location: BuildResultRepositoryLocation) => Awaitable<BuildResultRepositoryOpened>;
   readonly credentialStore: CredentialStore;
-  readonly components?: readonly ComponentPackage[];
+  /** Deterministic implementations injected directly by an embedding. Installed packages arrive as facets. */
+  readonly producerPackages?: readonly ProducerPackage[];
+  /** Type-owner admission rules injected directly by an embedding. */
+  readonly admissionPackages?: readonly AdmissionPackage[];
   /** Load the complete physical package closure named by a claimed Build. */
-  readonly loadComponentPackages?: (specifiers: readonly string[]) => Awaitable<readonly LoadedComponentPackage[]>;
-  readonly endpoints?: readonly EndpointPackage[];
+  readonly loadProducerPackages?: (specifiers: readonly string[]) => Awaitable<readonly LoadedPackage[]>;
+  readonly endpoints?: readonly EndpointInstance[];
   /** Which Endpoint instance serves each capability that several selected Endpoints offer. */
   readonly bindings?: Readonly<Record<string, string>>;
   readonly close?: () => Awaitable<void>;
@@ -54,11 +61,11 @@ export type CreateLocalRuntimeOptions = {
 export type CreateLocalRuntimeControlOptions = {
   readonly executionLogs?: import("./log.js").LocalExecutionLogs;
   readonly buildStore: BuildStore;
-  readonly commandExecutionStore: import("@hypit/runtime").CommandExecutionStore;
+  readonly commandExecutionStore: import("@hypit/hypit/runtime").CommandExecutionStore;
   readonly buildCatalog?: BuildCatalog;
   readonly operationStore: OperationStore;
   readonly executionStore: BuildExecutionStore;
-  readonly submissionStore: import("@hypit/runtime").PendingBuildStore;
+  readonly submissionStore: import("./submission.js").PendingBuildStore;
   /** Optional owner supplied by the Runtime assembly. */
   readonly close?: () => Awaitable<void>;
 };
@@ -67,10 +74,10 @@ export type CreateLocalResultWriterOptions = {
   readonly executionLogs?: import("./log.js").LocalExecutionLogs;
   readonly buildStore: BuildStore;
   readonly operationStore: OperationStore;
-  readonly commandExecutionStore: import("@hypit/runtime").CommandExecutionStore;
+  readonly commandExecutionStore: import("@hypit/hypit/runtime").CommandExecutionStore;
   readonly executionStore: BuildExecutionStore;
   readonly removeActiveBuild: (build: string) => Awaitable<BuildCompletion>;
-  readonly submissionStore: import("@hypit/runtime").PendingBuildStore;
+  readonly submissionStore: import("./submission.js").PendingBuildStore;
   readonly resourceStore: ResourceStore;
   readonly resourceStoreForBuild?: (build: string) => ResourceStore;
   readonly clearBuildResources?: (build: string) => Awaitable<void>;
@@ -80,7 +87,7 @@ export type CreateLocalResultWriterOptions = {
 
 export type CreateLocalCredentialControlOptions = {
   readonly credentialStore: CredentialStore;
-  readonly endpoints: readonly EndpointPackage[];
+  readonly endpoints: readonly EndpointInstance[];
   readonly close?: () => Awaitable<void>;
 };
 
@@ -98,7 +105,7 @@ export type LocalRuntimeControl = RuntimeHostControl;
 
 export type LocalResultWriter = RuntimeHostResultControl & {
   /** Incrementally accept public Outputs already completed during execution. */
-  sync(execution: BuildExecutionSnapshot, state: import("@hypit/protocol").BuildState): Promise<void>;
+  sync(execution: BuildExecutionSnapshot, state: import("@hypit/hypit/protocol").BuildState): Promise<void>;
   /** Persist the outcome just frozen by the execution Worker, then remove active Runtime state. */
   completeResult(execution: BuildExecutionSnapshot): Promise<BuildExecutionSnapshot | BuildCompletion>;
 };

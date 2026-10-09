@@ -1,4 +1,4 @@
-<?svml using="@hypit/svs@1"?>
+<?svml using="@hypit/recipe@1"?>
 
 <sheet version="1" id="recipes">
   broll.calm-ugc-montage {
@@ -61,18 +61,6 @@
     performance: natural-banter;
     reaction: subtle-listening;
     gesture: natural;
-  }
-
-
-  media.performance { stack-order: 10;
-    fit: cover;
-  }
-
-  media.lifestyle {
-    stack-order: 40;
-    fit: cover;
-    playback: stretch;
-    clip: frame;
   }
 
   caption.original-girl {

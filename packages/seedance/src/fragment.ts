@@ -1,15 +1,15 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGraphFragment } from "@hypit/elaborator";
-import { generationProducers } from "@hypit/generation";
-import { createExactModelPrimaryGenerationFragment } from "@hypit/model-kit";
-import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/model-kit";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { generationProducers } from "@hypit/hypit/generation";
+import { createExactModelPrimaryGenerationFragment } from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
 
 const input = (name: string) => ({ kind: "fragment-input" as const, name });
 const operation = (id: string) => ({ kind: "fragment-operation" as const, operation: id });
 
 /**
  * Keep the remote GeneratedVideoSet atomic, then deterministically expose its
- * primary video as an ordinary BlobArtifact for downstream media programs.
+ * primary video as an ordinary Blob for downstream media programs.
  */
 export function createSeedanceGenerationFragment(endpoint: ExactModelEndpoint) {
   return sealGraphFragment({
@@ -30,7 +30,7 @@ export function createSeedanceGenerationFragment(endpoint: ExactModelEndpoint) {
     ],
     exports: [{
       name: "video",
-      type: artifactTypes.blob,
+      type: blobTypes.blob,
       root: operation("select-primary-video"),
     }],
   });

@@ -1,22 +1,27 @@
-import { artifactDependency, artifactTypes } from "@hypit/artifact";
-import type { ModuleManifest, TypeRef } from "@hypit/protocol";
-import { compositableSurfaceSchema, fontArtifactSchema, fontStackSchema, mediaInspectionSchema, mediaStreamSelectionSchema, muxedMediaSchema, renderedVisualSchema, synchronizedMediaSchema, timelineAudioSchema } from "./schema.js";
+import { blobDependency, blobTypes } from "@hypit/blob";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import { compositableSurfaceSchema, fontArtifactSchema, fontStackSchema, mediaInspectionSchema, mediaStreamSelectionSchema, muxedMediaSchema, timelineVisualSchema, synchronizedMediaSchema, timelineAudioSchema } from "./schema.js";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
 export const mediaModuleRef = { name: "@hypit/media", version: "1" } as const;
 export const mediaTypes = {
   frameRange: { module: mediaModuleRef, name: "MediaFrameRange" },
   inspection: { module: mediaModuleRef, name: "MediaInspection" },
   streamSelection: { module: mediaModuleRef, name: "MediaStreamSelection" }, synchronized: { module: mediaModuleRef, name: "SynchronizedMedia" },
-  renderedVisual: { module: mediaModuleRef, name: "RenderedVisual" }, timelineAudio: { module: mediaModuleRef, name: "TimelineAudio" },
+  domainSpec: { module: mediaModuleRef, name: "MediaDomainSpec" },
+  timelineVisual: { module: mediaModuleRef, name: "TimelineVisual" }, timelineAudio: { module: mediaModuleRef, name: "TimelineAudio" },
   muxed: { module: mediaModuleRef, name: "MuxedMedia" }, fontArtifact: { module: mediaModuleRef, name: "FontArtifactRef" },
   fontStack: { module: mediaModuleRef, name: "FontStackRef" },
   compositableSurface: { module: mediaModuleRef, name: "CompositableSurfaceRef" },
-  /** Declared by `@hypit/artifact`. A Type is identified by the Module that owns it, not the one that re-exports it. */
-  blobArtifact: artifactTypes.blob,
+  /** Declared by `@hypit/blob`. A Type is identified by the Module that owns it, not the one that re-exports it. */
+  blobArtifact: blobTypes.blob,
 } satisfies Record<string, TypeRef>;
+export const mediaProducers = {
+  localDomain: { module: mediaModuleRef, name: "local-domain" },
+} satisfies Record<string, ProducerRef>;
 
 export const mediaMarkupSurfaces = [
     {
-      name: "image", tag: "Image", mode: "structured", outputs: [artifactTypes.blob],
+      name: "image", tag: "Image", mode: "structured", outputs: [blobTypes.blob],
       vocabulary: {
         summary: "Requests one authored image file from the Host and publishes it as a byte Artifact.",
         attributes: [
@@ -37,7 +42,7 @@ export const mediaMarkupSurfaces = [
       },
     },
     {
-      name: "audio", tag: "Audio", mode: "structured", outputs: [artifactTypes.blob],
+      name: "audio", tag: "Audio", mode: "structured", outputs: [blobTypes.blob],
       vocabulary: {
         summary: "Requests one authored audio file from the Host and publishes it as a byte Artifact.",
         attributes: [
@@ -58,7 +63,7 @@ export const mediaMarkupSurfaces = [
       },
     },
     {
-      name: "video", tag: "Video", mode: "structured", outputs: [artifactTypes.blob],
+      name: "video", tag: "Video", mode: "structured", outputs: [blobTypes.blob],
       vocabulary: {
         summary: "Requests one authored video file from the Host and publishes it as a byte Artifact.",
         attributes: [
@@ -81,12 +86,12 @@ export const mediaMarkupSurfaces = [
     {
       name: "font", tag: "Font", mode: "structured", outputs: [mediaTypes.fontArtifact],
       vocabulary: {
-        summary: "Requests one authored font file from the Host and publishes it with its exact weight and style as a one-source FontArtifact.",
+        summary: "Publishes one exact font face from one file or several Unicode-range files resolved by the Host.",
         attributes: [
           { name: "id", kind: "identifier", required: true,
             summary: "Names the FontArtifact Record this element publishes." },
-          { name: "src", kind: "literal", required: true,
-            summary: "Points at the font file, resolved by the Host against the source that declares it." },
+          { name: "src", kind: "literal", required: false,
+            summary: "Points at a single font file. Omit it when declaring Unicode-range Source children." },
           { name: "weight", kind: "literal", required: true,
             summary: "States the exact weight the bytes carry, as a whole number from 1 to 1000." },
           { name: "style", kind: "literal", required: true, values: ["normal", "italic", "oblique"],
@@ -94,29 +99,67 @@ export const mediaMarkupSurfaces = [
           { name: "media-type", kind: "literal", required: false,
             summary: "States the font media type when the src extension does not name one." },
         ],
+        children: [{
+          tag: "Source",
+          cardinality: "many",
+          summary: "Contributes one file shard of the exact face when src is not used.",
+          attributes: [
+            { name: "src", kind: "literal", required: true,
+              summary: "Points at one font file, including a Host-supported package: locator." },
+            { name: "media-type", kind: "literal", required: false,
+              summary: "States the font media type when the src extension does not name one." },
+            { name: "unicode-range", kind: "literal", required: false,
+              summary: "Limits this shard to the declared CSS Unicode range." },
+          ],
+        }],
         example: `<media:Font id="brand" src="./assets/Brand-Semibold.woff2" weight="600" style="normal"/>`,
         notes: [
-          "The element is empty; it accepts no children and no text.",
+          "Use either the src attribute or one or more Source children; mixing the two is an error.",
           "`.otf`, `.ttf`, `.woff` and `.woff2` name their own media type; any other file needs `media-type`.",
           "One element declares one face, so `weight` and `style` describe these bytes rather than a family.",
           "The FontArtifact is published under the bare `id`, and an invalid weight or style fails before any bytes are read.",
         ],
       },
     },
+    {
+      name: "font-stack", tag: "FontStack", mode: "structured", outputs: [mediaTypes.fontStack],
+      vocabulary: {
+        summary: "Orders already-authored exact font faces into one primary-plus-fallback stack.",
+        attributes: [
+          { name: "id", kind: "identifier", required: true,
+            summary: "Names the FontStack Record this element publishes." },
+          { name: "primary", kind: "reference", required: true, accepts: [mediaTypes.fontArtifact],
+            summary: "Selects the first exact face used for glyph lookup." },
+        ],
+        children: [{
+          tag: "Fallback",
+          cardinality: "many",
+          summary: "Appends one exact face to the ordered fallback chain.",
+          attributes: [{ name: "font", kind: "reference", required: true, accepts: [mediaTypes.fontArtifact],
+            summary: "References an authored exact FontArtifact." }],
+        }],
+        example: `<media:FontStack id="caption" primary={latin}><media:Fallback font={han}/></media:FontStack>`,
+      },
+    },
   ] as const;
 
 export const mediaManifest: ModuleManifest = {
-  format: "hypit.module@1", name: mediaModuleRef.name, version: mediaModuleRef.version, dependencies: [artifactDependency],
+  format: "hypit.module@1", name: mediaModuleRef.name, version: mediaModuleRef.version, dependencies: [blobDependency, temporalDependency],
   types: [
     { name: mediaTypes.frameRange.name },
     { name: mediaTypes.inspection.name },
     { name: mediaTypes.streamSelection.name },
     { name: mediaTypes.synchronized.name },
-    { name: mediaTypes.renderedVisual.name },
+    { name: mediaTypes.domainSpec.name },
+    { name: mediaTypes.timelineVisual.name },
     { name: mediaTypes.timelineAudio.name },
     { name: mediaTypes.muxed.name },
     { name: mediaTypes.fontArtifact.name }, { name: mediaTypes.fontStack.name },
     { name: mediaTypes.compositableSurface.name },
-  ], capabilities: [], producers: [],
+  ], capabilities: [], producers: [
+    { name: mediaProducers.localDomain.name,
+      inputs: [{ name: "media", type: mediaTypes.synchronized }, { name: "spec", type: mediaTypes.domainSpec }],
+      outputs: [{ name: "domain", type: temporalTypes.localDomain }], needs: [] },
+  ],
 };
 export const mediaDependency = { module: mediaModuleRef } as const;

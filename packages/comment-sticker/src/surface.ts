@@ -1,20 +1,13 @@
-import { resolveTemporalContext } from "@hypit/temporal-markup";
-import { artifactTypes } from "@hypit/artifact";
-import { mediaTypes } from "@hypit/media";
-import type { FontStackRef } from "@hypit/media";
-import { spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
-import type { SvsRecipe } from "@hypit/svs";
-import { sealText, textTypes } from "@hypit/text";
-import type {
-  StructuredElement,
-  StructuredSurfaceHandler,
-  SurfaceComponentDraft,
-  SurfaceRecordDraft,
-  SurfaceResolvedReference,
-  MarkupAttributeValue,
-} from "@hypit/markup";
-import { createTemporalWindowProjection, temporalWindowAttributeNames } from "@hypit/temporal-markup";
+import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { blobTypes } from "@hypit/hypit/blob";
+import { mediaTypes } from "@hypit/hypit/media";
+import type { FontStackRef } from "@hypit/hypit/media";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
+import { sealText, textTypes } from "@hypit/hypit/text";
+import type { StructuredElement, StructuredSurfaceHandler, SurfaceRecordDraft, SurfaceResolvedReference, MarkupAttributeValue } from "@hypit/hypit/markup";
+import { resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/hypit/temporal/markup";
 
 import { decodeCommentStickerStyle } from "./author.js";
 import { createCommentStickerFragment } from "./fragment.js";
@@ -81,16 +74,15 @@ export const decodeCommentStickerStyleSurface: StructuredSurfaceHandler = ({ ele
   allowed(element, ["id", "recipe", "font"], ["id", "recipe", "font"]);
   if (element.children.some((child) => child.kind === "element" || child.value.trim())) throw new Error(`${element.name} must be empty.`);
   const id = text(element, "id");
-  const recipeRef = reference(element.attributes.recipe, `${element.name}.recipe`, svsRecipeType, resolveReference);
+  const recipeRef = reference(element.attributes.recipe, `${element.name}.recipe`, recipeType, resolveReference);
   const fontRef = reference(element.attributes.font, `${element.name}.font`, mediaTypes.fontStack, resolveReference);
-  const style = decodeCommentStickerStyle(inline<SvsRecipe>(recipeRef, `${element.name}.recipe`), inline<FontStackRef>(fontRef, `${element.name}.font`), id);
+  const style = decodeCommentStickerStyle(inline<Recipe>(recipeRef, `${element.name}.recipe`), inline<FontStackRef>(fontRef, `${element.name}.font`), id);
   return { records: [{ id, type: commentStickerTypes.style, value: { kind: "inline", value: style }, range: element.range }], components: [], fragments: [] };
 };
 
 export const decodeCommentStickerTrackSurface: StructuredSurfaceHandler = ({ element, resolveReference }) => {
-  allowed(element, ["id", "canvas", "timeline"], ["id", "canvas", "timeline"]);
+  allowed(element, ["id", "timeline"], ["id", "timeline"]);
   const id = text(element, "id");
-  const canvas = reference(element.attributes.canvas, `${element.name}.canvas`, spatialTypes.canvas, resolveReference);
   const context = resolveTemporalContext({ element, resolveReference });
   const headerId = `${id}.__header`;
   const records: SurfaceRecordDraft[] = [{
@@ -99,9 +91,7 @@ export const decodeCommentStickerTrackSurface: StructuredSurfaceHandler = ({ ele
     value: { kind: "inline", value: sealCommentStickerHeader({ id }) },
     range: element.range,
   }];
-  const temporalComponents: SurfaceComponentDraft[] = [];
-  const temporalFragments: ReturnType<typeof createTemporalWindowProjection>["fragments"][number][] = [];
-  const inputs: Record<string, typeof canvas.ref> = { canvas: canvas.ref, header: { kind: "record", id: headerId }, timeline: context.timeline.ref };
+  const inputs: Record<string, typeof context.timeline.ref> = { header: { kind: "record", id: headerId }, timeline: context.timeline.ref };
   const items: Parameters<typeof createCommentStickerFragment>[0][number][] = [];
   for (const child of element.children) {
     if (child.kind === "text") {
@@ -112,12 +102,11 @@ export const decodeCommentStickerTrackSurface: StructuredSurfaceHandler = ({ ele
     if (child.children.some((node) => node.kind === "element")) throw new Error(`${child.name} accepts plain comment text only.`);
     allowed(child, ["id", "comment", "frame", "style", "avatar", "author", "header", "meta", ...TIMING], ["id", "frame", "style"]);
     const itemId = text(child, "id");
-    const temporal = createTemporalWindowProjection({ id: itemId, element: child, ...context, resolveReference });
-    records.push(...temporal.records); temporalComponents.push(...temporal.components); temporalFragments.push(...temporal.fragments);
+    const window = resolveTemporalWindowReference({ element: child, resolveReference });
     const suffix = String(items.length + 1).padStart(4, "0");
     const frame = reference(child.attributes.frame, `${child.name}.frame`, spatialTypes.frame, resolveReference);
     const style = reference(child.attributes.style, `${child.name}.style`, commentStickerTypes.style, resolveReference);
-    const avatar = child.attributes.avatar === undefined ? undefined : reference(child.attributes.avatar, `${child.name}.avatar`, artifactTypes.blob, resolveReference);
+    const avatar = child.attributes.avatar === undefined ? undefined : reference(child.attributes.avatar, `${child.name}.avatar`, blobTypes.blob, resolveReference);
     const comment = child.attributes.comment === undefined
       ? dedent(child.children.map((node) => node.kind === "text" ? node.value : "").join(""))
       : graphText(child.attributes.comment, `${child.name}.comment`, resolveReference);
@@ -140,7 +129,7 @@ export const decodeCommentStickerTrackSurface: StructuredSurfaceHandler = ({ ele
     });
     const windowName = `item-${suffix}-window`;
     const specName = `item-${suffix}-spec`; const frameName = `item-${suffix}-frame`; const styleName = `item-${suffix}-style`;
-    inputs[specName] = { kind: "record", id: specId }; inputs[windowName] = temporal.ref;
+    inputs[specName] = { kind: "record", id: specId }; inputs[windowName] = window.ref;
     inputs[frameName] = frame.ref; inputs[styleName] = style.ref;
     const attachText = (field: string, value: string | SurfaceResolvedReference): string => {
       const name = `item-${suffix}-${field}`;
@@ -164,8 +153,8 @@ export const decodeCommentStickerTrackSurface: StructuredSurfaceHandler = ({ ele
   const fragment = createCommentStickerFragment(items);
   return {
     records,
-    components: [...temporalComponents, { id, fragment: fragment.id, inputs, outputs: { program: `${id}.program`, track: `${id}.track` }, range: element.range }],
-    fragments: [...temporalFragments, fragment],
-    exports: [`${id}.program`, `${id}.track`],
+    components: [{ id, fragment: fragment.id, inputs, outputs: { program: `${id}.program`, visual: `${id}.visual` }, range: element.range }],
+    fragments: [fragment],
+    exports: [`${id}.program`, `${id}.visual`],
   };
 };

@@ -1,24 +1,22 @@
-import { sealTimeline } from "@hypit/timeline";
+import { sealTimeline, timelineTypes } from "@hypit/timeline";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fixtureResource } from "../../../test/fixture-resource.js";
 import { timelineFixture } from "../../../test/timeline-fixture.js";
 import { projectProgramWindow } from "../../../test/temporal-fixture.js";
 
-import { artifactTypes } from "@hypit/artifact";
-import { compileHyperframesDocument } from "@hypit/hyperframes";
+import { blobTypes } from "@hypit/blob";
+import { compileHtmlProgram } from "@hypit/html-program";
 import type { FontArtifactRef, FontStackRef } from "@hypit/media";
 import { mediaTypes } from "@hypit/media";
-import { sealProgramSpace } from "@hypit/program-space";
-import { timelineProducers, timelineTypes } from "@hypit/timeline";
 import { spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
-import type { SvsRecipe } from "@hypit/svs";
+import { recipeType } from "@hypit/recipe";
+import type { Recipe } from "@hypit/recipe";
 import { parseStructuredElement } from "@hypit/markup";
 import type { SurfaceResolvedReference } from "@hypit/markup";
 import { sealText } from "@hypit/text";
 import { textTypes } from "@hypit/text";
-import { temporalProducers } from "@hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 
 import {
   appendProjectedCommentSticker,
@@ -42,16 +40,15 @@ const font: FontArtifactRef = {
   style: "normal",
 };
 const fonts: FontStackRef = { faces: [font] };
-const recipe: SvsRecipe = {
+const recipe: Recipe = {
 
   path: "comment.social",
   properties: { "avatar-fallback": "initial", "body-max-lines": 4 },
 };
 const style = decodeCommentStickerStyle(recipe, fonts, "social-comment");
 const frame = { xPx: 80, yPx: 140, widthPx: 920, heightPx: 360 };
-const canvas = { widthPx: 1080, heightPx: 1920,
-  origin: "top-left" as const, xDirection: "right" as const, yDirection: "down" as const, pixelAspect: "square" as const };
-const space = sealTimeline({ items: [], id: "test-space", durationSec: 3, frameRate: { numerator: 30, denominator: 1 } });
+const canvas = { widthPx: 1080, heightPx: 1920 };
+const space = sealTimeline({ id: "test-space", frameCount: 90, frameRate: { numerator: 30, denominator: 1 } });
 const header = sealCommentStickerHeader({ id: "comments" });
 const semantic = timelineFixture(space);
 
@@ -72,9 +69,9 @@ function content(meta?: string) {
 function track(meta?: string) {
   const spec = item("opening");
   const set = appendProjectedCommentSticker(createCommentStickerSet(), header, space, frame, style, spec, content(meta), projectProgramWindow({
-    itemId: spec.id, semantic, projection: { start: { ref: "program.start" }, end: { ref: "program.end" } },
+    itemId: spec.id, semantic, projection: { start: { ref: "timeline.start" }, end: { ref: "timeline.end" } },
   }));
-  return renderCommentSticker(canvas, space, finalizeCommentSticker(set, header));
+  return renderCommentSticker(space, finalizeCommentSticker(set, header));
 }
 
 test("Comment Sticker is one deterministic self-contained peer VisualTrack", () => {
@@ -93,7 +90,7 @@ test("explicit metadata is rendered and the terminal compiler accepts the Track 
   const meta = rendered.presents[0]?.elements.find((element) => element.id === "meta");
   assert.equal(meta?.kind === "text-flow" ? meta.document.paragraphs[0]?.inlines[0]?.kind === "text"
     ? meta.document.paragraphs[0].inlines[0].text : undefined : undefined, "Featured comment");
-  const document = compileHyperframesDocument({
+  const document = compileHtmlProgram({
     id: "comment-film",
     canvas: { width: 1080, height: 1920, clearColor: "#000000" },
     tracks: [rendered],
@@ -123,10 +120,10 @@ test("short Sticker windows compose overlapping enter and exit motion instead of
   const spec = item("compressed");
   const set = appendProjectedCommentSticker(
     createCommentStickerSet(), header, space, frame, compressed, spec, content(), projectProgramWindow({
-      itemId: spec.id, semantic, projection: { start: { ref: "program.start" }, end: { ref: "program.end" } },
+      itemId: spec.id, semantic, projection: { start: { ref: "timeline.start" }, end: { ref: "timeline.end" } },
     }),
   );
-  const rendered = renderCommentSticker(canvas, space, finalizeCommentSticker(set, header));
+  const rendered = renderCommentSticker(space, finalizeCommentSticker(set, header));
   const animation = rendered.presents[0]?.elements.find((element) => element.animation !== undefined)?.animation;
   assert.ok(animation);
   const overlap = animation.keyframes.find((keyframe) => keyframe.atFrame === 45)!;
@@ -154,7 +151,7 @@ const noAsset = () => { throw new Error("No assets are resolved by this test.");
 
 test("Style Surface consumes an explicit SVS Recipe and exact Font Stack", async () => {
   const refs = new Map([
-    ["styles.comment", authored("styles.comment", svsRecipeType, recipe)],
+    ["styles.comment", authored("styles.comment", recipeType, recipe)],
     ["fonts.ui", authored("fonts.ui", mediaTypes.fontStack, fonts)],
   ]);
   const result = await decodeCommentStickerStyleSurface({
@@ -167,25 +164,26 @@ test("Style Surface consumes an explicit SVS Recipe and exact Font Stack", async
   assert.equal(result.components.length, 0);
 });
 
-test("Track Surface lowers mixed program and semantic Stickers to a finite explicit graph", async () => {
+test("Track Surface lowers literal and graph Text with a resolved Window to a finite explicit graph", async () => {
   const blob = { kind: "blob" as const, resource: fixtureResource("comment-avatar"), size: 128, mediaType: "image/png" };
   const refs = new Map<string, SurfaceResolvedReference>([
-    ["video.canvas", authored("video.canvas", spatialTypes.canvas, canvas)],
-    ["video.timeline", authored("video.timeline", timelineTypes.track, semantic)],
+    ["video.timeline", authored("video.timeline", timelineTypes.timeline, semantic)],
     ["layout.comment", authored("layout.comment", spatialTypes.frame, frame)],
     ["social", authored("social", commentStickerTypes.style, style)],
-    ["avatar", authored("avatar", artifactTypes.blob, blob)],
+    ["avatar", authored("avatar", blobTypes.blob, blob)],
     ["copy", authored("copy", textTypes.text, sealText("This is graph-supplied comment content."))],
+    ["whole", authored("whole", temporalTypes.window, projectProgramWindow({ itemId: "whole", semantic,
+      projection: { start: { ref: "timeline.start" }, end: { ref: "timeline.end" } } }))],
   ]);
   const result = await decodeCommentStickerTrackSurface({
     sourceName: "fixture.svml",
-    element: parsed(`<comment:Track id="comments" canvas={video.canvas} timeline={video.timeline}>
-      <comment:Sticker id="one" comment={copy} frame={layout.comment} style={social} avatar={avatar} author="@viewer" meta="Featured" during="program"/>
+    element: parsed(`<comment:Track id="comments" timeline={video.timeline}>
+      <comment:Sticker id="one" comment={copy} frame={layout.comment} style={social} avatar={avatar} author="@viewer" meta="Featured" during={whole}/>
     </comment:Track>`),
     resolveReference: (path) => refs.get(path),
     resolveAsset: noAsset,
   });
-  assert.equal(result.components.filter((component) => component.outputs.track !== undefined).length, 1);
+  assert.equal(result.components.filter((component) => component.outputs.visual !== undefined).length, 1);
   assert.deepEqual(result.fragments.flatMap((fragment) => fragment.operations.map((operation) => operation.producer.name)).sort(), [
     commentStickerProducers.createSet.name,
     commentStickerProducers.createContent.name,
@@ -193,10 +191,7 @@ test("Track Surface lowers mixed program and semantic Stickers to a finite expli
     commentStickerProducers.setContentMeta.name,
     commentStickerProducers.appendItemAvatar.name,
     commentStickerProducers.finalize.name,
-    temporalProducers.projectProgramInstant.name,
-    temporalProducers.projectProgramInstant.name,
-    temporalProducers.composeWindow.name,
         commentStickerProducers.render.name,
   ].sort());
-  assert.equal(result.components.find((component) => component.outputs.track !== undefined)?.outputs.track, "comments.track");
+  assert.equal(result.components.find((component) => component.outputs.visual !== undefined)?.outputs.visual, "comments.visual");
 });

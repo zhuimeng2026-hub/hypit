@@ -1,10 +1,10 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
-import type { GenerationMediaPort } from "@hypit/generation";
-import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationMediaPort } from "@hypit/hypit/generation";
+import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 import { seedreamEndpoints } from "./index.js";
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
@@ -53,7 +53,7 @@ function decoder(referenceMode: boolean): StructuredSurfaceHandler {
       assert(referenceMode && localName(child.name) === "Reference", `${element.name} accepts no such child`);
       exact(child, ["image"]);
       assert(!child.children.some((item) => item.kind === "element" || item.value.trim()), `${child.name} must be empty`);
-      const image = ref(child, "image", artifactTypes.blob, resolveReference);
+      const image = ref(child, "image", blobTypes.blob, resolveReference);
       if (image.record !== undefined) assert(image.record.value.kind === "blob" && image.record.value.mediaType.startsWith("image/"), `${child.name}.image must be image media`);
       images.push(image);
     }

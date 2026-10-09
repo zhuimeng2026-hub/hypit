@@ -3,34 +3,45 @@ import { spawnSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import test from "node:test";
 
-import { artifactTypes } from "@hypit/artifact";
-import { EndpointRegistry, MemoryResourceStore } from "@hypit/driver-node";
-import {
-  gptImageDenoiseV1,
-  sealImageTransformProgram,
-} from "@hypit/image-transform";
-import type { ImageTransformProgram } from "@hypit/image-transform";
+import { blobTypes } from "@hypit/blob";
+import { EndpointRegistry, MemoryResourceStore } from "@hypit/executor";
+import { sealImageTransformProgram } from "@hypit/image-operations";
+import type { ImageTransformProgram } from "@hypit/image-operations";
 import {
   createLocalOpenCvImageProvider,
   localOpenCvImageProviderModuleRef,
 } from "@hypit/provider-image-opencv-local";
 import { canonicalize } from "@hypit/protocol";
 import type { BlobRef, Need } from "@hypit/protocol";
-import { rasterCapabilities } from "@hypit/raster";
+import { imageOperationsCapabilities } from "@hypit/image-operations";
 
 import { resolveLocalOpenCvDeployment } from "../src/deployment.js";
 import { localOpenCvProgram } from "../src/program.js";
 
-function need(source: BlobRef, program: ImageTransformProgram = gptImageDenoiseV1): Need {
+const denoiseProgram = sealImageTransformProgram({
+  operations: [{
+    kind: "denoise",
+    method: "nlm-ycrcb",
+    lumaStrength: 1,
+    chromaStrength: 3,
+    templateWindow: 7,
+    searchWindow: 21,
+    saturationRecovery: 1,
+  }, {
+    kind: "encode",
+    format: "png",
+  }],
+});
+
+function need(source: BlobRef, program: ImageTransformProgram = denoiseProgram): Need {
   const constraints = canonicalize({
-    kind: "transform",
     source,
     operations: program.operations,
   });
   return {
     id: "need:image-transform",
-    capability: rasterCapabilities.execute,
-    returns: artifactTypes.blob,
+    capability: imageOperationsCapabilities.transform,
+    returns: blobTypes.blob,
     constraints,
     result: "record:image-transform",
   };
@@ -38,10 +49,8 @@ function need(source: BlobRef, program: ImageTransformProgram = gptImageDenoiseV
 
 function composeNeed(source: BlobRef): Need {
   const constraints = canonicalize({
-    kind: "compose",
     canvas: {
       widthPx: 3, heightPx: 2,
-      origin: "top-left", xDirection: "right", yDirection: "down", pixelAspect: "square",
     },
     background: "#00000000",
     layers: [{
@@ -51,7 +60,7 @@ function composeNeed(source: BlobRef): Need {
     }],
   });
   return {
-    id: "need:image-compose", capability: rasterCapabilities.execute, returns: artifactTypes.blob,
+    id: "need:image-compose", capability: imageOperationsCapabilities.compose, returns: blobTypes.blob,
     constraints, result: "record:image-compose",
   };
 }
@@ -60,8 +69,12 @@ test("the OpenCV package is one replaceable Endpoint with no second queue", asyn
   const provider = createLocalOpenCvImageProvider({ defaultConcurrency: 3 });
   assert.equal(provider.instance.id, "image.opencv.local");
   assert.deepEqual(provider.offers, [{
-    capability: rasterCapabilities.execute,
-    returns: artifactTypes.blob,
+    capability: imageOperationsCapabilities.transform,
+    returns: blobTypes.blob,
+    endpoint: "image.opencv.local",
+  }, {
+    capability: imageOperationsCapabilities.compose,
+    returns: blobTypes.blob,
     endpoint: "image.opencv.local",
   }]);
 });
@@ -95,7 +108,7 @@ const liveEnabled = process.env.HYPIT_OPENCV_TESTS === "1";
 const openCvPython = process.env.HYPIT_OPENCV_PYTHON ?? "python3";
 const hasOpenCv = spawnSync(openCvPython, ["-c", "import cv2, numpy"], { stdio: "ignore", windowsHide: true }).status === 0;
 
-test("the local Provider returns only a new image BlobArtifact", {
+test("the local Provider returns only a new image Blob", {
   skip: !liveEnabled || !hasOpenCv,
 }, async () => {
   const resources = new MemoryResourceStore();
@@ -111,7 +124,7 @@ test("the local Provider returns only a new image BlobArtifact", {
       height: 64,
       fit: "stretch",
       interpolation: "nearest",
-    }, ...gptImageDenoiseV1.operations],
+    }, ...denoiseProgram.operations],
   });
   const request = need(source, program);
   const registry = new EndpointRegistry();

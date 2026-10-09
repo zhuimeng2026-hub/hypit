@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { GenerationArtifactUrlResolver } from "@hypit/generation";
-import type { EndpointSupport } from "@hypit/endpoint-kit";
+import type { EndpointSupport } from "@hypit/endpoint";
 import type { BlobRef, CanonicalValue } from "@hypit/protocol";
 
 import { hypiHubRoutes } from "../src/routes.js";

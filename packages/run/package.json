@@ -8,8 +8,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/host": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/facet": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/source": "workspace:*"
   }

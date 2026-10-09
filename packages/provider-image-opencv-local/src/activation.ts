@@ -4,10 +4,10 @@ import {
   runtimeConfigObject,
   runtimeConfigPositiveInteger,
   runtimeConfigString,
-} from "@hypit/runtime-kit";
+} from "@hypit/runtime-local/extension";
 import {
   diagnoseRuntimeExecutable,
-} from "@hypit/runtime-host-node";
+} from "@hypit/runtime-local/node";
 
 import { resolveLocalOpenCvDeployment } from "./deployment.js";
 import { createLocalOpenCvImageProvider } from "./provider.js";
@@ -54,8 +54,8 @@ const localOpenCvRuntimeAdapter = createRuntimeEndpointAdapterFacet({
 });
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
-  hostFacets: [localOpenCvRuntimeAdapter],
+  format: "hypit.package@1" as const,
+  facets: [localOpenCvRuntimeAdapter],
 };
 
 export default hypitPackage;

@@ -1,6 +1,5 @@
-import type { SourceRange } from "@hypit/protocol";
-
-import { canonicalStringify } from "@hypit/protocol";
+import { canonicalStringify } from "@hypit/hypit/protocol";
+import type { SourceRange } from "@hypit/hypit/protocol";
 import { captionDocument, narrativeValue } from "./narrative.js";
 import { parseScript } from "./parser.js";
 import type { Affinity, ParsedNarrative, SemanticAnchor } from "./types.js";
@@ -27,23 +26,11 @@ export type ScriptMomentAdjustment = {
 
 type Edit = { readonly range: SourceRange; readonly replacement: string };
 
-/** Script owns the exact source inverse of every one of its 2M + 2N + 2 anchors. */
+/** Script owns the exact source inverse of every one of its 2M + 2N anchors. */
 export function scriptAnchorEditSites(parsed: ParsedNarrative): readonly ScriptAnchorEditSite[] {
   const segments = new Map(parsed.segments.map((segment) => [segment.id, segment] as const));
   const tokens = new Map(parsed.tokens.map((token) => [token.id, token] as const));
-  return parsed.semanticIndex.anchors.map((anchor): ScriptAnchorEditSite => {
-    if (anchor.kind === "program-start") {
-      return {
-        anchorId: anchor.id, kind: anchor.kind, offset: parsed.sourceRange.start,
-        affinity: "left", placement: "before",
-      };
-    }
-    if (anchor.kind === "program-end") {
-      return {
-        anchorId: anchor.id, kind: anchor.kind, offset: parsed.sourceRange.end,
-        affinity: "right", placement: "after",
-      };
-    }
+  return parsed.anchors.map((anchor): ScriptAnchorEditSite => {
     const segmentId = anchor.segmentId;
     const segment = segments.get(segmentId);
     if (segment === undefined) throw new Error(`Semantic Anchor ${anchor.id} names unknown Segment ${segmentId}.`);
@@ -173,7 +160,7 @@ export function adjustScriptSelection(input: AdjustmentInput & { readonly adjust
   const { adjustment, parsed } = input;
   const selection = parsed.selections.find((item) => item.id === adjustment.id);
   if (!selection) throw new Error(`Script Selection ${adjustment.id} does not exist.`);
-  const order = parsed.semanticIndex.anchors.map((anchor) => anchor.id);
+  const order = parsed.anchors.map((anchor) => anchor.id);
   const start = order.indexOf(adjustment.startAnchorId);
   const end = order.indexOf(adjustment.endAnchorId);
   if (start < 0 || end < start) throw new Error("Selection endpoints must follow Script anchor order.");

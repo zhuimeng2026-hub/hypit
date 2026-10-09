@@ -1,25 +1,13 @@
-import { resolveTemporalContext } from "@hypit/temporal-markup";
-import {
-  assertEmptyElement as empty,
-  assertAttributes as allowed,
-  localName,
-  textAttribute as text,
-  optionalTextAttribute as optionalText,
-  type StructuredElement,
-  type StructuredSurfaceHandler,
-  type SurfaceComponentDraft,
-  type SurfaceRecordDraft,
-  type SurfaceResolvedReference,
-  type MarkupAttributeValue,
-} from "@hypit/markup";
-import { sameType, type CanonicalValue, type TypeRef } from "@hypit/protocol";
-import { mediaTypes } from "@hypit/media";
-import type { FontArtifactRef, FontStackRef } from "@hypit/media";
-import { spatialTypes } from "@hypit/spatial";
-import { svsRecipeType } from "@hypit/svs";
-import type { SvsRecipe } from "@hypit/svs";
-import { textTypes } from "@hypit/text";
-import { createTemporalInstantProjection, createTemporalWindowProjection, temporalInstantAttributeNames } from "@hypit/temporal-markup";
+import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { assertEmptyElement as empty, assertAttributes as allowed, localName, textAttribute as text, optionalTextAttribute as optionalText, type StructuredElement, type StructuredSurfaceHandler, type SurfaceRecordDraft, type SurfaceResolvedReference, type MarkupAttributeValue } from "@hypit/hypit/markup";
+import { sameType, type CanonicalValue, type TypeRef } from "@hypit/hypit/protocol";
+import { mediaTypes } from "@hypit/hypit/media";
+import type { FontArtifactRef, FontStackRef } from "@hypit/hypit/media";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { recipeType } from "@hypit/hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
+import { textTypes } from "@hypit/hypit/text";
+import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalInstantAttributeNames } from "@hypit/hypit/temporal/markup";
 
 import { createRankingFragment } from "./fragment.js";
 import type { RankingFragmentItem, RankingFragmentSound } from "./fragment.js";
@@ -91,15 +79,15 @@ function inline<T>(value: SurfaceResolvedReference, label: string): T {
 
 function styleSurface<T>(
   styleType: TypeRef,
-  decode: (recipe: SvsRecipe, font: FontArtifactRef | FontStackRef) => { readonly style: T; readonly sound: RankingSoundStyle },
+  decode: (recipe: Recipe, font: FontArtifactRef | FontStackRef) => { readonly style: T; readonly sound: RankingSoundStyle },
 ): StructuredSurfaceHandler {
   return ({ element, resolveReference }) => {
     allowed(element, ["id", "recipe", "font"]);
     empty(element);
     const id = text(element, "id");
-    const recipeRef = reference(element.attributes.recipe, `${element.name}.recipe`, svsRecipeType, resolveReference);
+    const recipeRef = reference(element.attributes.recipe, `${element.name}.recipe`, recipeType, resolveReference);
     const fontRef = oneOfReference(element.attributes.font, `${element.name}.font`, [mediaTypes.fontArtifact, mediaTypes.fontStack], resolveReference);
-    const decoded = decode(inline<SvsRecipe>(recipeRef, `${element.name}.recipe`), inline<FontArtifactRef | FontStackRef>(fontRef, `${element.name}.font`));
+    const decoded = decode(inline<Recipe>(recipeRef, `${element.name}.recipe`), inline<FontArtifactRef | FontStackRef>(fontRef, `${element.name}.font`));
     return {
       records: [
         { id, type: styleType, value: { kind: "inline", value: decoded.style as unknown as CanonicalValue }, range: element.range },
@@ -201,28 +189,23 @@ function rankingSurface(variant: RankingVariant): StructuredSurfaceHandler {
   return ({ element, resolveReference }) => {
     const common = ["id", "timeline", "frame", "during", "terminal", "style", "appear-sound", "move-sound"];
     const attributes = variant === "column" || variant === "tier-board"
-      ? [...common.filter((name) => name !== "terminal"), "canvas"]
+      ? [...common.filter((name) => name !== "terminal"), "within"]
       : common;
     allowed(element, attributes);
     const id = text(element, "id");
     const selected = variantDefinition[variant];
     const context = resolveTemporalContext({ element, resolveReference });
-    const canvas = variant === "column" || variant === "tier-board"
-      ? reference(element.attributes.canvas, `${element.name}.canvas`, spatialTypes.canvas, resolveReference)
+    const within = variant === "column" || variant === "tier-board"
+      ? reference(element.attributes.within, `${element.name}.within`, spatialTypes.frame, resolveReference)
       : undefined;
     const frame = reference(element.attributes.frame, `${element.name}.frame`, spatialTypes.frame, resolveReference);
-    const outerTemporal = createTemporalWindowProjection({ id: `${id}.outer`, subjectId: id, element, ...context, resolveReference });
+    const outerTemporal = resolveTemporalWindowReference({ element, resolveReference });
     const terminalTemporal = variant === "top-three"
-      ? createTemporalInstantProjection({
-          id: `${id}.terminal`, subjectId: id, element, ...context, resolveReference,
-          semanticAttribute: "terminal", projectedAttribute: false,
-        })
+      ? resolveTemporalInstantReference({ element, resolveReference, attribute: "terminal" })
       : undefined;
     const styleRaw = element.attributes.style;
     const style = reference(styleRaw, `${element.name}.style`, selected.style, resolveReference);
-    const records: SurfaceRecordDraft[] = [...outerTemporal.records, ...(terminalTemporal?.records ?? [])];
-    const temporalComponents: SurfaceComponentDraft[] = [...outerTemporal.components, ...(terminalTemporal?.components ?? [])];
-    const temporalFragments = [...outerTemporal.fragments, ...(terminalTemporal?.fragments ?? [])];
+    const records: SurfaceRecordDraft[] = [];
     const headerId = `${id}.header`;
     records.push({
       id: headerId, type: rankingTypes.header,
@@ -232,7 +215,7 @@ function rankingSurface(variant: RankingVariant): StructuredSurfaceHandler {
     const inputs: Record<string, typeof context.timeline.ref> = {
       header: { kind: "record", id: headerId }, timeline: context.timeline.ref, frame: frame.ref,
       outer: outerTemporal.ref, style: style.ref,
-      ...(canvas === undefined ? {} : { canvas: canvas.ref }),
+      ...(within === undefined ? {} : { within: within.ref }),
       ...(terminalTemporal === undefined ? {} : { terminal: terminalTemporal.ref }),
     };
     const items: RankingFragmentItem[] = [];
@@ -259,13 +242,8 @@ function rankingSurface(variant: RankingVariant): StructuredSurfaceHandler {
       const contentName = authored.content === undefined ? undefined : `item-${suffix}-content`;
       if (authored.content !== undefined) inputs[contentName!] = authored.content.ref;
       const itemTemporal = !authored.timed ? undefined : variant === "top-three"
-        ? createTemporalInstantProjection({ id: `${id}.item.${suffix}`, subjectId: spec.id, element: child, ...context, resolveReference })
-        : createTemporalWindowProjection({ id: `${id}.item.${suffix}`, subjectId: spec.id, element: child, ...context, resolveReference });
-      if (itemTemporal !== undefined) {
-        records.push(...itemTemporal.records);
-        temporalComponents.push(...itemTemporal.components);
-        temporalFragments.push(...itemTemporal.fragments);
-      }
+        ? resolveTemporalInstantReference({ element: child, resolveReference })
+        : resolveTemporalWindowReference({ element: child, resolveReference });
       const timingName = itemTemporal === undefined ? undefined : `item-${suffix}-timing`;
       if (itemTemporal !== undefined) inputs[timingName!] = itemTemporal.ref;
       let iconName: string | undefined;
@@ -302,7 +280,7 @@ function rankingSurface(variant: RankingVariant): StructuredSurfaceHandler {
     const fragment = createRankingFragment(variant, items, sound);
     return {
       records,
-      components: [...temporalComponents, {
+      components: [{
         id, fragment: fragment.id, inputs,
         outputs: {
           schedule: `${id}.schedule`, program: `${id}.program`, visual: `${id}.visual`,
@@ -310,7 +288,7 @@ function rankingSurface(variant: RankingVariant): StructuredSurfaceHandler {
         },
         range: element.range,
       }],
-      fragments: [...temporalFragments, fragment],
+      fragments: [fragment],
       exports: [`${id}.schedule`, `${id}.program`, `${id}.visual`, ...(sound.appearName === undefined && sound.moveName === undefined ? [] : [`${id}.events`, `${id}.audio`])],
     };
   };

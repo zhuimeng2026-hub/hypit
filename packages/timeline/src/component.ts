@@ -1,10 +1,8 @@
-import type { ComponentPackage } from "@hypit/component-kit";
+import type { AdmissionPackage } from "@hypit/admission";
+import type { ProducerPackage } from "@hypit/producer";
 import type { StoredValue } from "@hypit/protocol";
-import { canonicalize } from "@hypit/protocol";
-
-import { timelineProducers, timelineTypes } from "./manifest.js";
+import { timelineTypes } from "./manifest.js";
 import { assertTimelineIdentity } from "./identity.js";
-import { projectTimelineAudio, projectTimelineSpace } from "./projection.js";
 import type { Timeline } from "./types.js";
 
 function track(value: StoredValue | undefined): Timeline {
@@ -13,12 +11,9 @@ function track(value: StoredValue | undefined): Timeline {
 }
 
 export const timelineComponent = {
-  producers: [
-    { producer: timelineProducers.projectProgramSpace, handler: ({ inputs }) => ({ outputs: { space: { kind: "inline", value: canonicalize(projectTimelineSpace(track(inputs.track?.value))) } }, needs: {} }) },
-    { producer: timelineProducers.projectAudio, handler: ({ inputs }) => ({ outputs: { audio: { kind: "inline", value: canonicalize(projectTimelineAudio(track(inputs.track?.value))) } }, needs: {} }) },
-  ],
+  producers: [],
   validators: [{
-    type: timelineTypes.track,
+    type: timelineTypes.timeline,
     handler: ({ value }) => assertTimelineIdentity(track(value)),
   }],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

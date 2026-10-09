@@ -1,36 +1,43 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/admission";
+import { createProducerPackageFacet } from "@hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/markup";
 
 import {
-  decodeMediaAudioSurface, decodeMediaFontSurface, decodeMediaImageSurface, decodeMediaVideoSurface, mediaComponent,
+  decodeMediaAudioSurface, decodeMediaFontStackSurface, decodeMediaFontSurface, decodeMediaImageSurface, decodeMediaVideoSurface, mediaComponent,
   mediaManifest,
   mediaModuleRef,
   mediaMarkupSurfaces,
 } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: mediaManifest }],
-  components: [mediaComponent],
-  hostFacets: [
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[mediaComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    createMarkupSurfaceFacet({
       module: mediaModuleRef,
     declaration: mediaMarkupSurfaces.find((item) => item.name === "image")!,
       handler: decodeMediaImageSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: mediaModuleRef,
     declaration: mediaMarkupSurfaces.find((item) => item.name === "audio")!,
       handler: decodeMediaAudioSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: mediaModuleRef,
     declaration: mediaMarkupSurfaces.find((item) => item.name === "video")!,
       handler: decodeMediaVideoSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: mediaModuleRef,
     declaration: mediaMarkupSurfaces.find((item) => item.name === "font")!,
       handler: decodeMediaFontSurface,
+    }),
+    createMarkupSurfaceFacet({
+      module: mediaModuleRef,
+      declaration: mediaMarkupSurfaces.find((item) => item.name === "font-stack")!,
+      handler: decodeMediaFontStackSurface,
     }),
   ],
 };

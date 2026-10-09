@@ -43,31 +43,31 @@ For one concrete trace, [Script](authors/script.svml) places `road-fail` at the 
 is difficult. [Main Source](authors/main.svml) connects that meaning to the editor scene:
 
 ```svml
-<webscene:Beat name="fail" at={copy.story.moment.road-fail}/>
+<webscene:Beat name="fail" at={moment-road-fail-cue}/>
 ```
 
-The scene projects the event to a frame. Its
+The scene receives the named absolute event and reads its frame. Its
 [animation](../../packages/web-scenes/src/scenes/editor-route/animation.js) derives the attempted
 drag and return from that frame, sharing the object's displacement with the pointer. `fail` is this
 component's vocabulary, not a special event known to Hypit. Moving the spoken anchor changes when
 the event happens; changing the animation changes how it feels.
 
-This also explains why one Take need not equal one scene. The editor develops across several spoken
+This also explains why one generated clip need not equal one scene. The editor develops across several spoken
 passages, while a single passage can trigger several states. Keep the temporal cause separate from
 the scope of the objects that respond to it.
 
 ## Keep playing footage distinct from its frame
 
 The same accepted presenter footage appears full-frame, in a circular inset and through a moving
-viewport. The short return to the inset on “我们继续” is a Performance Use applied to existing media.
-The camera presentation changes while the source playback continues. The
+viewport. The short return to the inset on “我们继续” is another visual occurrence of the existing
+media. The camera presentation changes while the source playback continues. The
 [opening system](../../packages/opening-system/README.md) owns these Styles; Main Source owns where
 they are used. Foreground and enlarged background presentations likewise share the same media sample.
 
-Covering the presenter with MG does not require producing a new audio-only Take: the voice remains
+Covering the presenter with MG does not require producing a new audio-only performance: the voice remains
 connected separately. The opening montage and silent ending occupy authored Timeline space outside
 spoken coverage. They do not need fake empty media. An actual acted drinking passage is different:
-it has performed material whose actions and eventual words belong to its Take.
+it has performed material whose actions and eventual words belong to that clip.
 
 ## Material quality starts in direction
 

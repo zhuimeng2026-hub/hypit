@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { sealGenerationRequestDraft } from "@hypit/generation";
-import type { GenerationRequest } from "@hypit/generation";
-import { plannedExactModelRequest } from "@hypit/model-kit";
-import type { ExactModelEndpoint } from "@hypit/model-kit";
+import { sealGenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationRequest } from "@hypit/hypit/generation";
+import { plannedExactModelRequest } from "@hypit/hypit/generation/model";
+import type { ExactModelEndpoint } from "@hypit/hypit/generation/model";
 import { canonicalize } from "@hypit/protocol";
 import type { BlobRef, BuildState, ProducerRef, StoredValue } from "@hypit/protocol";
 import { fixtureResource } from "../../../test/fixture-resource.js";

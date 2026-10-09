@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { MemoryResourceStore } from "@hypit/driver-node";
+import { MemoryResourceStore } from "@hypit/executor";
 import {
   assertMappingCoversPorts,
   bindGenerationMedia,

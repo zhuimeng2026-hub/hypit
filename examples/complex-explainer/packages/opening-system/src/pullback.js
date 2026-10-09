@@ -1,35 +1,27 @@
-import { performanceMedia } from "./performance-media.js";
-import {
-  assertAttributes,
-  assertEmptyElement,
-  textAttribute,
-  canonicalize,
-  sealGraphFragment,
-  createMarkupSurfaceHostFacet,
-} from "@hypit/hypit/author-kit";
-import {
-  performanceStyle,
-  performanceTypes,
-  performanceModuleRef,
-} from "@hypit/hypit/performance";
+import { placedVisualMedia } from "./placed-visual-media.js";
+import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { canonicalize } from "@hypit/hypit/protocol";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { presenterStyle, presenterTypes } from "./presenter.js";
 import { sealVisualTrack, compositionTypes } from "@hypit/hypit/composition";
 import { timelineTypes } from "@hypit/hypit/timeline";
 import { spatialTypes } from "@hypit/hypit/spatial";
 import { temporalTypes } from "@hypit/hypit/temporal";
-import { browserProgram } from "@hypit/hypit/hyperframes";
+import { htmlVisual } from "@hypit/hypit/html-program";
 const styles = (o) =>
   Object.entries(o).map(([name, value]) => ({ name, value }));
-// A local Use owns the pullback's clock; media continues at its placed source time.
+// A local Use owns the pullback's clock; media continues from its Source Window.
 export function installPullback(module, manifest, component, optionsType, mode="pullback") {
+  const types = presenterTypes(module);
   const isFade=mode==="fade-out",tag=isFade?"FadeOut":"Pullback";
   const inputs = [
-    { name: "timeline", type: timelineTypes.track },
-    { name: "canvas", type: spatialTypes.canvas },
+    { name: "timeline", type: timelineTypes.timeline },
+    { name: "within", type: spatialTypes.frame },
     { name: "window", type: temporalTypes.window },
+    { name: "sources", type: types.sources },
     { name: "options", type: optionsType },
   ];
   const producer = { module, name: mode };
-  if (!manifest.dependencies.some(d=>d.module.name===performanceModuleRef.name)) manifest.dependencies.push({ module: performanceModuleRef });
   manifest.producers.push({
     name: mode,
     inputs,
@@ -59,16 +51,16 @@ export function installPullback(module, manifest, component, optionsType, mode="
   component.producers.push({
     producer,
     handler: ({ inputs }) => {
-      const { timeline, canvas, window, options } = Object.fromEntries(
+      const { timeline, within, window, sources, options } = Object.fromEntries(
         Object.entries(inputs).map(([k, r]) => {
           if (r.value.kind !== "inline")
             throw Error("Pullback needs inline inputs");
           return [k, r.value.value];
         }),
       );
-      const { clips, children } = performanceMedia(timeline, window);
+      const { clips, children } = placedVisualMedia(timeline, window, sources.sources);
       const duration = window.span.endFrameExclusive - window.span.startFrame;
-      const program = browserProgram({
+      const program = htmlVisual({
         html:
           '<div class="picture">' +
           children.map((c) => "{{" + c.id + "}}").join("") +
@@ -88,14 +80,15 @@ export function installPullback(module, manifest, component, optionsType, mode="
       const id = window.subjectId,
         visual = sealVisualTrack({
           id,
-          programSpaceId: timeline.id,
+          timelineId: timeline.id,
           visualIr: "hypit.visual-ir@1",
           presents: children.length
             ? [
                 {
                   id,
+                  order: 0,
+                  z: 0,
                   span: window.span,
-                  stacking: { order: 0, tieBreak: id },
                   elements: [
                     {
                       id: "scene",
@@ -104,9 +97,10 @@ export function installPullback(module, manifest, component, optionsType, mode="
                       program,
                       style: styles({
                         position: "absolute",
-                        inset: 0,
-                        width: canvas.widthPx + "px",
-                        height: canvas.heightPx + "px",
+                        left: within.xPx + "px",
+                        top: within.yPx + "px",
+                        width: within.widthPx + "px",
+                        height: within.heightPx + "px",
                       }),
                     },
                     ...children,
@@ -121,13 +115,13 @@ export function installPullback(module, manifest, component, optionsType, mode="
       };
     },
   });
-  return createMarkupSurfaceHostFacet({
+  return createMarkupSurfaceFacet({
     module,
     declaration: {
       name: mode,
       tag,
       mode: "structured",
-      outputs: [performanceTypes.style, optionsType],
+      outputs: [types.style, optionsType],
       vocabulary: {
         summary:
           isFade?"Fade placed footage to transparent across this Use.":"Fast-to-slow pullback of placed footage, settling at ordinary full-frame geometry.",
@@ -168,10 +162,10 @@ export function installPullback(module, manifest, component, optionsType, mode="
           },
           {
             id,
-            type: performanceTypes.style,
+            type: types.style,
             value: {
               kind: "inline",
-              value: canonicalize(performanceStyle(fragment, { options })),
+              value: canonicalize(presenterStyle(fragment, { options })),
             },
             range: element.range,
           },

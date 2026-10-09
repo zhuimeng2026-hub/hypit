@@ -1,10 +1,10 @@
 import type { CompiledSource } from "./compile.js";
 import type { Placement } from "./observe.js";
 import type { StudioCompanionRegistry } from "./studio-registry.js";
-import type { StudioViewRole, StudioTrackTrace } from "@hypit/studio-adapter";
-import type { TypeRef } from "@hypit/protocol";
+import type { StudioViewRole, StudioTrackTrace } from "@hypit/studio-companion";
+import type { TypeRef } from "@hypit/hypit/protocol";
 
-export type { StudioViewRole } from "@hypit/studio-adapter";
+export type { StudioViewRole } from "@hypit/studio-companion";
 
 export type StudioTraceDependency = {
   readonly name: string;

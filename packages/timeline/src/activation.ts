@@ -1,8 +1,10 @@
+import { createAdmissionPackageFacet } from "@hypit/admission";
+import { createProducerPackageFacet } from "@hypit/producer";
 import { timelineComponent, timelineManifest } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: timelineManifest }],
-  components: [timelineComponent],
+  facets: [...[timelineComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)])],
 };
 export default hypitPackage;

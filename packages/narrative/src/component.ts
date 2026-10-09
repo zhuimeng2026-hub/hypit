@@ -1,18 +1,17 @@
-import type { ComponentPackage } from "@hypit/component-kit";
+import type { AdmissionPackage } from "@hypit/admission";
+import type { ProducerPackage } from "@hypit/producer";
 import type { StoredValue } from "@hypit/protocol";
 
 import {
-  assertCaptionDocumentIdentity,
-  assertNarrativeExcerptIdentity,
+  assertNarrativeSegmentRefIdentity,
   assertNarrativeIdentity,
   assertNarrativeMomentRefIdentity,
   assertNarrativeSelectionRefIdentity,
 } from "./identity.js";
 import { narrativeTypes } from "./manifest.js";
 import type {
-  CaptionDocument,
   Narrative,
-  NarrativeExcerpt,
+  NarrativeSegmentRef,
   NarrativeMomentRef,
   NarrativeSelectionRef,
 } from "./types.js";
@@ -25,9 +24,8 @@ function inline<T>(value: StoredValue, subject: string): T {
 export const narrativeComponent = {
   validators: [
     { type: narrativeTypes.narrative, handler: ({ value }) => assertNarrativeIdentity(inline<Narrative>(value, "Narrative")) },
-    { type: narrativeTypes.excerpt, handler: ({ value }) => assertNarrativeExcerptIdentity(inline<NarrativeExcerpt>(value, "NarrativeExcerpt")) },
+    { type: narrativeTypes.segmentRef, handler: ({ value }) => assertNarrativeSegmentRefIdentity(inline<NarrativeSegmentRef>(value, "NarrativeSegmentRef")) },
     { type: narrativeTypes.selection, handler: ({ value }) => assertNarrativeSelectionRefIdentity(inline<NarrativeSelectionRef>(value, "NarrativeSelection")) },
     { type: narrativeTypes.moment, handler: ({ value }) => assertNarrativeMomentRefIdentity(inline<NarrativeMomentRef>(value, "NarrativeMoment")) },
-    { type: narrativeTypes.captionDocument, handler: ({ value }) => assertCaptionDocumentIdentity(inline<CaptionDocument>(value, "CaptionDocument")) },
   ],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

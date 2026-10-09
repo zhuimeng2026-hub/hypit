@@ -1,13 +1,13 @@
-import { timelineTypes } from "@hypit/timeline";
+import { timelineTypes } from "@hypit/hypit/timeline";
 
-import { artifactTypes } from "@hypit/artifact";
-import { compositionTypes } from "@hypit/composition";
-import { sealGraphFragment } from "@hypit/elaborator";
-import type { FragmentOperation } from "@hypit/elaborator";
-import type { TypeRef } from "@hypit/protocol";
-import { spatialTypes } from "@hypit/spatial";
-import { textTypes } from "@hypit/text";
-import { temporalTypes } from "@hypit/temporal";
+import { blobTypes } from "@hypit/hypit/blob";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation } from "@hypit/hypit/author";
+import type { TypeRef } from "@hypit/hypit/protocol";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { textTypes } from "@hypit/hypit/text";
+import { temporalTypes } from "@hypit/hypit/temporal";
 
 import { commentStickerProducers, commentStickerTypes } from "./manifest.js";
 
@@ -51,7 +51,7 @@ export function createCommentStickerFragment(items: readonly CommentStickerFragm
     if (item.authorName !== undefined) types.set(item.authorName, textTypes.text);
     if (item.headerTextName !== undefined) types.set(item.headerTextName, textTypes.text);
     if (item.metaName !== undefined) types.set(item.metaName, textTypes.text);
-    if (item.avatarName !== undefined) types.set(item.avatarName, artifactTypes.blob);
+    if (item.avatarName !== undefined) types.set(item.avatarName, blobTypes.blob);
     const suffix = String(index + 1).padStart(4, "0");
     const createContentId = `comment:content:${suffix}:create`;
     operations.push({
@@ -105,21 +105,20 @@ export function createCommentStickerFragment(items: readonly CommentStickerFragm
     {
       id: "comment:track",
       producer: commentStickerProducers.render,
-      inputs: { canvas: input("canvas"), timeline: input("timeline"), program: operation("comment:program") },
+      inputs: { timeline: input("timeline"), program: operation("comment:program") },
       result: { kind: "output", name: "track" },
     },
   );
   return sealGraphFragment({
     inputs: [
-      { name: "canvas", type: spatialTypes.canvas },
       { name: "header", type: commentStickerTypes.header },
-      { name: "timeline", type: timelineTypes.track },
+      { name: "timeline", type: timelineTypes.timeline },
       ...[...types].map(([inputName, type]) => ({ name: inputName, type })),
     ],
     operations,
     exports: [
       { name: "program", type: commentStickerTypes.program, root: operation("comment:program") },
-      { name: "track", type: compositionTypes.visualTrack, root: operation("comment:track") },
+      { name: "visual", type: compositionTypes.visualTrack, root: operation("comment:track") },
     ],
   });
 }

@@ -1,6 +1,6 @@
 {
   "name": "@hypit/seedance-kits",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -18,7 +18,7 @@
     "README.md"
   ],
   "devDependencies": {
-    "@hypit/svs": "workspace:*",
+    "@hypit/recipe": "workspace:*",
     "@hypit/text": "workspace:*"
   }
 }

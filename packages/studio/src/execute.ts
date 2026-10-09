@@ -1,7 +1,7 @@
-import { MemoryResourceStore, NodeDriver } from "@hypit/driver-node";
-import type { ResourceStore } from "@hypit/runtime";
-import type { BuildState } from "@hypit/protocol";
-import type { RuntimeHostTransientExecution } from "@hypit/runtime-host-node";
+import { MemoryResourceStore, Executor } from "@hypit/hypit/executor";
+import type { ResourceStore } from "@hypit/hypit/runtime";
+import type { BuildState } from "@hypit/hypit/protocol";
+import type { CliTransientExecution as RuntimeHostTransientExecution } from "@hypit/hypit/cli";
 
 import type { StudioDomain } from "./domain.js";
 
@@ -24,7 +24,7 @@ export async function executeStudioProjection(
   execution?: RuntimeHostTransientExecution,
 ): Promise<Executed> {
   const result = execution === undefined
-    ? await new NodeDriver({
+    ? await new Executor({
         producers: domain.producers,
         validators: domain.validators,
         resources,

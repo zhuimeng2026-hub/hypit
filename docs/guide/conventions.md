@@ -9,8 +9,8 @@ These conventions describe work inside the Hypit repository. Project extensions 
 
 | Thing | Convention | Example |
 |---|---|---|
-| Package directory | kebab-case | `packages/speech-alignment/` |
-| Package name | `@hypit/` scope | `@hypit/speech-alignment` |
+| Package directory | kebab-case | `packages/narrative-speech-alignment/` |
+| Package name | `@hypit/` scope | `@hypit/narrative-speech-alignment` |
 | Provider package | `provider-` prefix | `@studio/provider-images` |
 | TypeScript file | kebab-case | `align.ts` |
 | Exported type | PascalCase | `SpeechAlignment` |

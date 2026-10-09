@@ -9,10 +9,8 @@ export type NarrativeTokenRange = {
 
 /** Resolve a semantic anchor to a boundary in the authored token sequence. */
 export function narrativeAnchorTokenBoundary(narrative: Narrative, anchorId: string): number {
-  const anchor = narrative.semanticIndex.anchors.find((item) => item.id === anchorId);
+  const anchor = narrative.anchors.find((item) => item.id === anchorId);
   if (anchor === undefined) throw new Error(`Narrative ${narrative.id} has no anchor ${anchorId}.`);
-  if (anchor.kind === "program-start") return 0;
-  if (anchor.kind === "program-end") return narrative.tokens.length;
   const segment = narrative.segments.find((item) => item.id === anchor.segmentId);
   if (segment === undefined) throw new Error(`Anchor ${anchorId} has no authored Segment.`);
   if (anchor.kind === "segment-start") return segment.tokenStart;
@@ -29,7 +27,7 @@ export function narrativeSelectionTokenRange(
   if ("narrativeId" in selection && selection.narrativeId !== narrative.id) {
     throw new Error(`Selection ${selection.id} belongs to another Narrative.`);
   }
-  const anchors = narrative.semanticIndex.anchors;
+  const anchors = narrative.anchors;
   const start = anchors.findIndex((item) => item.id === selection.startAnchorId);
   const end = anchors.findIndex((item) => item.id === selection.endAnchorId);
   if (start < 0 || end < 0 || end < start) {

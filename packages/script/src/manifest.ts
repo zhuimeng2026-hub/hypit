@@ -1,13 +1,16 @@
-import { narrativeDependency, narrativeSchema, narrativeTypes } from "@hypit/narrative";
-import { textDependency, textTypes } from "@hypit/text";
-import type { ModuleManifest, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, TypeRef } from "@hypit/hypit/protocol";
+import { captionDependency, captionTypes } from "@hypit/hypit/caption";
+import { narrativeDependency, narrativeSchema, narrativeTypes } from "@hypit/hypit/narrative";
+import { narrativeCaptionDependency, narrativeCaptionTypes } from "@hypit/hypit/narrative-caption";
+import { textDependency, textTypes } from "@hypit/hypit/text";
 
 export const scriptModuleRef = { name: "@hypit/script", version: "1" } as const;
 export const narrativeType: TypeRef = narrativeTypes.narrative;
-export const narrativeExcerptType: TypeRef = narrativeTypes.excerpt;
+export const narrativeSegmentRefType: TypeRef = narrativeTypes.segmentRef;
 export const narrativeSelectionType: TypeRef = narrativeTypes.selection;
 export const narrativeMomentType: TypeRef = narrativeTypes.moment;
-export const captionDocumentType: TypeRef = narrativeTypes.captionDocument;
+export const captionDocumentType: TypeRef = captionTypes.document;
+export const narrativeCaptionBindingType: TypeRef = narrativeCaptionTypes.binding;
 export { narrativeSchema };
 
 export const scriptMarkupSurfaces = [
@@ -17,11 +20,12 @@ export const scriptMarkupSurfaces = [
     mode: "raw",
     outputs: [
       narrativeType,
-      narrativeExcerptType,
+      narrativeSegmentRefType,
       textTypes.text,
       narrativeSelectionType,
       narrativeMomentType,
       captionDocumentType,
+      narrativeCaptionBindingType,
     ],
     vocabulary: {
       summary: "Holds every spoken word as prose-first Segments and publishes the authored Narrative with the Selections, Moments and text projections the rest of the source reads.",
@@ -33,14 +37,16 @@ export const scriptMarkupSurfaces = [
       ports: [
         { name: "", type: narrativeType,
           summary: "The complete authored Narrative, including speech structure, semantic anchors and its CaptionDocument, addressed by the element's own id." },
-        { name: "segment.<id>", type: narrativeExcerptType,
-          summary: "One Segment as a narrow Excerpt, used to associate a generated Take with that Segment." },
+        { name: "segment.<id>", type: narrativeSegmentRefType,
+          summary: "One Segment as a narrow Excerpt, used to associate generated or supplied performance media with that Segment." },
         { name: "segment.<id>.dialogue", type: textTypes.text,
           summary: "One Segment as display-independent dialogue, keeping Role Cue labels and the spoken side of Dual Text." },
         { name: "segment.<id>.speech", type: textTypes.text,
           summary: "One Segment as pronunciation only, with Role Cue labels dropped." },
         { name: "caption", type: captionDocumentType,
-          summary: "The Narrative's CaptionDocument exported as a narrow view: display Words, N:M Alignment Units, Cue breaks and speech correspondence." },
+          summary: "A source-neutral CaptionDocument: display Words, correspondence Units and authored Cues." },
+        { name: "caption-binding", type: narrativeCaptionBindingType,
+          summary: "The explicit relation from Caption units to this Narrative's speech Tokens." },
         { name: "selection.<id>", type: narrativeSelectionType,
           summary: "One named range over the Narrative, reusable wherever a Selection is read." },
         { name: "moment.<id>", type: narrativeMomentType,
@@ -89,7 +95,7 @@ export const scriptManifest: ModuleManifest = {
   format: "hypit.module@1",
   name: scriptModuleRef.name,
   version: scriptModuleRef.version,
-  dependencies: [narrativeDependency, textDependency],
+  dependencies: [captionDependency, narrativeDependency, narrativeCaptionDependency, textDependency],
   types: [],
   capabilities: [],
   producers: [],

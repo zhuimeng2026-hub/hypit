@@ -1,8 +1,9 @@
-import type { Timeline } from "@hypit/timeline";
+import { assertTimelineIdentity } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/hypit/timeline";
 import {
   assertVisualTrackIdentity,
   sealVisualTrack,
-} from "@hypit/composition";
+} from "@hypit/hypit/composition";
 import type {
   VisualAnimation,
   VisualElement,
@@ -10,17 +11,16 @@ import type {
   VisualTextFlow,
   VisualTextTypography,
   VisualTrack,
-} from "@hypit/composition";
-import { assertFontArtifactRef } from "@hypit/media";
-import { assertProgramSpaceIdentity } from "@hypit/program-space";
-import { canonicalize, isResourceId } from "@hypit/protocol";
-import type { BlobRef } from "@hypit/protocol";
-import { assertCanvasSpace, assertSpatialFrame } from "@hypit/spatial";
-import type { CanvasSpace, SpatialFrame } from "@hypit/spatial";
-import { assertTemporalWindowFor } from "@hypit/temporal";
-import type { ProjectedWindow } from "@hypit/temporal";
-import { verifyText } from "@hypit/text";
-import type { Text } from "@hypit/text";
+} from "@hypit/hypit/composition";
+import { assertFontArtifactRef } from "@hypit/hypit/media";
+import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
+import { assertSpatialFrame } from "@hypit/hypit/spatial";
+import type { SpatialFrame } from "@hypit/hypit/spatial";
+import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
+import type { TemporalWindow } from "@hypit/hypit/temporal";
+import { verifyText } from "@hypit/hypit/text";
+import type { Text } from "@hypit/hypit/text";
 
 import type {
   CommentStickerContent,
@@ -200,7 +200,7 @@ function realized(
   style: CommentStickerStyle,
   spec: CommentStickerItemSpec,
   content: CommentStickerContent,
-  window: ProjectedWindow,
+  window: TemporalWindow,
   avatar?: BlobRef,
 ): CommentStickerSet {
   assertCommentStickerSet(set);
@@ -218,7 +218,7 @@ function realized(
     style: structuredClone(style),
     content: structuredClone(content),
     ...(avatar === undefined ? {} : { avatar: structuredClone(avatar) }),
-    tieBreak: `${header.id}:${spec.id}`,
+    order: set.items.length,
   };
   const ids = new Set(set.items.map((item) => item.id));
   assert(!ids.has(addition.id), `Comment Sticker already contains Item ${addition.id}.`);
@@ -234,10 +234,10 @@ export function appendProjectedCommentSticker(
   style: CommentStickerStyle,
   spec: CommentStickerItemSpec,
   content: CommentStickerContent,
-  window: ProjectedWindow,
+  window: TemporalWindow,
   avatar?: BlobRef,
 ): CommentStickerSet {
-  assertTemporalWindowFor(window, { subjectId: spec.id, space: timeline });
+  assertTemporalWindowFor(window, { subjectId: spec.id, timeline: timeline });
   return realized(set, header, timeline, frame, style, spec, content, window, avatar);
 }
 
@@ -256,7 +256,7 @@ export function assertCommentStickerProgram(value: CommentStickerProgram): void 
     assertCommentStickerStyle(item.style);
     assertCommentStickerContent(item.content);
     if (item.avatar !== undefined) assertAvatar(item.avatar);
-    assert(item.tieBreak.length > 0, `Comment Sticker Item ${item.id} tie break is empty.`);
+    assert(Number.isSafeInteger(item.order) && item.order >= 0, `Comment Sticker Item ${item.id} order is invalid.`);
   }
 }
 
@@ -589,19 +589,19 @@ function stickerElements(item: CommentStickerItemProgram): readonly VisualElemen
   return elements;
 }
 
-export function renderCommentSticker(canvas: CanvasSpace, timeline: Timeline, program: CommentStickerProgram): VisualTrack {
-  assertCanvasSpace(canvas);
-  assertProgramSpaceIdentity(timeline);
+export function renderCommentSticker(timeline: Timeline, program: CommentStickerProgram): VisualTrack {
+  assertTimelineIdentity(timeline);
   assertCommentStickerProgram(program);
   const track = sealVisualTrack({
-    programSpaceId: timeline.id,
+    timelineId: timeline.id,
     visualIr: "hypit.visual-ir@1",
     id: program.id,
     presents: program.items.map((item) => ({
       id: item.id,
+      order: item.order,
+      z: item.style.stackingOrder,
       subjectId: item.subjectId,
       span: { ...item.span },
-      stacking: { order: item.style.stackingOrder, tieBreak: item.tieBreak },
       elements: stickerElements(item),
     })),
   });

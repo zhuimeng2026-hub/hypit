@@ -8,29 +8,31 @@ does not carry a private visual role.
 ```xml
 <caption-fine:Style id="primary" recipe={recipes.caption.primary} font={caption-font}/>
 
-<caption-fine:Track id="captions-track" document={story.caption}
-  timeline={speech.timeline}>
+<caption-fine:Caption id="captions-track" document={story.caption} timing={story-captions}
+  timeline={speech.timeline} within={vertical.bounds}>
     <caption-fine:Use style={primary}/>
-  </caption-fine:Track>
+  </caption-fine:Caption>
 ```
 
-An optional Spatial Region Timeline supplies a moving placement point when the user's reference
+An optional Region Evidence supplies a moving placement point when the user's reference
 visibly uses head-following Caption or the user asks for that treatment. Ordinary Caption uses the
-Style's placement without regions. The Region Timeline is authored numeric input mapped from available picture
+Style's placement without regions. Region Evidence is authored numeric input mapped from available picture
 evidence to the composition that consumes it; it is not a face-tracking request:
 
 ```xml
-<space:RegionTimeline id="heads" within={vertical} recipe={tracking.heads.default}/>
-<caption-fine:Track id="captions-track" document={story.caption}
-  timeline={speech.timeline} regions={heads}>
+<import as="region" from="@hypit/region-evidence@1"/>
+<region:Evidence id="heads" within={vertical.bounds} timeline={speech.timeline}
+  recipe={tracking.heads.default}/>
+<caption-fine:Caption id="captions-track" document={story.caption} timing={story-captions}
+  timeline={speech.timeline} within={vertical.bounds} regions={heads}>
     <caption-fine:Use style={primary}/>
-  </caption-fine:Track>
+  </caption-fine:Caption>
 ```
 
-With `regions`, every Cue must carry one Script Role. When the Region Timeline contains a measured region for that
-Role and Frame, the Track places the Cue at the region's top center. When that Role has a Track but
+With `regions`, every Cue must carry one Script Role. When Region Evidence contains a measured region for that
+Role and Frame, Fine places the Cue at the region's top center. When that Role has a series but
 the current Frame is `null`, the Cue is not rendered: absence of evidence never becomes a guessed
-position. A Role with no Track uses the Style's authored `x` and `y`, so unrelated speakers remain
+position. A Role with no evidence series uses the Style's authored `x` and `y`, so unrelated speakers remain
 ordinary fixed captions. The Style still owns its width and anchors, so `anchor-x: center;
 anchor-y: bottom` puts the Caption immediately above a measured region. The Timeline is finished
 external evidence: Fine does not detect people, associate identities, smooth motion, interpolate
@@ -38,7 +40,7 @@ missing Frames or invoke a Provider. Without `regions`, the ordinary Recipe `x` 
 unchanged.
 
 This keeps placement inspectable and editable. If a tracked face needs padding or an above-head anchor,
-transform the measured numbers while authoring the Region Timeline, then give Caption the result. Do
+transform the measured numbers while authoring Region Evidence, then give Caption the result. Do
 not hide that transformation in a Provider or ask the Build to rediscover the face.
 
 One SVS Recipe freezes three public dimensions:
@@ -47,14 +49,15 @@ One SVS Recipe freezes three public dimensions:
 - **How**: the exact font stack, typography, base/active glyph Paint, Cue box and decoration.
 - **When**: the visible lead/tail envelope, handoff, Cue/Atom motion, reveal, Karaoke and loops.
 
-Caption first projects authored Script units onto semantic Word timing. Fine then produces an
-explicit visible Schedule and renders that Schedule. Lead and tail never change the semantic Word
-times used by Karaoke. Later Uses mask earlier presentation, including Hidden. The final visibility
-is clipped to the winning Use Window while the original Cue envelope and animations are preserved.
+An upstream adapter supplies absolute Caption Unit timing. Fine then joins the document's authored
+Cues to that complete timing and produces an explicit visible Schedule. It never splits or merges a
+Cue. Lead and tail never change the source times used by Karaoke. Later Uses mask earlier
+presentation, including Hidden. The final visibility is clipped to the winning Use Window while the
+original Cue envelope and animations are preserved.
 
-The Fine Schedule preserves the Caption projection's ProgramSpace, Narrative and document identities.
-The renderer rejects any mismatched Space or document. Studio may expose lead, tail and handoff as
-ordinary parameter edits, but Cue rectangles remain read-only semantic evidence.
+The Fine Schedule preserves the CaptionTiming's Timeline and document identities. It contains no
+Narrative identity. The renderer rejects any mismatched Timeline or document. Studio may expose
+lead, tail and handoff as ordinary parameter edits, but Cue rectangles remain read-only timing facts.
 
 Script segments, turns and `||` organize complete Cues. Timed Uses select presentation without
 changing that grouping. Fine applies uniform rules to the words of a Cue. A caption whose Cue contains structural roles or
@@ -103,7 +106,7 @@ lines are included. Padding and borders extend beyond those rectangles without c
 overlapping line backgrounds share one outline and paint translucent color once. Cue motion then
 moves text and decoration together.
 
-This decoration uses HyperFrames' existing local browser-program extension, owned by Fine. Its
+This decoration uses the HtmlProgram's local `HtmlVisual` extension, owned by Fine. Its
 measurement copy uses the same exact-font text and available width, is removed synchronously after
 measurement, and is recomputed when a frame is sought (including after fonts finish loading). It
 adds no layout records to Script, Caption, Timeline or Runtime. Other backends must support the
@@ -143,7 +146,10 @@ The Hypit Skill's Caption craft page owns grouping and visual direction.
 
 `font` accepts an exact face or ordered stack. A local file declared through `media:Font` can be the
 primary face or a `<caption-fine:Fallback font={...}/>` child, just like a bundled face. See
-[Media font assets](../media/README.md#font-files) and [the open catalog](../fonts-open/README.md).
+[Media font assets](../media/README.md#font-files) and the independently installed
+[`@hypit/fontsource` adapter](../fontsource/README.md).
 
-The [Fine Studio Companion](../caption-fine-studio/src/index.ts) reads the same schedule and authored Use
-Style references. It presents the actual Cue timing and exposes Use timing and supported Style edits in the Inspector.
+The package's Studio facet, published as `@hypit/caption-fine/studio`, reads the same schedule and
+authored Use Style references. It presents the actual Cue timing and exposes Use timing and supported
+Style edits in the Inspector. Runtime and authoring support therefore ship as one versioned capability
+rather than as independently versioned packages.

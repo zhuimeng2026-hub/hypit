@@ -1,38 +1,41 @@
-import { fileReferenceIdentity } from "@hypit/build-result";
+import { fileReferenceIdentity, locateRepositoryBuildResultOutput } from "@hypit/hypit/result/node";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 
-import { buildIdCreatedAt } from "@hypit/protocol";
-import type { BuildView, NodeRuntimeHost, RuntimeHostTransientExecution } from "@hypit/runtime-host-node";
-import type { StoredValue, TypeRef } from "@hypit/protocol";
+import { buildIdCreatedAt } from "@hypit/hypit/protocol";
+import type { StoredValue, TypeRef } from "@hypit/hypit/protocol";
 import type {
   BuildResultFileRange,
   BuildResultManifest,
   BuildResultRepository,
   FinishedBuildResultManifest,
-} from "@hypit/build-result";
+} from "@hypit/hypit/result/node";
 
-import { resolveBuildResultValue } from "@hypit/cli";
-import { videoCliDistribution } from "@hypit/video-cli";
+import { resolveBuildResultValue } from "@hypit/hypit/cli";
+import type { CliBuildView as BuildView, CliDistribution, CliRuntimeHost, CliTransientExecution } from "@hypit/hypit/cli";
 
 import type { StudioArtifactView, StudioLibraryRequest, StudioLibraryView, StudioTaskView } from "./shared.js";
 import { mergeStudioArtifacts } from "./library-media.js";
 
-type RuntimeControl = Awaited<ReturnType<NodeRuntimeHost["openControl"]>>;
+type RuntimeControl = Awaited<ReturnType<CliRuntimeHost["openControl"]>>;
 
 export type StudioBuildLibrary = {
   readonly profile?: string;
   readonly runtime?: Pick<RuntimeControl, "activity">;
   /** Runtime-owned, disposable execution for the current authoring session. */
-  readonly transientExecution?: RuntimeHostTransientExecution;
+  readonly transientExecution?: CliTransientExecution;
   readonly library: (request: StudioLibraryRequest) => Promise<StudioLibraryView>;
   readonly renameArtifact: (build: string, output: string, displayName: string | null) => Promise<string | undefined>;
+  readonly locateHistoricalOutput: (
+    build: string,
+    output: string,
+  ) => Promise<import("@hypit/hypit/result").RepositoryBuildResultOutputLocation | undefined>;
   readonly resolveHistoricalOutput: (
     build: string,
     output: string,
   ) => Promise<{
     readonly type: TypeRef;
     readonly value: StoredValue;
-    readonly attachments?: readonly import("@hypit/workspace").ArtifactAttachment[];
+    readonly attachments?: readonly import("@hypit/hypit/workspace").BlobAttachment[];
   } | undefined>;
   readonly openArtifact: (
     build: string,
@@ -112,8 +115,8 @@ function resultTaskView(root: string, result: FinishedBuildResultManifest): Stud
     ongoing: false,
     status: result.outcome,
     ...(result.failure === undefined ? {} : { detail: result.failure }),
-    source: presentedPath(root, result.source.path),
-    ...(result.run === undefined ? {} : { run: presentedPath(root, result.run.path) }),
+    source: presentedPath(root, result.source.id),
+    ...(result.run === undefined ? {} : { run: presentedPath(root, result.run.id) }),
     targets: result.targets,
     operations: [],
   };
@@ -143,8 +146,8 @@ async function artifactsForResults(
         : await repository.resolve(manifest.id, output);
       if (resolved === undefined || (resolved.value.kind !== "build-file" && resolved.value.kind !== "external-file")) return [];
       const file = resolved.value;
-      const source = presentedPath(root, manifest.source.path);
-      const run = manifest.run === undefined ? undefined : presentedPath(root, manifest.run.path);
+      const source = presentedPath(root, manifest.source.id);
+      const run = manifest.run === undefined ? undefined : presentedPath(root, manifest.run.id);
       return [{
         id: fileReferenceIdentity(resolved.build, file),
         build: manifest.id,
@@ -175,23 +178,32 @@ export async function readStudioLibrary(input: StudioLibraryRequest & {
   readonly runtime?: Pick<RuntimeControl, "activity">;
   readonly results: BuildResultRepository;
 }): Promise<StudioLibraryView> {
-  const matches = (item: { readonly id: string; readonly source: { readonly path: string }; readonly run?: { readonly path: string } }) =>
-    (isWithin(input.workspaceRoot, item.run?.path ?? item.source.path) || isWithin(input.workspaceRoot, item.source.path))
+  const matches = (item: { readonly id: string; readonly source: string; readonly run?: string }) =>
+    (isWithin(input.workspaceRoot, item.run ?? item.source) || isWithin(input.workspaceRoot, item.source))
     && (input.build === undefined || item.id === input.build)
     && (input.run === undefined || (item.run !== undefined
-      && projectPath(input.workspaceRoot, item.run.path) === projectPath(input.workspaceRoot, input.run)));
+      && projectPath(input.workspaceRoot, item.run) === projectPath(input.workspaceRoot, input.run)));
   // Read activity before Results so a Build that finishes during this query is still represented.
   const active = input.runtime === undefined || input.before !== undefined
     ? [] : (await input.runtime.activity()).builds;
-  const views = active.filter((view) => view.source !== undefined && matches({ ...view, source: view.source }));
+  const views = active.filter((view) => view.source !== undefined && matches({
+    id: view.id,
+    source: view.source.path,
+    ...(view.run === undefined ? {} : { run: view.run.path }),
+  }));
   let page = input.build === undefined
     ? await input.results.browse({ limit: 25, ...(input.before === undefined ? {} : { before: input.before }) })
     : { results: [await input.results.read(input.build)].filter((item): item is BuildResultManifest => item !== undefined) };
-  const manifests = page.results.filter(matches);
+  const manifests = page.results.filter((manifest) => matches({
+    id: manifest.id,
+    source: manifest.source.id,
+    ...(manifest.run === undefined ? {} : { run: manifest.run.id }),
+  }));
   const resultsByBuild = new Map(manifests.map((manifest) => [manifest.id, manifest]));
   await Promise.all(views.filter((view) => !resultsByBuild.has(view.id)).map(async (view) => {
     const result = await input.results.read(view.id);
-    if (result !== undefined && matches(result)) resultsByBuild.set(view.id, result);
+    if (result !== undefined && matches({ id: result.id, source: result.source.id,
+      ...(result.run === undefined ? {} : { run: result.run.id }) })) resultsByBuild.set(view.id, result);
   }));
   let artifacts: readonly StudioArtifactView[] = [];
   if (input.section === "artifacts") {
@@ -203,7 +215,11 @@ export async function readStudioLibrary(input: StudioLibraryRequest & {
       page = await input.results.browse({ limit: 25, before: cursor });
       if ("next" in page && page.next === cursor) throw new Error("Result pagination did not advance");
       artifacts = mergeStudioArtifacts([...artifacts,
-        ...await artifactsForResults(input.workspaceRoot, input.results, page.results.filter(matches), input.media)]);
+        ...await artifactsForResults(input.workspaceRoot, input.results, page.results.filter((manifest) => matches({
+          id: manifest.id,
+          source: manifest.source.id,
+          ...(manifest.run === undefined ? {} : { run: manifest.run.id }),
+        })), input.media)]);
     }
   }
   return {
@@ -224,6 +240,7 @@ export async function readStudioLibrary(input: StudioLibraryRequest & {
 
 /** Open a Runtime profile read-only; Studio never creates or mutates a Build. */
 export async function openStudioBuildLibrary(
+  distribution: CliDistribution,
   profile: string | undefined,
   packageRoot: string,
   workspaceRoot: string,
@@ -232,16 +249,16 @@ export async function openStudioBuildLibrary(
   const resolvedProfile = profile === undefined ? undefined : resolve(profile);
   const host = resolvedProfile === undefined
     ? undefined
-    : await videoCliDistribution.openRuntimeHost(resolvedProfile, {
+    : await distribution.openRuntimeHost(resolvedProfile, {
         packageRoot,
         ...(distributionPackageRoot === undefined ? {} : { distributionPackageRoot }),
       });
   const runtime = await host?.openControl({ readOnly: true });
-  let transientExecution: RuntimeHostTransientExecution | undefined;
-  let openedResults: Awaited<ReturnType<typeof videoCliDistribution.openProjectResults>>;
+  let transientExecution: CliTransientExecution | undefined;
+  let openedResults: Awaited<ReturnType<CliDistribution["openProjectResults"]>>;
   try {
     transientExecution = await host?.openTransientExecution();
-    openedResults = await videoCliDistribution.openProjectResults(workspaceRoot, {
+    openedResults = await distribution.openProjectResults(workspaceRoot, {
       packageRoot,
       ...(distributionPackageRoot === undefined ? {} : { distributionPackageRoot }),
     });
@@ -272,6 +289,9 @@ export async function openStudioBuildLibrary(
       });
       presentationWrite = saved.catch(() => undefined);
       return await saved;
+    },
+    async locateHistoricalOutput(build, output) {
+      return await locateRepositoryBuildResultOutput(results, build, output);
     },
     async resolveHistoricalOutput(build, output) {
       return await resolveBuildResultValue(results, build, output);

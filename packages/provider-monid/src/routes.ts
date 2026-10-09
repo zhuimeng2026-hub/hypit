@@ -4,11 +4,11 @@ import {
   generationTypes,
   sealGeneratedImageSet,
   sealGeneratedVideoSet,
-} from "@hypit/generation";
-import type { GenerationArtifactUrlResolver, GenerationRequest } from "@hypit/generation";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CapabilityRef, CanonicalValue, StoredValue, TypeRef } from "@hypit/protocol";
-import type { EndpointRequest, EndpointSupport } from "@hypit/endpoint-kit";
+} from "@hypit/hypit/generation";
+import type { GenerationArtifactUrlResolver, GenerationRequest } from "@hypit/hypit/generation";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CapabilityRef, CanonicalValue, StoredValue, TypeRef } from "@hypit/hypit/protocol";
+import type { EndpointRequest, EndpointSupport } from "@hypit/hypit/endpoint";
 import { monidMappings } from "./mapping.js";
 import type { MonidMapping } from "./mapping.js";
 

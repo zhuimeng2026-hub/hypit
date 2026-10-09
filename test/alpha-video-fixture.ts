@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { MemoryResourceStore } from "../packages/driver-node/src/index.js";
+import { MemoryResourceStore } from "../packages/executor/src/index.js";
 export { MemoryResourceStore };
-import { executeInspectMedia, executeNormalizeMedia } from "../packages/media-execution/src/index.js";
-import type { MediaExecutionEnvironment } from "../packages/media-execution/src/index.js";
+import { executeInspectMedia, executeNormalizeMedia } from "../packages/media-local/src/execute.js";
+import type { MediaExecutionEnvironment } from "../packages/media-local/src/execute.js";
 import { verifyMediaInspection, verifySynchronizedMedia } from "@hypit/media";
-import { selectMediaStreams } from "@hypit/media-pipeline";
+import { selectMediaStreams } from "@hypit/media-operations";
 import { canonicalize } from "@hypit/protocol";
 import type { BlobRef } from "@hypit/protocol";
 

@@ -1,4 +1,5 @@
-import { EndpointHttpError, EndpointServiceError } from "@hypit/endpoint-kit";
+import { EndpointServiceError } from "@hypit/hypit/endpoint";
+import { EndpointHttpError, retryAfterMs } from "@hypit/hypit/endpoint/http";
 
 /** Pollo's `{ errorCode, message, code, requestId }` envelope and generation `failMsg`, kept at the service boundary. */
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -17,7 +18,8 @@ export function safePolloReason(value: string): string {
 export class PolloServiceError extends EndpointServiceError {}
 
 export class PolloHttpError extends EndpointHttpError {
-  constructor(status: number, bodyText: string, request: { readonly method: string; readonly path: string }) {
+  constructor(status: number, response: { readonly headers: Headers }, bodyText: string,
+    request: { readonly method: string; readonly path: string }) {
     let body: Record<string, unknown> | undefined;
     try { body = record(JSON.parse(bodyText)); } catch { /* Non-JSON gateway failures still have HTTP evidence. */ }
     const code = text(body?.errorCode) ?? "POLLO_HTTP_ERROR";
@@ -27,7 +29,8 @@ export class PolloHttpError extends EndpointHttpError {
       `Pollo HTTP ${status}`, code, `${request.method} ${request.path}`,
       ...(requestId === undefined ? [] : [`request=${requestId}`]),
     ];
-    super(code, `${facts.join("; ")}${reason === undefined ? "" : `: ${safePolloReason(reason)}`}`, status);
+    super(code, `${facts.join("; ")}${reason === undefined ? "" : `: ${safePolloReason(reason)}`}`,
+      status, retryAfterMs(response.headers));
   }
 }
 

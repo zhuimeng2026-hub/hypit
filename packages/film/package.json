@@ -1,34 +1,43 @@
 {
   "name": "@hypit/film",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./studio": "./src/studio.ts"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
-    "@hypit/component-kit": "workspace:*",
-    "@hypit/composition": "workspace:*",
-    "@hypit/elaborator": "workspace:*",
-    "@hypit/program-space": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/timeline": "workspace:*",
-    "@hypit/spatial": "workspace:*",
-    "@hypit/svs": "workspace:*",
-    "@hypit/markup": "workspace:*",
-    "@hypit/temporal-markup": "workspace:*"
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/studio-companion": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/core": "workspace:*",
-    "@hypit/driver-node": "workspace:*",
-    "@hypit/hyperframes": "workspace:*",
+    "@hypit/compiler": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/studio-companion": "workspace:*",
+    "@hypit/producer": "workspace:*",
+    "@hypit/composition": "workspace:*",
+    "@hypit/kernel": "workspace:*",
+    "@hypit/executor": "workspace:*",
+    "@hypit/author": "workspace:*",
+    "@hypit/source": "workspace:*",
+    "@hypit/html-program": "workspace:*",
+    "@hypit/markup": "workspace:*",
     "@hypit/media": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/spatial": "workspace:*",
+    "@hypit/recipe": "workspace:*",
     "@hypit/text": "workspace:*",
-    "@hypit/typography-track": "workspace:*",
-    "@hypit/validation": "workspace:*"
+    "@hypit/text-fine": "workspace:*",
+    "@hypit/timeline": "workspace:*",
+    "@hypit/admission": "workspace:*"
   }
 }

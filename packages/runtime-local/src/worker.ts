@@ -1,31 +1,31 @@
 import { randomUUID } from "node:crypto";
-import type { BuildState } from "@hypit/protocol";
+import type { BuildState } from "@hypit/hypit/protocol";
 import type {
   ResourceStore,
-  BuildCompletion,
-  BuildExecutionSnapshot,
+  RuntimeBuildExecution,
   RuntimeCommandExecutor,
   RuntimeExecutionResult,
   RuntimePreparation,
   RuntimeRunnableCommand,
   ScheduledBuildResult,
-} from "@hypit/runtime";
-import { LocalBuildScheduler } from "@hypit/runtime";
-import { BuildMachine } from "@hypit/core";
+} from "@hypit/hypit/runtime";
+import type { BuildCompletion, BuildExecutionSnapshot } from "./execution.js";
+import { InProcessBuildScheduler } from "@hypit/hypit/runtime";
+import { BuildMachine } from "@hypit/hypit/kernel";
 
 type LocalWorkerOptions = {
   readonly executionBuild?: string;
   readonly executionLogs?: import("./log.js").LocalExecutionLogs;
   readonly stores: {
-    readonly builds: import("@hypit/runtime").BuildStore;
-    readonly operations: import("@hypit/runtime").OperationStore;
-    readonly executions: import("@hypit/runtime").CommandExecutionStore;
-    readonly execution: import("@hypit/runtime").BuildExecutionStore;
+    readonly builds: import("@hypit/hypit/runtime").BuildStore;
+    readonly operations: import("@hypit/hypit/runtime").OperationStore;
+    readonly executions: import("@hypit/hypit/runtime").CommandExecutionStore;
+    readonly execution: import("./execution.js").BuildExecutionStore;
   };
   readonly resourceStore: ResourceStore;
   readonly resourceStoreForBuild?: (build: string) => ResourceStore;
   readonly openBuildResultRepository: NonNullable<import("./types.js").CreateLocalRuntimeOptions["openBuildResultRepository"]>;
-  readonly installComponentPackages: (specifiers: readonly string[]) => Promise<void>;
+  readonly installProducerPackages: (specifiers: readonly string[]) => Promise<void>;
   readonly resultWriter: import("./types.js").LocalResultWriter;
 };
 
@@ -51,6 +51,10 @@ class CapacityExecutor implements RuntimeCommandExecutor {
     return this.#delegate.prepare(state);
   }
 
+  prepareExecution(execution: RuntimeBuildExecution): RuntimePreparation {
+    return this.#delegate.prepareExecution?.(execution) ?? this.#delegate.prepare(execution.view());
+  }
+
   async #assertRunning(build: string): Promise<void> {
     const execution = await this.#options.stores.execution.read(build);
     assert(execution?.turn?.owner === this.#owner && execution.decision === undefined,
@@ -62,14 +66,19 @@ class CapacityExecutor implements RuntimeCommandExecutor {
     state: BuildState,
     descriptor: RuntimeRunnableCommand,
     context: { readonly build: string },
+    execution?: RuntimeBuildExecution,
   ): Promise<RuntimeExecutionResult> {
     const store = this.#options.stores.executions;
     const recordExecution = this.#options.executionLogs === undefined ? {} : {
-      recordExecution: (event: import("@hypit/runtime").ExecutionLogEvent) =>
+      recordExecution: (event: import("@hypit/hypit/runtime").ExecutionLogEvent) =>
         this.#options.executionLogs!.record(context.build, descriptor.command.id, event),
     };
+    const execute = (executionContext: import("@hypit/hypit/runtime").RuntimeExecutionContext) =>
+      execution !== undefined && this.#delegate.executeExecutionCommand !== undefined
+        ? this.#delegate.executeExecutionCommand(execution, descriptor, executionContext)
+        : this.#delegate.executeCommand(state, descriptor, executionContext);
     if (descriptor.capacityMode === "asynchronous") {
-      return await this.#delegate.executeCommand(state, descriptor, {
+      return await execute({
         ...context, ...recordExecution, releaseOperationCapacity: () => this.#options.stores.execution.releaseCapacity(context.build, descriptor.command.id),
       });
     }
@@ -88,7 +97,7 @@ class CapacityExecutor implements RuntimeCommandExecutor {
       return { status: "completed", event };
     }
     try {
-      const result = await this.#delegate.executeCommand(state, descriptor, {
+      const result = await execute({
         ...context, ...recordExecution,
         reportProgress: (activity) => store.reportProgress(context.build, descriptor.command.id, activity),
       });
@@ -114,19 +123,20 @@ class CapacityExecutor implements RuntimeCommandExecutor {
     return operation?.remoteEnded === true || operation?.submission === "queued";
   }
 
-  async executeCommand(
+  async #execute(
     state: BuildState,
     descriptor: RuntimeRunnableCommand,
     context: { readonly build: string },
+    execution?: RuntimeBuildExecution,
   ): Promise<RuntimeExecutionResult> {
     const resources = descriptor.resources;
     await this.#assertRunning(context.build);
     if (descriptor.capacityMode === "asynchronous") {
       const [operation] = await this.#options.stores.operations.list({ build: context.build, command: descriptor.command.id });
-      if (operation?.remoteEnded) return await this.#executeOnce(state, descriptor, context);
+      if (operation?.remoteEnded) return await this.#executeOnce(state, descriptor, context, execution);
     }
     if (resources.length === 0) {
-      return await this.#executeOnce(state, descriptor, context);
+      return await this.#executeOnce(state, descriptor, context, execution);
     }
     // acquireCapacity also returns the reservation already held by this command.
     const acquired = await this.#options.stores.execution.acquireCapacity({
@@ -143,7 +153,7 @@ class CapacityExecutor implements RuntimeCommandExecutor {
       };
     }
     try {
-      const result = await this.#executeOnce(state, descriptor, context);
+      const result = await this.#executeOnce(state, descriptor, context, execution);
       if (await this.#releaseAfter(result, context.build, descriptor.command.id)) {
         await this.#options.stores.execution.releaseCapacity(
           acquired.reservation.build,
@@ -160,9 +170,25 @@ class CapacityExecutor implements RuntimeCommandExecutor {
     }
   }
 
+  async executeCommand(
+    state: BuildState,
+    descriptor: RuntimeRunnableCommand,
+    context: { readonly build: string },
+  ): Promise<RuntimeExecutionResult> {
+    return await this.#execute(state, descriptor, context);
+  }
+
+  async executeExecutionCommand(
+    execution: RuntimeBuildExecution,
+    descriptor: RuntimeRunnableCommand,
+    context: { readonly build: string },
+  ): Promise<RuntimeExecutionResult> {
+    return await this.#execute(execution.view(), descriptor, context, execution);
+  }
+
   async cancelOperation(
     state: BuildState,
-    operation: import("@hypit/runtime").OperationSnapshot,
+    operation: import("@hypit/hypit/runtime").OperationSnapshot,
   ) {
     assert(this.#delegate.cancelOperation !== undefined, "selected executor cannot cancel Operations");
     return await this.#delegate.cancelOperation(state, operation);
@@ -184,7 +210,7 @@ class DurableLocalWorker {
     this.#executorWithCapacity = new CapacityExecutor(executor, options, this.#owner);
   }
 
-  async #readBuild(build: string): Promise<import("@hypit/runtime").BuildSnapshot | undefined> {
+  async #readBuild(build: string): Promise<import("@hypit/hypit/runtime").BuildSnapshot | undefined> {
     const previous = this.#buildRead;
     let release!: () => void;
     this.#buildRead = new Promise<void>((resolve) => { release = resolve; });
@@ -200,7 +226,7 @@ class DurableLocalWorker {
     }
   }
 
-  async #finishResult(execution: BuildExecutionSnapshot, outcome: import("@hypit/runtime").BuildOutcome, reason?: string): Promise<WorkerTurnResult> {
+  async #finishResult(execution: BuildExecutionSnapshot, outcome: import("./execution.js").BuildOutcome, reason?: string): Promise<WorkerTurnResult> {
     await this.#options.stores.execution.releaseBuildCapacity(execution.build);
     const decided = await this.#options.stores.execution.decide(execution.build, this.#owner, outcome, reason);
     return await this.#options.resultWriter.completeResult(decided);
@@ -213,9 +239,9 @@ class DurableLocalWorker {
     if (received.length > 0 || execution.stop.cause === "user-cancelled") {
       const snapshot = await this.#readBuild(execution.build);
       assert(snapshot !== undefined, `Build ${execution.build} has no execution state`);
-      const machine = new BuildMachine(snapshot.definition, snapshot.facts);
+      const machine = BuildMachine.fromMaterialized(snapshot.definition, snapshot.state);
       for (const operation of received) {
-        let event: import("@hypit/protocol").CommandResult | undefined;
+        let event: import("@hypit/hypit/protocol").CommandResult | undefined;
         try {
           event = await this.#executor.acceptOperation?.(machine.view(), operation);
         } catch (error) {
@@ -300,7 +326,7 @@ class DurableLocalWorker {
     hydrated?: () => void,
   ): Promise<readonly WorkerTurnResult[]> {
     const finished: WorkerTurnResult[] = [];
-    const runnable: { readonly execution: BuildExecutionSnapshot; readonly snapshot: import("@hypit/runtime").BuildSnapshot }[] = [];
+    const runnable: { readonly execution: BuildExecutionSnapshot; readonly snapshot: import("@hypit/hypit/runtime").BuildSnapshot }[] = [];
     for (const execution of executions) {
       assert(execution.turn?.owner === this.#owner && execution.decision === undefined,
         `Execution ${execution.build} was not claimed by this Worker turn`);
@@ -318,7 +344,7 @@ class DurableLocalWorker {
             const result = await this.#executor.advanceOperation!(operation, {
               build: operation.build,
               ...(this.#options.executionLogs === undefined ? {} : {
-                recordExecution: (event: import("@hypit/runtime").ExecutionLogEvent) =>
+                recordExecution: (event: import("@hypit/hypit/runtime").ExecutionLogEvent) =>
                   this.#options.executionLogs!.record(operation.build, operation.command, event),
               }),
             });
@@ -343,7 +369,7 @@ class DurableLocalWorker {
             continue;
           }
         }
-        await this.#options.installComponentPackages(execution.componentPackages);
+        await this.#options.installProducerPackages(execution.executionPackages);
         const snapshot = await this.#readBuild(execution.build);
         assert(snapshot !== undefined, `Execution ${execution.build} has no Build Definition`);
         runnable.push({ execution, snapshot });
@@ -354,7 +380,7 @@ class DurableLocalWorker {
       }
     }
     if (runnable.length === 0) return finished;
-    const scheduler = new LocalBuildScheduler(this.#executorWithCapacity, {
+    const scheduler = new InProcessBuildScheduler(this.#executorWithCapacity, {
       buildStore: this.#options.stores.builds,
       onStateChange: async (build, state) => {
         const item = runnable.find((candidate) => candidate.execution.build === build);

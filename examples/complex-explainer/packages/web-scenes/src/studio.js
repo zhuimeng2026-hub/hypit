@@ -1,5 +1,5 @@
 import { compositionTypes } from "@hypit/hypit/composition";
-import { textLayer, temporalLineageFor } from "@hypit/hypit/studio-adapter";
+import { textLayer, temporalLineageFor } from "@hypit/studio-companion";
 const scenes = {
   ComponentWorkshop: ["Components in use", "Motion → components → library → another video"],
   SemanticWorkshop: ["Words drive motion", "Selection → reveal → revised words → following motion"],

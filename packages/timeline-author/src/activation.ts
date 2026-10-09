@@ -1,22 +1,33 @@
-import { decodeClockSurface } from "@hypit/program-space";
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
+import { createStudioCompanionFacet } from "@hypit/studio-companion";
 import {
-  decodeTimelineAuthorSurface, timelineAuthorComponent, timelineAuthorManifest,
+  decodeAbsoluteInstantSurface, decodeAbsoluteWindowSurface, decodeClockSurface, decodeTimelineAuthorSurface, timelineAuthorComponent, timelineAuthorManifest,
   timelineAuthorModuleRef,
   timelineAuthorMarkupSurfaces,
 } from "./index.js";
+import { timelineAuthorStudioTemporalDeclarations, timelineAuthorStudioTemporalRelations } from "./studio.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{
     manifest: timelineAuthorManifest,
   }],
-  components: [timelineAuthorComponent],
-  hostFacets: [createMarkupSurfaceHostFacet({
+  facets: [
+    createStudioCompanionFacet({
+      temporalDeclarations: timelineAuthorStudioTemporalDeclarations,
+      temporalRelations: timelineAuthorStudioTemporalRelations,
+    }),
+    ...[timelineAuthorComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),createMarkupSurfaceFacet({
     module: timelineAuthorModuleRef,
     declaration: timelineAuthorMarkupSurfaces.find((item) => item.name === "timeline")!, handler: decodeTimelineAuthorSurface,
-  }), createMarkupSurfaceHostFacet({ module: timelineAuthorModuleRef,
+  }), createMarkupSurfaceFacet({ module: timelineAuthorModuleRef,
     declaration: timelineAuthorMarkupSurfaces.find(item => item.name === "clock")!, handler: decodeClockSurface,
+  }), createMarkupSurfaceFacet({ module: timelineAuthorModuleRef,
+    declaration: timelineAuthorMarkupSurfaces.find(item => item.name === "window")!, handler: decodeAbsoluteWindowSurface,
+  }), createMarkupSurfaceFacet({ module: timelineAuthorModuleRef,
+    declaration: timelineAuthorMarkupSurfaces.find(item => item.name === "instant")!, handler: decodeAbsoluteInstantSurface,
   })],
 };
 export default hypitPackage;

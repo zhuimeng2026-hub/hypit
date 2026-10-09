@@ -1,15 +1,12 @@
 import { userText, uiAttribute, uiText, uiAttr } from "./i18n.js";
-import type {
-  SemanticToken,
-  StudioSnapshot,
-} from "../shared.js";
-import type { StudioEditHandle } from "@hypit/studio-adapter";
+import type { StudioSnapshot } from "../shared.js";
+import type { StudioEditHandle } from "@hypit/studio-companion";
 import { icon, setIcon } from "./icons.js";
 import { mountMaterialPreview } from "./material-preview.js";
 import type { State, Store } from "./selection.js";
 import { createHandle } from "./resize.js";
 import { createZoom } from "./zoom.js";
-import { chooseSemanticGesture, semanticGestureSpan } from "../temporal-edit.js";
+import { chooseDomainGesture, domainGestureSpan } from "../temporal-edit.js";
 import { applyStudioMutation } from "./writeback.js";
 
 export type Timeline = {
@@ -20,7 +17,7 @@ export type Timeline = {
 };
 
 const itemMetrics = {
-  // Ordinary items fill their rows. Only the semantic lane owns compact word cells.
+  // Ordinary items fill their rows. Temporal-domain lanes may own compact cells.
   insetYPx: 1,
   headerPx: 15,
   contentCellPx: 18,
@@ -31,7 +28,6 @@ const labelFont = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", "H
 const textMeasure = document.createElement("canvas").getContext("2d");
 const textWidths = new Map<string, number>();
 const wordLabelPaddingPx = 5;
-const wordLabelEnterBufferPx = 1;
 
 function measuredText(value: string, font = labelFont): number {
   const key = `${font}\u0000${value}`;
@@ -147,7 +143,6 @@ export function createTimeline(store: Store): Timeline {
   let built = -1;
   let paintFrame = 0;
   let rebuildFrame = 0;
-  const readableWordLabels = new Set<string>();
   let selectedWord: string | undefined;
   let overlapMenu: HTMLElement | undefined;
   const closeOverlapMenu = () => { overlapMenu?.remove(); overlapMenu = undefined; };
@@ -156,25 +151,28 @@ export function createTimeline(store: Store): Timeline {
   });
   element.addEventListener("keydown", event => { if (event.key === "Escape") closeOverlapMenu(); });
   body.addEventListener("scroll", closeOverlapMenu);
-  let clipNodes: readonly {
+  let itemNodes: readonly {
     readonly node: HTMLElement;
     readonly start: number;
     readonly end: number;
     readonly id: string;
     readonly selectionGroup?: string;
   }[] = [];
-  let semanticNodes: readonly {
+  let domainNodes: readonly {
     readonly node: HTMLElement;
+    readonly companion: string;
+    readonly domainId: string;
     readonly id: string;
     readonly start: number;
     readonly end: number;
-    readonly kind: "segment" | "word" | "selection" | "moment";
+    readonly kind: "span" | "point";
+    readonly appearance: "block" | "compact" | "marker";
   }[] = [];
 
   const playheadFraction = (): number => {
     if (state === undefined) return 0.5;
     const shown = zoom.window();
-    const at = state.playhead.frame / Math.max(1, state.snapshot.space.frameCount);
+    const at = state.playhead.frame / Math.max(1, state.snapshot.timeline.frameCount);
     return Math.max(0, Math.min(1, (at - shown.start) / Math.max(1e-6, shown.end - shown.start)));
   };
   const zoomOut = (): void => zoom.pinch(playheadFraction(), 1.25);
@@ -185,13 +183,13 @@ export function createTimeline(store: Store): Timeline {
   element.querySelector<HTMLButtonElement>("[data-zoom-fit]")!.addEventListener("click", fit);
 
   const fps = (snapshot: StudioSnapshot): number =>
-    snapshot.space.frameRate.numerator / snapshot.space.frameRate.denominator;
+    snapshot.timeline.frameRate.numerator / snapshot.timeline.frameRate.denominator;
 
   const snapFrame = (frame: number): number => {
     if (state === undefined || lanes.clientWidth <= 0) return frame;
     const shown = zoom.window();
     const threshold = Math.max(1, Math.ceil(
-      (shown.end - shown.start) * state.snapshot.space.frameCount / lanes.clientWidth * 6,
+      (shown.end - shown.start) * state.snapshot.timeline.frameCount / lanes.clientWidth * 6,
     ));
     let nearest = frame;
     let distance = threshold + 1;
@@ -199,10 +197,10 @@ export function createTimeline(store: Store): Timeline {
       const next = Math.abs(candidate - frame);
       if (next < distance) { nearest = candidate; distance = next; }
     };
-    for (const anchor of state.snapshot.semantic?.anchors ?? []) consider(anchor.frame);
-    for (const clip of state.snapshot.tracks.flatMap((track) => track.clips)) {
-      consider(clip.startFrame);
-      consider(clip.endFrameExclusive);
+    for (const anchor of state.snapshot.temporalDomains.flatMap((domain) => domain.anchors)) consider(anchor.frame);
+    for (const item of state.snapshot.tracks.flatMap((track) => track.items)) {
+      consider(item.startFrame);
+      consider(item.endFrameExclusive);
     }
     return distance <= threshold ? nearest : frame;
   };
@@ -213,7 +211,7 @@ export function createTimeline(store: Store): Timeline {
     const across = Math.max(0, Math.min(1, (clientX - box.left) / box.width));
     const shown = zoom.window();
     return Math.floor(
-      (shown.start + across * (shown.end - shown.start)) * state.snapshot.space.frameCount,
+      (shown.start + across * (shown.end - shown.start)) * state.snapshot.timeline.frameCount,
     );
   };
   const frameAt = (clientX: number): number => snapFrame(rawFrameAt(clientX));
@@ -228,7 +226,7 @@ export function createTimeline(store: Store): Timeline {
   let pointerDownX = 0;
   let pointerDownOnItem = false;
   let activeEdit: {
-    readonly clip: StudioSnapshot["tracks"][number]["clips"][number];
+    readonly item: StudioSnapshot["tracks"][number]["items"][number];
     readonly handle: StudioEditHandle;
     readonly startFrame: number;
     readonly pointerId: number;
@@ -237,10 +235,15 @@ export function createTimeline(store: Store): Timeline {
     readonly originalWidth: string;
   } | undefined;
 
-  const semanticTarget = (edit: NonNullable<typeof activeEdit>, nextFrame: number) =>
-    state === undefined ? undefined : chooseSemanticGesture({
-      anchors: state.snapshot.semantic?.anchors ?? [], handle: edit.handle,
-      pointerStart: edit.startFrame, pointerNow: nextFrame, frameCount: state.snapshot.space.frameCount,
+  const editDomain = (snapshot: StudioSnapshot, handle: StudioEditHandle) => handle.domain === undefined
+    ? undefined
+    : snapshot.temporalDomains.find((domain) => domain.companion === handle.domain!.companion
+      && domain.id === handle.domain!.domainId);
+
+  const domainTarget = (edit: NonNullable<typeof activeEdit>, nextFrame: number) =>
+    state === undefined ? undefined : chooseDomainGesture({
+      anchors: editDomain(state.snapshot, edit.handle)?.anchors ?? [], handle: edit.handle,
+      pointerStart: edit.startFrame, pointerNow: nextFrame, frameCount: state.snapshot.timeline.frameCount,
     });
 
   const absoluteWindowTarget = (
@@ -248,23 +251,23 @@ export function createTimeline(store: Store): Timeline {
     nextFrame: number,
   ): { readonly startFrame: number; readonly endFrameExclusive: number } => {
     if (state === undefined) return {
-      startFrame: edit.clip.startFrame,
-      endFrameExclusive: edit.clip.endFrameExclusive,
+      startFrame: edit.item.startFrame,
+      endFrameExclusive: edit.item.endFrameExclusive,
     };
     const rawDelta = nextFrame - edit.startFrame;
-    const delta = Math.max(-edit.clip.startFrame,
-      Math.min(state.snapshot.space.frameCount - edit.clip.endFrameExclusive, rawDelta));
+    const delta = Math.max(-edit.item.startFrame,
+      Math.min(state.snapshot.timeline.frameCount - edit.item.endFrameExclusive, rawDelta));
     if (edit.handle.gesture === "move") return {
-      startFrame: edit.clip.startFrame + delta,
-      endFrameExclusive: edit.clip.endFrameExclusive + delta,
+      startFrame: edit.item.startFrame + delta,
+      endFrameExclusive: edit.item.endFrameExclusive + delta,
     };
     if (edit.handle.gesture === "trim-start") return {
-      startFrame: Math.min(edit.clip.endFrameExclusive - 1, nextFrame),
-      endFrameExclusive: edit.clip.endFrameExclusive,
+      startFrame: Math.min(edit.item.endFrameExclusive - 1, nextFrame),
+      endFrameExclusive: edit.item.endFrameExclusive,
     };
     return {
-      startFrame: edit.clip.startFrame,
-      endFrameExclusive: Math.max(edit.clip.startFrame + 1, nextFrame),
+      startFrame: edit.item.startFrame,
+      endFrameExclusive: Math.max(edit.item.startFrame + 1, nextFrame),
     };
   };
 
@@ -273,18 +276,18 @@ export function createTimeline(store: Store): Timeline {
     nextFrame: number,
   ): { readonly startFrame: number; readonly endFrameExclusive: number } | undefined => {
     if (state === undefined) return undefined;
-    const target = semanticTarget(edit, nextFrame);
-    if (target !== undefined) return semanticGestureSpan(state.snapshot.semantic?.anchors ?? [], edit.handle, target);
-    if (edit.handle.semantic !== undefined) return undefined;
+    const target = domainTarget(edit, nextFrame);
+    if (target !== undefined) return domainGestureSpan(editDomain(state.snapshot, edit.handle)?.anchors ?? [], edit.handle, target);
+    if (edit.handle.domain !== undefined) return undefined;
     return edit.handle.temporal === undefined ? undefined : absoluteWindowTarget(edit, nextFrame);
   };
   lanes.addEventListener("pointerdown", (event) => {
     pointerDownOnItem = (event.target as HTMLElement).closest(
-      ".clip, .semantic-segment, .semantic-word, .semantic-selection, .semantic-moment",
+      ".studio-item, .temporal-domain-block, .temporal-domain-compact, .temporal-domain-span, .temporal-domain-point",
     ) !== null;
     pointerDownX = event.clientX;
     pointerArmed = true;
-    // Let semantic children receive their native click. Capturing every
+    // Let temporal-domain children receive their native click. Capturing every
     // pointer here retargets the later click to `.lanes`, which made segment
     // and selection buttons appear to be dead zones. Blank-space scrubbing
     // still uses capture so it can continue outside the lane.
@@ -298,18 +301,18 @@ export function createTimeline(store: Store): Timeline {
   });
   lanes.addEventListener("pointermove", (event) => {
     const frame = frameAt(event.clientX);
-    const at = place(frame, state?.snapshot.space.frameCount ?? 1, zoom.window()) * lanes.clientWidth;
+    const at = place(frame, state?.snapshot.timeline.frameCount ?? 1, zoom.window()) * lanes.clientWidth;
     hover.style.transform = `translate3d(${at}px,0,0)`;
     hoverTime.textContent = state === undefined ? "" : frameTimecode(state.snapshot, frame);
     hover.classList.add("visible");
     if (activeEdit !== undefined && state !== undefined) {
-      const nextFrame = activeEdit.handle.coordinate === "semantic-anchor"
+      const nextFrame = activeEdit.handle.coordinate === "domain-anchor"
         ? rawFrameAt(event.clientX)
         : frameAt(event.clientX);
       const preview = previewWindow(activeEdit, nextFrame);
       if (preview !== undefined) {
-        const from = place(preview.startFrame, state.snapshot.space.frameCount, zoom.window());
-        const to = place(preview.endFrameExclusive, state.snapshot.space.frameCount, zoom.window());
+        const from = place(preview.startFrame, state.snapshot.timeline.frameCount, zoom.window());
+        const to = place(preview.endFrameExclusive, state.snapshot.timeline.frameCount, zoom.window());
         activeEdit.node.style.left = `${from * 100}%`;
         activeEdit.node.style.width = `max(2px, ${Math.max(0, to - from) * 100}%)`;
       }
@@ -330,45 +333,45 @@ export function createTimeline(store: Store): Timeline {
     pointerArmed = false;
     try { lanes.releasePointerCapture(event.pointerId); } catch { /* already released */ }
     if (edit === undefined || state === undefined || event.type === "pointercancel") return;
-    const nextFrame = edit.handle.coordinate === "semantic-anchor"
+    const nextFrame = edit.handle.coordinate === "domain-anchor"
       ? rawFrameAt(event.clientX)
       : frameAt(event.clientX);
-    const resolvedSemanticTarget = semanticTarget(edit, nextFrame);
+    const resolvedDomainTarget = domainTarget(edit, nextFrame);
     const resolvedWindow = previewWindow(edit, nextFrame);
     if (resolvedWindow === undefined || edit.handle.temporal === undefined) return;
     const target = edit.handle.temporal.kind === "instant"
       ? {
           kind: "instant" as const,
           frame: resolvedWindow.startFrame,
-          ...(resolvedSemanticTarget === undefined ? {} : { semantic: resolvedSemanticTarget }),
+          ...(resolvedDomainTarget === undefined ? {} : { domain: resolvedDomainTarget }),
         }
       : {
           kind: "window" as const,
           ...resolvedWindow,
-          ...(resolvedSemanticTarget === undefined ? {} : { semantic: resolvedSemanticTarget }),
+          ...(resolvedDomainTarget === undefined ? {} : { domain: resolvedDomainTarget }),
         };
-    if (resolvedSemanticTarget?.kind === "selection"
-      && edit.handle.semantic?.kind === "selection"
-      && resolvedSemanticTarget.startAnchorId === edit.handle.semantic.startAnchorId
-      && resolvedSemanticTarget.endAnchorId === edit.handle.semantic.endAnchorId
+    if (resolvedDomainTarget?.kind === "span"
+      && edit.handle.domain?.kind === "span"
+      && resolvedDomainTarget.startAnchorId === edit.handle.domain.startAnchorId
+      && resolvedDomainTarget.endAnchorId === edit.handle.domain.endAnchorId
       && (target.kind === "instant"
-        ? target.frame === edit.clip.startFrame
-        : target.startFrame === edit.clip.startFrame && target.endFrameExclusive === edit.clip.endFrameExclusive)) return;
-    if (resolvedSemanticTarget?.kind === "moment"
-      && edit.handle.semantic?.kind === "moment"
-      && resolvedSemanticTarget.anchorId === edit.handle.semantic.anchorId
+        ? target.frame === edit.item.startFrame
+        : target.startFrame === edit.item.startFrame && target.endFrameExclusive === edit.item.endFrameExclusive)) return;
+    if (resolvedDomainTarget?.kind === "point"
+      && edit.handle.domain?.kind === "point"
+      && resolvedDomainTarget.anchorId === edit.handle.domain.anchorId
       && (target.kind === "instant"
-        ? target.frame === edit.clip.startFrame
-        : target.startFrame === edit.clip.startFrame && target.endFrameExclusive === edit.clip.endFrameExclusive)) return;
-    if (resolvedSemanticTarget === undefined
+        ? target.frame === edit.item.startFrame
+        : target.startFrame === edit.item.startFrame && target.endFrameExclusive === edit.item.endFrameExclusive)) return;
+    if (resolvedDomainTarget === undefined
       && (target.kind === "instant"
-        ? target.frame === edit.clip.startFrame
-        : target.startFrame === edit.clip.startFrame && target.endFrameExclusive === edit.clip.endFrameExclusive)) return;
+        ? target.frame === edit.item.startFrame
+        : target.startFrame === edit.item.startFrame && target.endFrameExclusive === edit.item.endFrameExclusive)) return;
     element.dispatchEvent(new CustomEvent("studio:write", { detail: { state: "saving" } }));
     void applyStudioMutation({
       type: "timeline.adjust",
       revision: state.snapshot.revision,
-      entityId: edit.clip.id,
+      itemId: edit.item.id,
       gesture: edit.handle.gesture,
       target,
     }).then(() => {
@@ -388,7 +391,7 @@ export function createTimeline(store: Store): Timeline {
 
   const drawRuler = (snapshot: StudioSnapshot): void => {
     ruler.replaceChildren();
-    const frameCount = Math.max(1, snapshot.space.frameCount);
+    const frameCount = Math.max(1, snapshot.timeline.frameCount);
     const shown = zoom.window();
     const visibleFrames = Math.max(1, (shown.end - shown.start) * frameCount);
     const widthPx = Math.max(1, lanes.clientWidth);
@@ -410,7 +413,7 @@ export function createTimeline(store: Store): Timeline {
     const majorSeconds = secondCandidates.find((candidate) => candidate * pxPerSecond >= 112)
       ?? secondCandidates.at(-1)!;
     const firstSecond = Math.max(0, Math.ceil(startSecond - 1e-6));
-    const lastSecond = Math.min(Math.floor(snapshot.space.durationSec), Math.floor(endSecond + 1e-6));
+    const lastSecond = Math.min(Math.floor(snapshot.timeline.durationSec), Math.floor(endSecond + 1e-6));
     for (let seconds = firstSecond; seconds <= lastSecond; seconds += 1) {
       const frame = Math.min(frameCount, Math.round(seconds * exactRate));
       const at = place(frame, frameCount, shown);
@@ -488,185 +491,87 @@ export function createTimeline(store: Store): Timeline {
       && (groupId === undefined || track.binding.groupId === groupId))
     .sort((left, right) => (left.binding.lane.order ?? 0) - (right.binding.lane.order ?? 0));
 
-  const buildSemanticLane = (snapshot: StudioSnapshot): void => {
-    if (snapshot.semantic === undefined || snapshot.semantic.segments.length === 0) {
-      return;
-    }
-    const presentation = snapshot.semantic.presentation;
-    const bandHeight = Math.max(1, (presentation.lane.heightPx - itemMetrics.insetYPx * 2) / 3);
-    const bands = [
-      { kind: "segment", height: bandHeight },
-      ...(snapshot.semantic.tokens.length > 0 ? [{ kind: "word", height: bandHeight }] : []),
-      ...(snapshot.semantic.selections.length + snapshot.semantic.moments.length > 0
-        ? [{ kind: "intent", height: bandHeight }] : []),
-    ];
-    const laneHeight = bands.reduce((height, band) => height + band.height, itemMetrics.insetYPx * 2);
-    const label = createTrackLabel(
-      presentation.label ?? "",
-      presentation.tone,
-      presentation.icon,
-      "",
-      laneHeight,
-    );
-    if (presentation.label === undefined) uiText(label.querySelector("strong")!, "inspector.timeline");
-    uiAttr(label, "title", "timeline.segment-count", { count: snapshot.semantic.segments.length });
-    label.classList.add("track-label-semantic");
-    label.style.height = `calc(var(--timeline-ruler-height) + ${laneHeight}px)`;
+
+  const buildTemporalDomainLane = (
+    snapshot: StudioSnapshot,
+    domain: StudioSnapshot["temporalDomains"][number],
+  ): void => {
+    if (domain.lanes.length === 0) return;
+    const laneHeight = domain.lanes.reduce((height, lane) => height + lane.heightPx, itemMetrics.insetYPx * 2);
+    const label = createTrackLabel(domain.presentation.label ?? domain.id, domain.presentation.tone,
+      domain.presentation.icon, "", laneHeight);
+    label.title = `${domain.items.length} temporal items`;
+    label.classList.add("track-label-temporal-domain");
+    label.style.height = `${laneHeight}px`;
     labels.append(label);
 
     const lane = document.createElement("div");
-    lane.className = `lane semantic-lane track-tone-${presentation.tone}`;
+    lane.className = `lane temporal-domain-lane track-tone-${domain.presentation.tone}`;
     lane.style.height = `${laneHeight}px`;
-    const laneWidth = lanes.clientWidth;
-    const nextSemanticNodes: {
-      node: HTMLElement;
-      id: string;
-      start: number;
-      end: number;
-      kind: "segment" | "word" | "selection" | "moment";
-    }[] = [];
-
+    const bands = new Map<string, HTMLElement>();
     let bandTop = itemMetrics.insetYPx;
-    for (const { kind, height } of bands) {
+    for (const description of domain.lanes) {
       const band = document.createElement("div");
-      band.className = `semantic-band semantic-band-${kind}`;
+      band.className = "temporal-domain-band";
       band.style.top = `${bandTop}px`;
-      band.style.setProperty("--semantic-band-height", `${height}px`);
-      uiAttr(band, "aria-label", kind === "intent" ? "timeline.selections-and-moments" : kind === "word" ? "timeline.words" : "timeline.segments");
+      band.style.setProperty("--temporal-domain-band-height", `${description.heightPx}px`);
+      band.setAttribute("aria-label", description.label ?? description.id);
+      bands.set(description.id, band);
       lane.append(band);
-      bandTop += height;
+      bandTop += description.heightPx;
     }
-    const segmentBand = lane.querySelector<HTMLElement>(".semantic-band-segment")!;
-    const wordBand = lane.querySelector<HTMLElement>(".semantic-band-word")!;
-    const intentBand = lane.querySelector<HTMLElement>(".semantic-band-intent")!;
-
-    for (const segment of snapshot.semantic.segments) {
-      const from = place(segment.startFrame, snapshot.space.frameCount, zoom.window());
-      const to = place(segment.endFrameExclusive, snapshot.space.frameCount, zoom.window());
+    const nextNodes: typeof domainNodes[number][] = [];
+    for (const item of domain.items) {
+      const band = bands.get(item.laneId);
+      if (band === undefined) continue;
+      const start = item.kind === "point" ? item.frame : item.startFrame;
+      const end = item.kind === "point" ? item.frame + 1 : item.endFrameExclusive;
+      const from = place(start, snapshot.timeline.frameCount, zoom.window());
+      const to = place(end, snapshot.timeline.frameCount, zoom.window());
       if (to <= 0 || from >= 1) continue;
-      const node = document.createElement("button");
-      node.type = "button";
-      node.className = "semantic-cell semantic-segment";
-      node.tabIndex = 0;
-      node.setAttribute("role", "button");
-      uiAttr(node, "aria-label", "timeline.segment-name", { name: segment.id });
-      node.dataset.semanticSegment = segment.id;
+      const node = item.appearance === "compact" ? document.createElement("span") : document.createElement("button");
+      if (node instanceof HTMLButtonElement) node.type = "button";
+      node.className = item.kind === "point" ? "temporal-domain-point"
+        : item.appearance === "compact" ? "temporal-domain-cell temporal-domain-compact"
+        : "temporal-domain-cell temporal-domain-span";
       node.style.left = `${from * 100}%`;
-      const segmentWidth = Math.max(0, to - from) * 100;
-      node.style.width = `max(2px, ${segmentWidth}%)`;
-      node.title = segment.id;
-      const segmentLabel = document.createElement("span");
-      segmentLabel.className = "semantic-segment-label";
-      segmentLabel.textContent = segment.id;
-      const head = document.createElement("div");
-      head.className = "semantic-cell-content";
-      head.append(segmentLabel);
-      node.append(head);
+      if (item.kind === "span") node.style.width = `max(${item.appearance === "compact" ? 1 : 2}px, ${Math.max(0, to - from) * 100}%)`;
+      node.title = item.label;
+      node.setAttribute("aria-label", item.label);
+      if (item.kind === "span") {
+        const content = document.createElement("span");
+        content.className = "temporal-domain-cell-content";
+        const text = document.createElement("span");
+        text.className = item.appearance === "compact" ? "temporal-domain-compact-label" : "temporal-domain-span-label";
+        text.textContent = item.label;
+        content.append(text);
+        node.append(content);
+        if (item.appearance === "compact") {
+          const widthPx = Math.max(1, (to - from) * lanes.clientWidth);
+          node.classList.toggle("word-label-visible", widthPx - wordLabelPaddingPx * 2 >= measuredText(item.label));
+        }
+      }
       node.addEventListener("click", (event) => {
         event.stopPropagation();
-        if ((event.target as Element).closest(".semantic-word") !== null) return;
-        store.selectSemanticSegment(segment.id, "timeline");
-        store.seek(segment.startFrame, "timeline");
+        if (item.appearance === "compact") {
+          store.clearSelection();
+          selectedWord = `${domain.companion}:${domain.id}:${item.id}`;
+        } else {
+          store.selectTemporalDomainItem(domain.companion, domain.id, item.id, "timeline");
+        }
+        store.seek(start, "timeline");
       });
-      node.addEventListener("dblclick", (event) => {
+      if (item.kind === "span" && item.appearance !== "compact") node.addEventListener("dblclick", (event) => {
         event.stopPropagation();
-        zoom.focus(
-          segment.startFrame / Math.max(1, snapshot.space.frameCount),
-          segment.endFrameExclusive / Math.max(1, snapshot.space.frameCount),
-        );
+        zoom.focus(item.startFrame / Math.max(1, snapshot.timeline.frameCount),
+          item.endFrameExclusive / Math.max(1, snapshot.timeline.frameCount));
       });
-      node.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        store.selectSemanticSegment(segment.id, "timeline");
-      });
-      nextSemanticNodes.push({ node, id: segment.id, start: segment.startFrame, end: segment.endFrameExclusive, kind: "segment" });
-      segmentBand.append(node);
+      band.append(node);
+      nextNodes.push({ node, companion: domain.companion, domainId: domain.id, id: item.id,
+        start, end, kind: item.kind, appearance: item.appearance });
     }
-    for (const token of snapshot.semantic.tokens) {
-      const wordFrom = place(token.startFrame, snapshot.space.frameCount, zoom.window());
-      const wordTo = place(token.endFrameExclusive, snapshot.space.frameCount, zoom.window());
-      if (wordTo <= 0 || wordFrom >= 1) continue;
-      const word = document.createElement("span");
-      word.className = "semantic-cell semantic-word";
-      word.dataset.semanticToken = token.id;
-      word.setAttribute("aria-label", token.text);
-      word.style.left = `${wordFrom * 100}%`;
-      const wordWidth = Math.max(0, wordTo - wordFrom);
-      word.style.width = `max(1px, ${wordWidth * 100}%)`;
-      word.title = token.text;
-      const text = document.createElement("span");
-      text.className = "semantic-word-label";
-      text.textContent = token.text;
-      const wordWidthPx = Math.max(1, wordWidth * laneWidth);
-      const textWidthPx = measuredText(token.text);
-      const contentWidthPx = Math.max(0, wordWidthPx - wordLabelPaddingPx * 2);
-      const wasReadable = readableWordLabels.has(token.id);
-      const textFitsCell = contentWidthPx >= textWidthPx + (wasReadable ? 0 : wordLabelEnterBufferPx);
-      if (textFitsCell) readableWordLabels.add(token.id);
-      else readableWordLabels.delete(token.id);
-      const textFitsViewport = wordFrom >= 0
-        && wordFrom * laneWidth + wordLabelPaddingPx * 2 + textWidthPx <= laneWidth;
-      word.classList.toggle("word-label-visible", textFitsCell && textFitsViewport);
-      const wordContent = document.createElement("span");
-      wordContent.className = "semantic-cell-content";
-      wordContent.append(text);
-      word.append(wordContent);
-      word.addEventListener("click", (event) => {
-        event.stopPropagation();
-        store.clearSelection();
-        selectedWord = token.id;
-        store.seek(token.startFrame, "timeline");
-      });
-      nextSemanticNodes.push({ node: word, id: token.id, start: token.startFrame, end: token.endFrameExclusive, kind: "word" });
-      wordBand.append(word);
-    }
-    for (const selection of snapshot.semantic.selections) {
-      const from = place(selection.startFrame, snapshot.space.frameCount, zoom.window());
-      const to = place(selection.endFrameExclusive, snapshot.space.frameCount, zoom.window());
-      if (to <= 0 || from >= 1) continue;
-      const node = document.createElement("button");
-      node.type = "button";
-      node.className = "semantic-cell semantic-selection";
-      node.tabIndex = 0;
-      uiAttr(node, "aria-label", "timeline.selection-name", { name: selection.id });
-      node.style.left = `${from * 100}%`;
-      node.style.width = `max(2px, ${Math.max(0, to - from) * 100}%)`;
-      node.title = selection.id;
-      const selectionLabel = document.createElement("span");
-      selectionLabel.className = "semantic-selection-label";
-      selectionLabel.textContent = selection.id;
-      const selectionContent = document.createElement("div");
-      selectionContent.className = "semantic-cell-content";
-      selectionContent.append(selectionLabel);
-      node.append(selectionContent);
-      node.addEventListener("click", (event) => {
-        event.stopPropagation();
-        store.selectSemanticSelection(selection.id, "timeline");
-        store.seek(selection.startFrame, "timeline");
-      });
-      intentBand.append(node);
-      nextSemanticNodes.push({ node, id: selection.id, start: selection.startFrame, end: selection.endFrameExclusive, kind: "selection" });
-    }
-    for (const moment of snapshot.semantic.moments) {
-      const at = place(moment.frame, snapshot.space.frameCount, zoom.window());
-      if (at < 0 || at > 1) continue;
-      const node = document.createElement("button");
-      node.type = "button";
-      node.className = "semantic-moment";
-      node.tabIndex = 0;
-      uiAttr(node, "aria-label", "timeline.moment-name", { name: moment.id });
-      node.style.left = `${at * 100}%`;
-      node.title = moment.id;
-      node.addEventListener("click", (event) => {
-        event.stopPropagation();
-        store.selectSemanticMoment(moment.id, "timeline");
-      });
-      intentBand.append(node);
-      nextSemanticNodes.push({ node, id: moment.id, start: moment.frame, end: moment.frame + 1, kind: "moment" });
-    }
-    lane.addEventListener("contextmenu", event => {
-      const hits = nextSemanticNodes.filter(({ node }) => {
+    lane.addEventListener("contextmenu", (event) => {
+      const hits = nextNodes.filter(({ node }) => {
         const rect = node.getBoundingClientRect();
         return event.clientX >= rect.left && event.clientX < rect.right
           && event.clientY >= rect.top && event.clientY < rect.bottom;
@@ -693,26 +598,18 @@ export function createTimeline(store: Store): Timeline {
       menu.querySelector("button")?.focus();
     });
     rows.append(lane);
-    semanticNodes = nextSemanticNodes;
+    domainNodes = [...domainNodes, ...nextNodes];
   };
 
   const buildTrack = (
     snapshot: StudioSnapshot,
     track: StudioSnapshot["tracks"][number],
-    nextClipNodes: { node: HTMLElement; start: number; end: number; id: string; selectionGroup?: string }[],
+    nextItemNodes: { node: HTMLElement; start: number; end: number; id: string; selectionGroup?: string }[],
     attached = false,
   ): void => {
-    const trackBands = track.binding.bands ?? [];
-    const banded = trackBands.length > 0;
-    const layout = [
-      ...trackBands.filter(band => band.placement === "before"),
-      { id: undefined, heightPx: track.binding.lane.heightPx, display: "content" as const, tone: track.binding.tone },
-      ...trackBands.filter(band => band.placement === "after"),
-    ];
-    const totalHeight = layout.reduce((sum, band) => sum + band.heightPx, 0)
-      + (banded ? 2 * itemMetrics.insetYPx : 0);
+    const totalHeight = track.binding.lane.heightPx;
     const tone = track.binding.tone;
-    const displayedItems = track.clips.length;
+    const displayedItems = track.items.length;
     const label = createTrackLabel(
       displayTrackName(track),
       tone,
@@ -725,74 +622,60 @@ export function createTimeline(store: Store): Timeline {
     labels.append(label);
 
     const trackBody = document.createElement("div");
-    trackBody.className = banded ? "timeline-track timeline-track-banded" : "timeline-track";
+    trackBody.className = "timeline-track";
     trackBody.dataset.track = track.id;
     trackBody.style.height = `${totalHeight}px`;
     const materialMounts: {
       readonly target: HTMLElement;
-      readonly preview: Extract<StudioSnapshot["tracks"][number]["clips"][number]["display"]["layers"][number], { readonly kind: "preview" }>["preview"];
+      readonly preview: Extract<StudioSnapshot["tracks"][number]["items"][number]["display"]["layers"][number], { readonly kind: "preview" }>["preview"];
     }[] = [];
-    for (const band of layout) {
-      const tone = band.tone ?? track.binding.tone;
-      const laneHeight = band.heightPx;
-      const lane = document.createElement("div");
-      lane.className = `lane track-tone-${tone} track-facet-${track.binding.facet}${attached ? " lane-attached" : ""}`;
-      lane.style.height = `${laneHeight}px`;
-      if (banded) lane.classList.add("track-band", `track-band-${band.display}`);
-      if (band.id !== undefined) lane.dataset.band = band.id;
-      lane.style.setProperty("--lane-height", `${laneHeight}px`);
-      const laneWidth = lanes.clientWidth;
-      // Stable order preserves Companion projection order when stack levels tie.
-      for (const clip of track.clips.filter(clip => clip.band === band.id).sort((a, b) => a.stackOrder - b.stackOrder)) {
-        const from = place(clip.startFrame, snapshot.space.frameCount, zoom.window());
-        const to = place(clip.endFrameExclusive, snapshot.space.frameCount, zoom.window());
+    const lane = document.createElement("div");
+    lane.className = `lane track-tone-${tone} track-facet-${track.binding.facet}${attached ? " lane-attached" : ""}`;
+    lane.style.height = `${totalHeight}px`;
+    lane.style.setProperty("--lane-height", `${totalHeight}px`);
+    const laneWidth = lanes.clientWidth;
+    // Stable order preserves Companion projection order when stack levels tie.
+    for (const item of [...track.items].sort((a, b) => a.stackOrder - b.stackOrder)) {
+        const from = place(item.startFrame, snapshot.timeline.frameCount, zoom.window());
+        const to = place(item.endFrameExclusive, snapshot.timeline.frameCount, zoom.window());
         if (to <= 0 || from >= 1) continue;
         const node = document.createElement("button");
         node.type = "button";
-        node.className = `clip clip-tone-${tone} clip-facet-${track.binding.facet} clip-chrome-${clip.presentation.chrome}`;
-        node.classList.toggle("clip-editable", clip.editHandles.some((handle) => handle.enabled));
-        node.dataset.clip = clip.id;
-        node.setAttribute("aria-label", clip.display.title);
+        node.className = `studio-item studio-item-tone-${tone} studio-item-facet-${track.binding.facet} studio-item-chrome-${item.presentation.chrome}`;
+        node.classList.toggle("studio-item-editable", item.editHandles.some((handle) => handle.enabled));
+        node.dataset.item = item.id;
+        node.setAttribute("aria-label", item.display.title);
         node.style.left = `${from * 100}%`;
         node.style.width = `max(2px, ${Math.max(0, to - from) * 100}%)`;
         const visibleWidthPx = visibleItemWidth(from, to, laneWidth);
-        node.classList.toggle("clip-preview-wide", visibleWidthPx >= 92);
-        node.title = `${clip.display.title} · ${clip.startFrame}-${clip.endFrameExclusive}f`;
-        node.innerHTML = `<span class="clip-head"><span class="clip-name"></span><span class="clip-meta"></span></span><span class="clip-body"><span class="clip-layers" aria-hidden="true"></span><span class="clip-phases"></span></span><span class="clip-boundary" aria-hidden="true"></span><span class="clip-selection" aria-hidden="true"></span>`;
-        const layers = node.querySelector<HTMLElement>(".clip-layers")!;
-        clip.display.layers.forEach((layer, index) => {
+        node.classList.toggle("studio-item-preview-wide", visibleWidthPx >= 92);
+        node.title = `${item.display.title} · ${item.startFrame}-${item.endFrameExclusive}f`;
+        node.innerHTML = `<span class="studio-item-head"><span class="studio-item-name"></span><span class="studio-item-meta"></span></span><span class="studio-item-body"><span class="studio-item-layers" aria-hidden="true"></span></span><span class="studio-item-boundary" aria-hidden="true"></span><span class="studio-item-selection" aria-hidden="true"></span>`;
+        const layers = node.querySelector<HTMLElement>(".studio-item-layers")!;
+        item.display.layers.forEach((layer, index) => {
           const layerNode = document.createElement("span");
-          layerNode.className = `clip-layer clip-layer-${layer.kind} clip-layer-role-${layer.role}`;
+          layerNode.className = `studio-item-layer studio-item-layer-${layer.kind} studio-item-layer-role-${layer.role}`;
           layerNode.style.zIndex = String(index + 1);
           if (layer.kind === "text") {
             layerNode.textContent = layer.text;
           } else {
-            layerNode.classList.add(`clip-layer-layout-${layer.layout}`);
+            layerNode.classList.add(`studio-item-layer-layout-${layer.layout}`);
             materialMounts.push({ target: layerNode, preview: layer.preview });
           }
           layers.append(layerNode);
         });
-        const phaseLayer = node.querySelector<HTMLElement>(".clip-phases")!;
-        for (const phase of clip.temporal?.phases ?? []) {
-          if (phase.endFrameExclusive <= clip.startFrame || phase.startFrame >= clip.endFrameExclusive) continue;
-          const phaseNode = document.createElement("span");
-          phaseNode.className = `clip-phase clip-phase-${phase.role}`;
-          phaseNode.style.left = `${(phase.startFrame - clip.startFrame) / Math.max(1, clip.endFrameExclusive - clip.startFrame) * 100}%`;
-          phaseNode.style.width = `${(phase.endFrameExclusive - phase.startFrame) / Math.max(1, clip.endFrameExclusive - clip.startFrame) * 100}%`;
-          phaseLayer.append(phaseNode);
-        }
-        const metaText = clip.presentation.chrome === "point"
-          ? `${(clip.startFrame / fps(snapshot)).toFixed(2)}s`
-          : `${((clip.endFrameExclusive - clip.startFrame) / fps(snapshot)).toFixed(2)}s`;
-        const headerLabel = node.querySelector<HTMLElement>(".clip-name")!;
-        node.querySelector(".clip-meta")!.textContent = metaText;
-        headerLabel.textContent = clip.display.title;
+        const metaText = item.presentation.chrome === "point"
+          ? `${(item.startFrame / fps(snapshot)).toFixed(2)}s`
+          : `${((item.endFrameExclusive - item.startFrame) / fps(snapshot)).toFixed(2)}s`;
+        const headerLabel = node.querySelector<HTMLElement>(".studio-item-name")!;
+        node.querySelector(".studio-item-meta")!.textContent = metaText;
+        headerLabel.textContent = item.display.title;
         node.addEventListener("pointerdown", (event) => {
           const rect = node.getBoundingClientRect();
           const edge = Math.min(8, Math.max(4, rect.width / 3));
           const nearStart = event.clientX - rect.left <= edge;
           const nearEnd = rect.right - event.clientX <= edge;
-          const handle = clip.editHandles.find((candidate) =>
+          const handle = item.editHandles.find((candidate) =>
             candidate.enabled
             && ((candidate.gesture === "trim-start" && nearStart)
               || (candidate.gesture === "trim-end" && nearEnd)
@@ -800,11 +683,11 @@ export function createTimeline(store: Store): Timeline {
           if (handle !== undefined
             && (handle.gesture === "move" || handle.gesture === "trim-start" || handle.gesture === "trim-end")) {
             event.stopPropagation();
-            const pointerFrame = handle.coordinate === "semantic-anchor"
+            const pointerFrame = handle.coordinate === "domain-anchor"
               ? rawFrameAt(event.clientX)
               : frameAt(event.clientX);
             activeEdit = {
-              clip,
+              item,
               handle,
               startFrame: pointerFrame,
               pointerId: event.pointerId,
@@ -814,17 +697,16 @@ export function createTimeline(store: Store): Timeline {
             };
             node.classList.add("editing");
             try { lanes.setPointerCapture(event.pointerId); } catch { /* local pointer */ }
-            store.select(clip.id, "timeline");
+            store.select(item.id, "timeline");
             return;
           }
-          store.select(clip.id, "timeline");
+          store.select(item.id, "timeline");
         });
-        node.addEventListener("dblclick", () => store.seek(clip.startFrame, "timeline"));
-        nextClipNodes.push({ node, start: clip.startFrame, end: clip.endFrameExclusive, id: clip.id, ...(clip.selectionGroup === undefined ? {} : { selectionGroup: clip.selectionGroup }) });
-        lane.append(node);
-      }
-      trackBody.append(lane);
+        node.addEventListener("dblclick", () => store.seek(item.startFrame, "timeline"));
+        nextItemNodes.push({ node, start: item.startFrame, end: item.endFrameExclusive, id: item.id, ...(item.selectionGroup === undefined ? {} : { selectionGroup: item.selectionGroup }) });
+      lane.append(node);
     }
+    trackBody.append(lane);
     rows.append(trackBody);
     // Cached storyboards render synchronously and need connected, measurable targets.
     for (const item of materialMounts) mountMaterialPreview(item.target, item.preview);
@@ -835,24 +717,24 @@ export function createTimeline(store: Store): Timeline {
     const scrollTop = body.scrollTop;
     labels.replaceChildren();
     rows.replaceChildren();
-    semanticNodes = [];
+    domainNodes = [];
     const corner = document.createElement("div");
     corner.className = "label-corner";
     userText(corner, "");
-    if (snapshot.semantic === undefined || snapshot.semantic.segments.length === 0) labels.append(corner);
-    buildSemanticLane(snapshot);
-    const nextClipNodes: { node: HTMLElement; start: number; end: number; id: string; selectionGroup?: string }[] = [];
+    labels.append(corner);
+    for (const domain of snapshot.temporalDomains) buildTemporalDomainLane(snapshot, domain);
+    const nextItemNodes: { node: HTMLElement; start: number; end: number; id: string; selectionGroup?: string }[] = [];
     for (const track of snapshot.tracks) {
       const attachedTo = track.binding.lane.attachedTo;
       if (attachedTo !== undefined) continue;
-      buildTrack(snapshot, track, nextClipNodes);
+      buildTrack(snapshot, track, nextItemNodes);
       const slot = track.binding.lane.groupId ?? track.binding.groupId;
       const attachments = attachedTracks(snapshot, slot, track.binding.groupId);
       for (const attachment of attachments) {
-        buildTrack(snapshot, attachment, nextClipNodes, true);
+        buildTrack(snapshot, attachment, nextItemNodes, true);
       }
     }
-    clipNodes = nextClipNodes;
+    itemNodes = nextItemNodes;
     drawRuler(snapshot);
     // Replacing every row briefly collapses the scroll surface. Preserve the
     // vertical reading position when a horizontal pan rebuilds the window.
@@ -862,7 +744,7 @@ export function createTimeline(store: Store): Timeline {
   const paint = (): void => {
     if (state === undefined) return;
     const { snapshot, selection, playhead: head } = state;
-    const position = place(head.frame, snapshot.space.frameCount, zoom.window()) * lanes.clientWidth;
+    const position = place(head.frame, snapshot.timeline.frameCount, zoom.window()) * lanes.clientWidth;
     if (head.origin === "play" && position > lanes.clientWidth * 0.88 && zoom.window().end < 0.9999) {
       zoom.slide(Math.max(0.25, position / Math.max(1, lanes.clientWidth) - 0.18));
       return;
@@ -872,28 +754,24 @@ export function createTimeline(store: Store): Timeline {
     playhead.classList.toggle("outside", position < 0 || position > lanes.clientWidth);
     playheadGrip.classList.toggle("outside", position < 0 || position > lanes.clientWidth);
     timelineTime.textContent = frameTimecode(snapshot, head.frame);
-    const chosen = selection.kind === "clip" ? store.clip(selection.clipId) : undefined;
-    for (const item of clipNodes) {
+    const chosen = selection.kind === "item" ? store.item(selection.itemId) : undefined;
+    for (const item of itemNodes) {
       const selected = chosen !== undefined && (chosen.id === item.id
         || (chosen.selectionGroup !== undefined && chosen.selectionGroup === item.selectionGroup));
       item.node.classList.toggle("selected", selected);
       item.node.setAttribute("aria-pressed", String(selected));
       item.node.classList.toggle("live", head.frame >= item.start && head.frame < item.end);
     }
-    for (const item of semanticNodes) {
-      item.node.classList.toggle("live",
-        (item.kind === "segment" || item.kind === "selection")
-        && head.frame >= item.start && head.frame < item.end);
-      item.node.classList.toggle("current", item.kind === "word" && head.frame >= item.start && head.frame < item.end);
-      const selected = (item.kind === "word" && selectedWord === item.id && selection.kind === "none")
-        || (item.kind === "segment"
-        && selection.kind === "semantic-segment" && selection.segmentId === item.id)
-        || (item.kind === "selection"
-          && selection.kind === "semantic-selection" && selection.selectionId === item.id)
-        || (item.kind === "moment"
-          && selection.kind === "semantic-moment" && selection.momentId === item.id);
+    for (const item of domainNodes) {
+      const inside = item.kind === "span" && head.frame >= item.start && head.frame < item.end;
+      item.node.classList.toggle("live", inside && item.appearance !== "compact");
+      item.node.classList.toggle("current", inside && item.appearance === "compact");
+      const identity = `${item.companion}:${item.domainId}:${item.id}`;
+      const selected = (item.appearance === "compact" && selectedWord === identity && selection.kind === "none")
+        || (selection.kind === "temporal-domain" && selection.companion === item.companion
+          && selection.domainId === item.domainId && selection.itemId === item.id);
       item.node.classList.toggle("selected", selected);
-      if (item.kind !== "word") item.node.setAttribute("aria-pressed", String(selected));
+      if (item.appearance !== "compact") item.node.setAttribute("aria-pressed", String(selected));
     }
   };
 

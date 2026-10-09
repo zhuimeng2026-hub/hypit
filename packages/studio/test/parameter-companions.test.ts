@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { StudioPlacement, StudioEntityDraft, StudioParameterCompanion } from "@hypit/studio-adapter";
-import { studioContributionFromPackage, createStudioCompanionHostFacet } from "@hypit/studio-adapter";
+import type { StudioPlacement, StudioItemDraft, StudioParameterCompanion } from "@hypit/studio-companion";
+import { studioContributionFromPackage, createStudioCompanionFacet } from "@hypit/studio-companion";
 import { composeParameterDeclarations, sourceBindingsForDraft, inspectorFieldsForBindings } from "../src/parameters.js";
 import { StudioCompanionRegistry } from "../src/studio-registry.js";
 import { parameterAuthorValue, serializeParameterValue } from "../src/parameter-values.js";
@@ -20,12 +20,12 @@ function placement(id: string, start: number, end: number): StudioPlacement {
     attributes: { id }, attributeValueRanges: {}, references: [], referenceAttributes: {}, referenceTypes: {} };
 }
 test("a project object contributes its own parameters to a consumer and inserts an omitted scalar on first edit", () => {
-  const contribution = studioContributionFromPackage("@project/pan", [createStudioCompanionHostFacet({ parameters: [companion] })]);
+  const contribution = studioContributionFromPackage("@project/pan", [createStudioCompanionFacet({ parameters: [companion] })]);
   const registry = new StudioCompanionRegistry([], { parameters: contribution.parameters });
   const split = text.indexOf('<p:Pan');
   const owner = { ...placement("view", 0, split), referenceAttributes: { style: "pan" }, resolvedReferenceAttributes: { style: "pan" } };
   const style = placement("pan", split, text.length);
-  const draft: StudioEntityDraft = { id: "use", authoredId: "view", display: { title: "Pan", layers: [] }, startFrame: 0, endFrameExclusive: 30, stackOrder: 0 };
+  const draft: StudioItemDraft = { id: "use", authoredId: "view", display: { title: "Pan", layers: [] }, startFrame: 0, endFrameExclusive: 30, stackOrder: 0 };
   const declarations = composeParameterDeclarations({ registry, placement: owner, placements: [owner, style], draft,
     bindings: [{ name: "style", companion: true }], inspector: [] });
   const fields = inspectorFieldsForBindings(draft, sourceBindingsForDraft({ root: "/workspace", files: [{ path: "main.svml", text, language: "svml" }],

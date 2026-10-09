@@ -7,6 +7,11 @@ Official package-owned assembly layer between peer Tracks and the generic Compos
 Film is an ordinary author component and an optional Target, not a Core root or a privileged video
 type.
 
+The official video Distribution installs Film as an ordinary default npm dependency. Film owns its
+author Surface, assembly Producers and Studio film companion together; the reusable companion is
+published as `@hypit/film/studio`. Composition remains the shared value below it, so another author
+package can assemble the same public result without importing Film.
+
 The package lowers one concrete Film declaration into a finite `FilmTrackSet` fold, then compiles
 that set into `Composition`. This supports any number and mix
 of VisualTrack and AudioTrack inputs while every Core Operation retains a fixed manifest-declared
@@ -16,12 +21,12 @@ port list and one atomic result.
 receives the previous set and newly added Track through explicit graph edges. The domain value copies
 no lineage metadata. Final Composition
 remains order-independent because the public contract canonicalizes Tracks and visual ordering
-belongs to each Present's absolute stacking key.
+belongs to each Present's absolute `z`, Track-local `order` and stable identity fallback.
 
 The official Structured Surface validates an imported generic SVS Recipe into a nominal
-`FilmProgram`, receives CanvasSpace and the selected time source through separate explicit edges,
+`FilmProgram`, receives Canvas and the selected time source through separate explicit edges,
 passes the Timeline directly, type-checks
-each `<film:Track source={...}/>` reference and generates the finite fold. CanvasSpace is the only
+each `<film:Track source={...}/>` reference and generates the finite fold. Canvas is the only
 dimension truth, Timeline is the only time-range truth, and FilmProgram owns only assembly
 identity and clear color.
 Child order is organizational: Track and Present identity, timing and absolute stacking remain in
@@ -30,24 +35,19 @@ their own typed values. Final rendering is a separate author package and capabil
 For example, after the named inputs are declared:
 
 ```svml
-<import as="sound" from="@hypit/sound@1"/>
-<sound:Style id="voice-style"/>
-<sound:Track id="voice" timeline={speech.timeline}>
-  <sound:Use style={voice-style}/>
-</sound:Track>
-
-<film:Film id="main" canvas={vertical} timeline={speech.timeline}
+<film:Film id="main" canvas={vertical.canvas} timeline={speech.timeline}
   appearance={recipes.film.vertical}>
-  <film:Track source={performance.visual}/>
-  <film:Track source={voice.audio}/>
+  <film:Track source={picture.visual}/>
+  <film:Track source={mix.audio}/>
   <film:Track source={coverage.visual}/>
-  <film:Track source={captions.track}/>
-  <film:Track source={music.track}/>
+  <film:Track source={captions.visual}/>
+  <film:Track source={music.audio}/>
 </film:Film>
 ```
 
-The public output is `main.composition`. Including a visual output does not automatically include
-its sibling audio output. An opaque upper layer can cover a performance while its audio continues;
+The public output is `main.composition`. Including a Visual Track output does not automatically include
+an Audio Track output derived from the same media. An opaque upper layer can cover a performance while
+its separately included audio continues;
 reordering these children is not how an author changes that visual stacking.
 
 The `appearance` Recipe uses `background`, for example `film.vertical { background: #18212A; }`.

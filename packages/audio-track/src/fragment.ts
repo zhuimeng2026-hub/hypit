@@ -1,10 +1,10 @@
-import { timelineTypes } from "@hypit/timeline";
+import { timelineTypes } from "@hypit/hypit/timeline";
 
-import { compositionTypes } from "@hypit/composition";
-import { sealGraphFragment } from "@hypit/elaborator";
-import type { FragmentOperation } from "@hypit/elaborator";
-import { mediaTypes } from "@hypit/media";
-import { temporalTypes } from "@hypit/temporal";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation } from "@hypit/hypit/author";
+import { mediaTypes } from "@hypit/hypit/media";
+import { temporalTypes } from "@hypit/hypit/temporal";
 
 import { audioTrackProducers, audioTrackTypes } from "./manifest.js";
 
@@ -17,25 +17,25 @@ export type AudioTrackFragmentItem = {
 const input = (name: string) => ({ kind: "fragment-input" as const, name });
 const operation = (id: string) => ({ kind: "fragment-operation" as const, operation: id });
 
-export function createAudioTrackFragment(items: readonly AudioTrackFragmentItem[]) {
-  if (items.length === 0) throw new Error("Audio Track Fragment requires at least one Item.");
+export function createAudioTrackFragment(clips: readonly AudioTrackFragmentItem[]) {
+  if (clips.length === 0) throw new Error("Audio Track Fragment requires at least one Clip.");
   const inputTypes = new Map<string, (typeof audioTrackTypes.clipSpec | typeof mediaTypes.synchronized | typeof temporalTypes.window)>();
   const operations: FragmentOperation[] = [
     { id: "audio:set:empty", producer: audioTrackProducers.createSet, inputs: {}, result: { kind: "output", name: "set" } },
   ];
   let current = "audio:set:empty";
-  items.forEach((item, index) => {
-    inputTypes.set(item.mediaName, mediaTypes.synchronized);
-    inputTypes.set(item.specName, audioTrackTypes.clipSpec);
-    inputTypes.set(item.windowName, temporalTypes.window);
+  clips.forEach((clip, index) => {
+    inputTypes.set(clip.mediaName, mediaTypes.synchronized);
+    inputTypes.set(clip.specName, audioTrackTypes.clipSpec);
+    inputTypes.set(clip.windowName, temporalTypes.window);
     const id = `audio:set:append:${String(index + 1).padStart(4, "0")}`;
     operations.push({
       id,
-      producer: audioTrackProducers.appendItem,
+      producer: audioTrackProducers.appendClip,
       inputs: {
         set: operation(current), header: input("header"), timeline: input("timeline"),
-        media: input(item.mediaName), spec: input(item.specName),
-        window: input(item.windowName),
+        media: input(clip.mediaName), spec: input(clip.specName),
+        window: input(clip.windowName),
       },
       result: { kind: "output", name: "set" },
     });
@@ -48,7 +48,7 @@ export function createAudioTrackFragment(items: readonly AudioTrackFragmentItem[
   return sealGraphFragment({
     inputs: [
       { name: "header", type: audioTrackTypes.header },
-      { name: "timeline", type: timelineTypes.track },
+      { name: "timeline", type: timelineTypes.timeline },
       ...[...inputTypes].map(([inputName, type]) => ({ name: inputName, type })),
     ],
     operations,

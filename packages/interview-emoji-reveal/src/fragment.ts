@@ -1,11 +1,11 @@
-import { timelineTypes } from "@hypit/timeline";
+import { timelineTypes } from "@hypit/hypit/timeline";
 
-import { compositionTypes } from "@hypit/composition";
-import { artifactTypes } from "@hypit/artifact";
-import { sealGraphFragment } from "@hypit/elaborator";
-import type { FragmentOperation } from "@hypit/elaborator";
-import { spatialTypes } from "@hypit/spatial";
-import { temporalTypes } from "@hypit/temporal";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation } from "@hypit/hypit/author";
+import { spatialTypes } from "@hypit/hypit/spatial";
+import { temporalTypes } from "@hypit/hypit/temporal";
 
 import { emojiRevealProducers, emojiRevealTypes } from "./manifest.js";
 
@@ -41,23 +41,23 @@ export function createEmojiRevealFragment(items: readonly EmojiRevealFragmentIte
       placeholder: input("placeholder"), set: operation(current),
     }, result: { kind: "output", name: "program" } },
     { id: "emoji:track", producer: emojiRevealProducers.render, inputs: {
-      canvas: input("canvas"), timeline: input("timeline"), program: operation("emoji:program"),
+      within: input("within"), timeline: input("timeline"), program: operation("emoji:program"),
     }, result: { kind: "output", name: "track" } },
   );
   return sealGraphFragment({
     inputs: [
-      { name: "header", type: emojiRevealTypes.header }, { name: "timeline", type: timelineTypes.track },
-      { name: "canvas", type: spatialTypes.canvas }, { name: "outer", type: temporalTypes.window }, { name: "style", type: emojiRevealTypes.style },
-      { name: "placeholder", type: artifactTypes.blob },
+      { name: "header", type: emojiRevealTypes.header }, { name: "timeline", type: timelineTypes.timeline },
+      { name: "within", type: spatialTypes.frame }, { name: "outer", type: temporalTypes.window }, { name: "style", type: emojiRevealTypes.style },
+      { name: "placeholder", type: blobTypes.blob },
       ...items.flatMap((item) => [
-        { name: item.specName, type: emojiRevealTypes.itemSpec }, { name: item.iconName, type: artifactTypes.blob },
+        { name: item.specName, type: emojiRevealTypes.itemSpec }, { name: item.iconName, type: blobTypes.blob },
         ...(item.activationName === undefined ? [] : [{ name: item.activationName, type: temporalTypes.instant }]),
       ]),
     ],
     operations,
     exports: [
       { name: "program", type: emojiRevealTypes.program, root: operation("emoji:program") },
-      { name: "track", type: compositionTypes.visualTrack, root: operation("emoji:track") },
+      { name: "visual", type: compositionTypes.visualTrack, root: operation("emoji:track") },
     ],
   });
 }

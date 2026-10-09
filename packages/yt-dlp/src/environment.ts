@@ -1,12 +1,17 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { resolveNodePackageResource } from "@hypit/package-loader-node";
-import { hypitHostStateRoot, pythonEnvironmentCommand } from "@hypit/runtime-host-node";
+import { join, resolve } from "node:path";
+import { hypitHostStateRoot } from "@hypit/hypit/cli";
+
+function pythonEnvironmentCommand(environment: string, name: string): string {
+  return process.platform === "win32"
+    ? resolve(environment, "Scripts", `${name}.exe`)
+    : resolve(environment, "bin", name);
+}
 
 /** One selected, locked environment. Fetching media never invokes its installer. */
 export function videoDownloadEnvironment() {
-  const project = dirname(resolveNodePackageResource("@hypit/yt-dlp-service-runtime", "pyproject.toml", { from: import.meta.url }));
+  const project = resolve(import.meta.dirname, "../runtime");
   const version = /"yt-dlp(?:\[[^\]]+\])?==([^"]+)"/u.exec(readFileSync(join(project, "pyproject.toml"), "utf8"))?.[1];
   if (version === undefined) throw new Error("yt-dlp runtime must declare its exact upstream version");
   const environment = join(hypitHostStateRoot(), "programs", "yt-dlp", version, ".venv");
@@ -19,7 +24,7 @@ export function requireVideoDownload(): string {
   // PyPI normalizes date-version leading zeroes; the executable retains them.
   const release = (value: string) => value.trim().split(".").map((part) => part.replace(/^0+(?=\d)/u, "")).join(".");
   if (result.status !== 0 || release(result.stdout ?? "") !== release(selected.version)) {
-    throw new Error(`yt-dlp ${selected.version} is not ready at ${selected.executable}; run hypit media prepare-fetch. ${result.error?.message ?? result.stderr?.trim() ?? ""}`);
+    throw new Error(`yt-dlp ${selected.version} is not ready at ${selected.executable}; run hypit download prepare. ${result.error?.message ?? result.stderr?.trim() ?? ""}`);
   }
   return selected.executable;
 }

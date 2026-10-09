@@ -1,28 +1,34 @@
 {
   "name": "@hypit/provider-hypihub",
-  "version": "0.0.0-dev",
+  "version": "0.1.1",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
+  "files": ["dist", "README.md"],
   "hypit": { "activation": "./src/activation.ts" },
-  "dependencies": {
-    "@hypit/endpoint-kit": "workspace:*",
-    "@hypit/generation": "workspace:*",
-    "@hypit/protocol": "workspace:*",
-    "@hypit/runtime": "workspace:*",
-    "@hypit/runtime-kit": "workspace:*",
-    "@hypit/speech-evidence": "workspace:*",
-    "@hypit/text": "workspace:*",
-    "@hypit/whisperx": "workspace:*"
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^",
+    "@hypit/runtime-local": "workspace:^",
+    "@hypit/whisperx": "workspace:^"
   },
   "devDependencies": {
-    "@hypit/driver-node": "workspace:*",
+    "@hypit/endpoint": "workspace:*",
+    "@hypit/generation": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/protocol": "workspace:*",
+    "@hypit/runtime": "workspace:*",
+    "@hypit/runtime-local": "workspace:*",
+    "@hypit/speech-evidence": "workspace:*",
+    "@hypit/text": "workspace:*",
+    "@hypit/whisperx": "workspace:*",
+    "@hypit/executor": "workspace:*",
     "@hypit/elevenlabs-speech": "workspace:*",
     "@hypit/fishaudio-speech": "workspace:*",
     "@hypit/mimo-speech": "workspace:*",
     "@hypit/seedance": "workspace:*",
-    "@hypit/speech": "workspace:*",
-    "@hypit/volcengine-matting": "workspace:*"
+    "@hypit/volcengine-matting": "workspace:*",
+    "@hypit/gpt-image": "workspace:*",
+    "typescript": "5.9.3"
   }
 }

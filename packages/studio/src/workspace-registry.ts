@@ -8,9 +8,9 @@ import { pipeline } from "node:stream/promises";
 import type { IncomingHttpHeaders, ServerResponse } from "node:http";
 
 import type { ViteDevServer } from "vite";
-import type { BuildResultFileRange } from "@hypit/build-result";
-import type { HyperframesDocument } from "@hypit/hyperframes";
-import type { StudioTemporalInstantProjection } from "@hypit/studio-adapter";
+import type { BuildResultFileRange } from "@hypit/hypit/result";
+import type { HtmlProgram } from "@hypit/hypit/html-program";
+import type { StudioTemporalInstantProjection } from "@hypit/studio-companion";
 
 import type { StudioBuildLibrary } from "./build-library.js";
 import type { ServedFile } from "./compile.js";
@@ -19,13 +19,15 @@ import { loadStudioRun } from "./run.js";
 import { allowsStudioMutationWithToken } from "./mutation-origin.js";
 import { parameterAuthorValue, parameterOption, serializeParameterValue, serializeAttributeGroup, validateParameterValue } from "./parameter-values.js";
 import { readStudioSession } from "./session.js";
+import type { StudioSession } from "./session.js";
 import type { Range, StudioFailure, StudioLibraryRequest, StudioLibraryView, StudioMutation, StudioSnapshot } from "./shared.js";
 import type { SseHub } from "./sse.js";
 import { createStudioStoryboard } from "./storyboard.js";
 import type { StudioStoryboard } from "./storyboard.js";
 import type { StudioCompanionRegistry } from "./studio-registry.js";
 import { findSurfacePreview } from "./surface-preview.js";
-import { formatTemporalPointEdit, semanticGestureSpan } from "./temporal-edit.js";
+import { domainGestureSpan } from "./temporal-edit.js";
+import { planTemporalInverse, temporalAuthorBindings } from "./temporal-inverse.js";
 import { replaceSourceFiles } from "./source-transaction.js";
 
 /**
@@ -127,7 +129,8 @@ export class WorkspaceSession {
   // Compile state (moved verbatim from the Phase-1/2 studioPlugin closure).
   #snapshot: StudioSnapshot | undefined;
   #visualHtml: string | undefined;
-  #visualDocument: HyperframesDocument | undefined;
+  #visualDocument: HtmlProgram | undefined;
+  #temporalEdit: StudioSession["temporalEdit"] | undefined;
   #failure: StudioFailure | undefined;
   #material: ReadonlyMap<string, ServedFile> = new Map();
   #revision = 0;
@@ -254,6 +257,7 @@ export class WorkspaceSession {
       this.#visualHtml = result.visualHtml;
       this.#visualDocument = result.document;
       this.#material = result.material;
+      this.#temporalEdit = result.temporalEdit;
       this.#failure = undefined;
       if (notify) this.#broadcast("studio:snapshot", this.#snapshot);
     } catch (error) {
@@ -332,26 +336,39 @@ export class WorkspaceSession {
     return new Map([...previousFiles].filter(([absolute]) => nextFiles.has(absolute)));
   }
 
-  #currentClip(entityId: string): StudioSnapshot["tracks"][number]["clips"][number] {
-    const found = this.#snapshot?.tracks.flatMap((track) => track.clips).find((clip) => clip.id === entityId);
-    if (found === undefined) throw new Error(`Studio entity ${entityId} no longer exists.`);
+  #currentItem(itemId: string): StudioSnapshot["tracks"][number]["items"][number] {
+    const found = this.#snapshot?.tracks.flatMap((track) => track.items).find((item) => item.id === itemId);
+    if (found === undefined) throw new Error(`Studio Item ${itemId} no longer exists.`);
     return found;
+  }
+
+  #currentParameterOwner(
+    owner: Extract<StudioMutation, { readonly type: "parameter.adjust" }>["owner"],
+  ): { readonly label: string; readonly inspector: StudioSnapshot["tracks"][number]["items"][number]["inspector"] } {
+    if (owner.kind === "item") {
+      const item = this.#currentItem(owner.itemId);
+      return { label: `Item ${owner.itemId}`, inspector: item.inspector };
+    }
+    const track = this.#snapshot?.tracks.find((candidate) => candidate.id === owner.trackId);
+    const object = track?.inspectorObjects.find((candidate) => candidate.id === owner.objectId);
+    if (object === undefined) throw new Error(`Studio Inspector object ${owner.objectId} no longer exists.`);
+    return { label: `Inspector object ${owner.objectId}`, inspector: object.inspector };
   }
 
   async #timelinePatches(
     mutation: Extract<StudioMutation, { readonly type: "timeline.adjust" }>,
   ): Promise<readonly Patch[]> {
-    const clip = this.#currentClip(mutation.entityId);
-    const handle = clip.editHandles.find((candidate) =>
+    const item = this.#currentItem(mutation.itemId);
+    const handle = item.editHandles.find((candidate) =>
       candidate.operation === "timeline.adjust"
       && candidate.gesture === mutation.gesture
       && candidate.enabled);
-    if (handle === undefined) throw new Error(`Entity ${mutation.entityId} does not allow ${mutation.gesture}.`);
+    if (handle === undefined) throw new Error(`Item ${mutation.itemId} does not allow ${mutation.gesture}.`);
 
     const temporal = handle.temporal;
-    if (temporal === undefined) throw new Error("This timeline entity has no authoring authority.");
+    if (temporal === undefined) throw new Error("This timeline Item has no authoring authority.");
     if (temporal.kind !== mutation.target.kind) {
-      throw new Error(`This timeline entity requires a ${temporal.kind} mutation target.`);
+      throw new Error(`This timeline Item requires a ${temporal.kind} mutation target.`);
     }
     const startFrame = mutation.target.kind === "instant" ? mutation.target.frame : mutation.target.startFrame;
     const endFrameExclusive = mutation.target.kind === "instant" ? mutation.target.frame + 1 : mutation.target.endFrameExclusive;
@@ -361,14 +378,14 @@ export class WorkspaceSession {
       throw new Error("A timeline target must use valid whole frames.");
     }
     if (temporal.kind === "window") {
-      if (mutation.gesture === "move" && handle.semantic?.kind !== "selection"
-        && endFrameExclusive - startFrame !== clip.endFrameExclusive - clip.startFrame) {
+      if (mutation.gesture === "move" && handle.domain?.kind !== "span"
+        && endFrameExclusive - startFrame !== item.endFrameExclusive - item.startFrame) {
         throw new Error("Move must preserve the Window duration.");
       }
-      if (mutation.gesture === "trim-start" && endFrameExclusive !== clip.endFrameExclusive) {
+      if (mutation.gesture === "trim-start" && endFrameExclusive !== item.endFrameExclusive) {
         throw new Error("Trim start cannot change the Window end.");
       }
-      if (mutation.gesture === "trim-end" && startFrame !== clip.startFrame) {
+      if (mutation.gesture === "trim-end" && startFrame !== item.startFrame) {
         throw new Error("Trim end cannot change the Window start.");
       }
     } else if (mutation.gesture !== "move") {
@@ -376,122 +393,94 @@ export class WorkspaceSession {
     }
 
     const patches: Patch[] = [];
-    const semanticTarget = mutation.target.semantic;
-    if (handle.semantic !== undefined && semanticTarget === undefined) throw new Error("A semantic edit requires explicit target anchors.");
-    if (semanticTarget !== undefined) {
-      if (handle.semantic?.kind !== semanticTarget.kind) {
-        throw new Error(`Entity ${mutation.entityId} is not bound to a writable ${semanticTarget.kind}.`);
+    const domainTarget = mutation.target.domain;
+    if (handle.domain !== undefined && domainTarget === undefined) throw new Error("A temporal-domain edit requires explicit target anchors.");
+    if (domainTarget !== undefined) {
+      if (handle.domain?.kind !== domainTarget.kind
+        || handle.domain.companion !== domainTarget.companion
+        || handle.domain.domainId !== domainTarget.domainId
+        || handle.domain.itemId !== domainTarget.itemId) {
+        throw new Error(`Item ${mutation.itemId} is not bound to the requested temporal-domain item.`);
       }
       const current = this.#snapshot;
-      const script = current?.script;
-      if (current === undefined || script === undefined || current.semantic === undefined) throw new Error("Studio has no writable Script source map.");
-      if (handle.semantic.narrativeId !== current.semantic.narrativeId
-        || script.narrativeId !== current.semantic.narrativeId) {
-        throw new Error("The timeline entity and writable Script do not belong to the selected Narrative.");
-      }
-      const projected = semanticGestureSpan(current.semantic.anchors, handle, semanticTarget);
+      const domain = current?.temporalDomains.find((candidate) => candidate.companion === domainTarget.companion
+        && candidate.id === domainTarget.domainId);
+      if (current === undefined || domain === undefined) throw new Error("Studio has no writable temporal-domain source.");
+      const projected = domainGestureSpan(domain.anchors, handle, domainTarget);
       if (projected === undefined || projected.startFrame !== startFrame || projected.endFrameExclusive !== endFrameExclusive) {
-        throw new Error("The semantic edit does not produce the requested timeline projection.");
+        throw new Error("The temporal-domain edit does not produce the requested timeline projection.");
       }
-      const absolute = resolve(this.#workspaceRoot, script.sourcePath);
+      const absolute = resolve(this.#workspaceRoot, domain.source.path);
       const source = await readFile(absolute, "utf8");
-      if (script.content.start < 0 || script.content.end < script.content.start || script.content.end > source.length) {
-        throw new Error("The current Script source range is invalid.");
+      if (domain.source.content.start < 0 || domain.source.content.end < domain.source.content.start || domain.source.content.end > source.length) {
+        throw new Error("The current temporal-domain source range is invalid.");
       }
-      const body = source.slice(script.content.start, script.content.end);
-      const replacement = this.#registry.adjustScript({
-        companion: script.companion,
-        sourceName: script.sourcePath,
+      const body = source.slice(domain.source.content.start, domain.source.content.end);
+      const replacement = this.#registry.adjustTemporalDomain({
+        companion: domain.companion,
+        sourceName: domain.source.path,
         source: body,
-        adjustment: semanticTarget.kind === "selection"
+        adjustment: domainTarget.kind === "span"
           ? {
-              kind: "selection",
-              id: handle.semantic.id,
-              startAnchorId: semanticTarget.startAnchorId,
-              endAnchorId: semanticTarget.endAnchorId,
+              kind: "span",
+              itemId: domainTarget.itemId,
+              startAnchorId: domainTarget.startAnchorId,
+              endAnchorId: domainTarget.endAnchorId,
             }
-          : { kind: "moment", id: handle.semantic.id, anchorId: semanticTarget.anchorId },
+          : { kind: "point", itemId: domainTarget.itemId, anchorId: domainTarget.anchorId },
       });
       if (replacement !== body) patches.push({
-        path: relative(this.#workspaceRoot, absolute), range: script.content, replacement, preimage: body,
+        path: relative(this.#workspaceRoot, absolute), range: domain.source.content, replacement, preimage: body,
       });
     }
 
-    const source = (role: "start" | "end" | "duration") =>
-      handle.sources?.find((candidate) => candidate.role === role)?.source;
-    const frame = (value: number): string => `${value}f`;
-    const semanticFrame = (endpoint: StudioTemporalInstantProjection): number | undefined => {
-      if (endpoint.authority.kind !== "semantic" || semanticTarget === undefined || handle.semantic === undefined) return undefined;
-      if (endpoint.source.kind === "selection" && semanticTarget.kind === "selection"
-        && endpoint.source.id === handle.semantic.id) {
+    const domainFrame = (endpoint: StudioTemporalInstantProjection): number | undefined => {
+      if (endpoint.authority.kind !== "domain" || domainTarget === undefined || handle.domain === undefined) return undefined;
+      const domain = this.#snapshot?.temporalDomains.find((candidate) => candidate.companion === domainTarget.companion
+        && candidate.id === domainTarget.domainId);
+      if (domainTarget.kind === "span" && handle.domain.kind === "span") {
         const anchorId = endpoint.authority.boundary === "start"
-          ? semanticTarget.startAnchorId
-          : semanticTarget.endAnchorId;
-        return this.#snapshot?.semantic?.anchors.find((anchor) => anchor.id === anchorId)?.frame;
+          ? domainTarget.startAnchorId
+          : domainTarget.endAnchorId;
+        return domain?.anchors.find((anchor) => anchor.id === anchorId)?.frame;
       }
-      if (endpoint.source.kind === "moment" && semanticTarget.kind === "moment"
-        && endpoint.source.id === handle.semantic.id) {
-        return this.#snapshot?.semantic?.anchors.find((anchor) => anchor.id === semanticTarget.anchorId)?.frame;
+      if (domainTarget.kind === "point" && handle.domain.kind === "point") {
+        return domain?.anchors.find((anchor) => anchor.id === domainTarget.anchorId)?.frame;
       }
       return undefined;
     };
-    const projectionBaseFrame = (endpoint: StudioTemporalInstantProjection): number | undefined => {
-      if (endpoint.reference === "absolute") return undefined;
-      if (endpoint.reference === "program.start") return 0;
-      if (endpoint.reference === "program.end") return this.#snapshot?.space.frameCount;
-      const id = endpoint.source.id;
-      if (id === undefined) return undefined;
-      if (endpoint.reference === "selection.start" || endpoint.reference === "selection.end") {
-        const selection = this.#snapshot?.semantic?.selections.find((candidate) => candidate.id === id);
-        return endpoint.reference === "selection.start" ? selection?.startFrame : selection?.endFrameExclusive;
-      }
-      if (endpoint.reference === "segment.start" || endpoint.reference === "segment.end") {
-        const segment = this.#snapshot?.semantic?.segments.find((candidate) => candidate.id === id);
-        return endpoint.reference === "segment.start" ? segment?.startFrame : segment?.endFrameExclusive;
-      }
-      return this.#snapshot?.semantic?.moments.find((candidate) => candidate.id === id)?.frame;
-    };
-    const projectedPointValue = (endpoint: StudioTemporalInstantProjection, desired: number): string =>
-      formatTemporalPointEdit(endpoint.reference, desired, projectionBaseFrame(endpoint));
-    const writeEndpoint = (
-      endpoint: StudioTemporalInstantProjection,
-      desired: number,
-      role: "start" | "end",
-    ): void => {
-      if (desired === endpoint.frame) return;
-      if (endpoint.authority.kind === "fixed") throw new Error(`The ${role} endpoint has no timeline write target.`);
-      if (endpoint.authority.kind === "semantic") {
-        if (semanticFrame(endpoint) !== desired) throw new Error(`The ${role} endpoint does not match its semantic Anchor.`);
-        return;
-      }
-      if (endpoint.authority.relation !== "direct") return;
-      const author = source(role);
-      if (author === undefined) throw new Error(`The ${role} projection has no writable Source binding.`);
-      patches.push({ ...author, replacement: projectedPointValue(endpoint, desired) });
-    };
-    if (temporal.kind === "instant") {
-      writeEndpoint(temporal, startFrame, "start");
-    } else {
-      writeEndpoint(temporal.start, startFrame, "start");
-      writeEndpoint(temporal.end, endFrameExclusive, "end");
-      const derived = [temporal.start, temporal.end].find((endpoint) =>
-        endpoint.authority.kind === "parameter" && endpoint.authority.relation !== "direct");
-      if (derived !== undefined
-        && endFrameExclusive - startFrame !== temporal.endFrameExclusive - temporal.startFrame) {
-        const author = source("duration");
-        if (author === undefined) throw new Error("The projected duration has no writable Source binding.");
-        patches.push({ ...author, replacement: frame(endFrameExclusive - startFrame) });
-      }
+    const temporalEdit = this.#temporalEdit;
+    if (temporalEdit === undefined || handle.temporalRecord === undefined) {
+      throw new Error("This timeline Item has no executed Temporal edit graph.");
     }
+    const bindings = temporalAuthorBindings({
+      state: temporalEdit.state,
+      rootRecord: handle.temporalRecord,
+      workspaceRoot: this.#workspaceRoot,
+      placements: temporalEdit.placements,
+      files: temporalEdit.files,
+    });
+    const writes = planTemporalInverse({
+      state: temporalEdit.state,
+      rootRecord: handle.temporalRecord,
+      target: temporal.kind === "instant"
+        ? { kind: "instant", frame: startFrame }
+        : { kind: "window", startFrame, endFrameExclusive },
+      bindings,
+      domainFrame,
+      registry: this.#registry,
+      identify: (type, value) => this.#registry.identifyTemporalSource(type, value),
+    });
+    patches.push(...writes.map((write) => ({ ...write.source, replacement: write.replacement })));
     return patches.filter((patch) => patch.replacement !== patch.preimage);
   }
 
   async #mutationPatches(mutation: StudioMutation): Promise<readonly Patch[]> {
     if (mutation.type === "timeline.adjust") return this.#timelinePatches(mutation);
-    const clip = this.#currentClip(mutation.entityId);
-    const parameter = clip.inspector.find((candidate) => candidate.id === mutation.parameterId);
+    const owner = this.#currentParameterOwner(mutation.owner);
+    const parameter = owner.inspector.find((candidate) => candidate.id === mutation.parameterId);
     if (parameter?.edit === undefined) {
-      throw new Error(`Entity ${mutation.entityId} has no writable parameter ${mutation.parameterId}.`);
+      throw new Error(`${owner.label} has no writable parameter ${mutation.parameterId}.`);
     }
     const authorValue = parameterAuthorValue(parameter, mutation.value);
     if (parameter.schema !== undefined) {
@@ -666,8 +655,7 @@ export class WorkspaceSession {
         for await (const chunk of request) chunks.push(Buffer.from(chunk));
         const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as Partial<StudioMutation>;
         if ((body.type !== "timeline.adjust" && body.type !== "parameter.adjust")
-          || typeof body.revision !== "number"
-          || typeof body.entityId !== "string") {
+          || typeof body.revision !== "number") {
           json(response, 400, { error: "Expected a Studio author mutation." });
           return;
         }

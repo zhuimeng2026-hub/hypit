@@ -1,0 +1,26 @@
+{
+  "name": "@hypit/narrative-speech-alignment",
+  "version": "0.1.1",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "hypit": {
+    "activation": "./src/activation.ts"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/hypit": "workspace:*",
+    "@hypit/script": "workspace:*",
+    "@hypit/narrative": "workspace:*",
+    "@hypit/speech-evidence": "workspace:*"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@hypit/video",
+  "version": "0.1.1",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./cli": "./src/commands.ts"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@hypit/runtime-local": "workspace:^"
+  },
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^"
+  },
+  "devDependencies": {
+    "@hypit/cli": "workspace:*",
+    "@hypit/hypit": "workspace:*",
+    "@hypit/loader": "workspace:*",
+    "@hypit/markup": "workspace:*"
+  }
+}

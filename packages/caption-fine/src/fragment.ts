@@ -1,9 +1,9 @@
-import { captionProducers, captionTypes } from "@hypit/caption";
-import { compositionTypes } from "@hypit/composition";
-import { sealGraphFragment } from "@hypit/elaborator";
-import { narrativeTypes } from "@hypit/narrative";
-import { timelineTypes } from "@hypit/timeline";
-import { spatialTypes } from "@hypit/spatial";
+import { captionTypes } from "@hypit/hypit/caption";
+import { compositionTypes } from "@hypit/hypit/composition";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import { timelineTypes } from "@hypit/hypit/timeline";
+import { regionEvidenceTypes } from "@hypit/hypit/region-evidence";
+import { spatialTypes } from "@hypit/hypit/spatial";
 
 import { captionFineProducers, captionFineTypes } from "./manifest.js";
 
@@ -13,24 +13,18 @@ const operation = (id: string) => ({ kind: "fragment-operation" as const, operat
 /** One timing join plus one Style-family render operation, regardless of how many Styles are used. */
 export const fineCaptionTrackFragment = sealGraphFragment({
   inputs: [
-    { name: "document", type: narrativeTypes.captionDocument },
-    { name: "timeline", type: timelineTypes.track },
+    { name: "document", type: captionTypes.document },
+    { name: "timeline", type: timelineTypes.timeline },
+    { name: "within", type: spatialTypes.frame },
+    { name: "timing", type: captionTypes.timing },
     { name: "program", type: captionTypes.program },
   ],
   operations: [
     {
-      id: "caption:temporalize-document",
-      producer: captionProducers.temporalizeDocument,
-      inputs: {
-        document: input("document"), timeline: input("timeline"),
-      },
-      result: { kind: "output", name: "caption" },
-    },
-    {
       id: "caption-fine:schedule",
       producer: captionFineProducers.schedule,
       inputs: {
-        caption: operation("caption:temporalize-document"), program: input("program"), document: input("document"),
+        timing: input("timing"), program: input("program"), document: input("document"),
       },
       result: { kind: "output", name: "schedule" },
     },
@@ -39,7 +33,7 @@ export const fineCaptionTrackFragment = sealGraphFragment({
       producer: captionFineProducers.render,
       inputs: {
         schedule: operation("caption-fine:schedule"), program: input("program"),
-        document: input("document"), timeline: input("timeline"),
+        document: input("document"), timeline: input("timeline"), within: input("within"),
       },
       result: { kind: "output", name: "track" },
     },
@@ -51,7 +45,7 @@ export const fineCaptionTrackFragment = sealGraphFragment({
       root: operation("caption-fine:schedule"),
     },
     {
-      name: "track",
+      name: "visual",
       type: compositionTypes.visualTrack,
       root: operation("caption-fine:render"),
     },
@@ -59,27 +53,21 @@ export const fineCaptionTrackFragment = sealGraphFragment({
 });
 
 /** The same Caption pipeline with one explicit, external spatial-evidence edge. */
-export const fineCaptionRegionTrackFragment = sealGraphFragment({
+export const fineCaptionRegionEvidenceFragment = sealGraphFragment({
   inputs: [
-    { name: "document", type: narrativeTypes.captionDocument },
-    { name: "timeline", type: timelineTypes.track },
+    { name: "document", type: captionTypes.document },
+    { name: "timeline", type: timelineTypes.timeline },
+    { name: "within", type: spatialTypes.frame },
+    { name: "timing", type: captionTypes.timing },
     { name: "program", type: captionTypes.program },
-    { name: "regions", type: spatialTypes.regionTimeline },
+    { name: "regions", type: regionEvidenceTypes.evidence },
   ],
   operations: [
-    {
-      id: "caption:temporalize-document",
-      producer: captionProducers.temporalizeDocument,
-      inputs: {
-        document: input("document"), timeline: input("timeline"),
-      },
-      result: { kind: "output", name: "caption" },
-    },
     {
       id: "caption-fine:schedule",
       producer: captionFineProducers.schedule,
       inputs: {
-        caption: operation("caption:temporalize-document"), program: input("program"), document: input("document"),
+        timing: input("timing"), program: input("program"), document: input("document"),
       },
       result: { kind: "output", name: "schedule" },
     },
@@ -88,13 +76,13 @@ export const fineCaptionRegionTrackFragment = sealGraphFragment({
       producer: captionFineProducers.renderWithRegions,
       inputs: {
         schedule: operation("caption-fine:schedule"), program: input("program"),
-        document: input("document"), timeline: input("timeline"), regions: input("regions"),
+        document: input("document"), timeline: input("timeline"), within: input("within"), regions: input("regions"),
       },
       result: { kind: "output", name: "track" },
     },
   ],
   exports: [
     { name: "schedule", type: captionFineTypes.schedule, root: operation("caption-fine:schedule") },
-    { name: "track", type: compositionTypes.visualTrack, root: operation("caption-fine:render") },
+    { name: "visual", type: compositionTypes.visualTrack, root: operation("caption-fine:render") },
   ],
 });

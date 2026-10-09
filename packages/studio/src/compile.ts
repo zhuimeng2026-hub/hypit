@@ -1,7 +1,7 @@
-import type { NodeCompiledSourceClosure } from "@hypit/compiler-node";
-import type { AuthorElementProvenance, AuthorValueRef } from "@hypit/elaborator";
-import type { ArtifactAttachment } from "@hypit/workspace";
-import type { TypeRef } from "@hypit/protocol";
+import type { CompiledAuthorSource } from "@hypit/hypit/compiler";
+import type { AuthorElementProvenance, AuthorValueRef } from "@hypit/hypit/author";
+import type { BlobAttachment } from "@hypit/hypit/workspace";
+import type { TypeRef } from "@hypit/hypit/protocol";
 
 import type { Observations } from "./observe.js";
 import type { Placement } from "./observe.js";
@@ -13,7 +13,7 @@ export type ServedFile = {
 };
 
 export type CompiledSource = {
-  readonly compiled: NodeCompiledSourceClosure;
+  readonly compiled: CompiledAuthorSource;
   readonly observations: Observations;
   readonly served: ReadonlyMap<string, ServedFile>;
   readonly exports: readonly {
@@ -30,7 +30,7 @@ export type CompiledSource = {
  * Studio share one Author graph instead of compiling two look-alike graphs.
  */
 export async function observedCompiledSource(
-  compiled: NodeCompiledSourceClosure,
+  compiled: CompiledAuthorSource,
   observations: Observations,
 ): Promise<CompiledSource> {
   const served = new Map<string, ServedFile>();
@@ -66,7 +66,7 @@ function sameRange(
 }
 
 function exactElement(
-  compiled: NodeCompiledSourceClosure,
+  compiled: CompiledAuthorSource,
   sourcePath: string,
   range: { readonly start: number; readonly end: number },
 ): AuthorElementProvenance | undefined {
@@ -74,14 +74,14 @@ function exactElement(
     element.sourceName === sourcePath && sameRange(element.range, range));
 }
 
-function resolvedRef(compiled: NodeCompiledSourceClosure, ref: AuthorValueRef): string | undefined {
+function resolvedRef(compiled: CompiledAuthorSource, ref: AuthorValueRef): string | undefined {
   if (ref.kind === "record") return ref.id;
   return compiled.provenance.elements.flatMap((element) => element.outputs)
     .find((output) => output.component === ref.component && output.name === ref.output)?.id;
 }
 
 function decorate(
-  compiled: NodeCompiledSourceClosure,
+  compiled: CompiledAuthorSource,
   sourcePath: string,
   range: { readonly start: number; readonly end: number },
 ): {
@@ -110,7 +110,7 @@ function decorate(
 
 /** Join Studio presentation to compiler-owned identities without re-matching authored names. */
 function normalizeObservations(
-  compiled: NodeCompiledSourceClosure,
+  compiled: CompiledAuthorSource,
   observations: Observations,
 ): Observations {
   const placements: Placement[] = observations.placements.map((placement) => {
@@ -145,10 +145,10 @@ function normalizeObservations(
       }),
     };
   });
-  return { placements, sourceMaps: observations.sourceMaps };
+  return { placements, temporalDomains: observations.temporalDomains };
 }
 
-async function bytesOf(attachment: ArtifactAttachment): Promise<Uint8Array> {
+async function bytesOf(attachment: BlobAttachment): Promise<Uint8Array> {
   const chunks: Uint8Array[] = [];
   let size = 0;
   for await (const chunk of await attachment.open()) {

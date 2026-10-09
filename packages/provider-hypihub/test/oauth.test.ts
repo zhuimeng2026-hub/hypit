@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { EndpointCredential } from "@hypit/endpoint-kit";
+import type { EndpointCredential } from "@hypit/endpoint";
 import { decodeOAuth2Credential, encodeOAuth2Credential } from "@hypit/runtime";
 
 import { createHypiHubAuth } from "../src/oauth.js";

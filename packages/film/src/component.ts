@@ -1,9 +1,10 @@
-import type { Timeline } from "@hypit/timeline";
-import type { ComponentPackage } from "@hypit/component-kit";
-import type { CanvasSpace } from "@hypit/spatial";
-import type { AudioTrack, VisualTrack } from "@hypit/composition";
-import type { StoredValue } from "@hypit/protocol";
-import { canonicalize } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { StoredValue } from "@hypit/hypit/protocol";
+import type { AudioTrack, VisualTrack } from "@hypit/hypit/composition";
+import type { Canvas } from "@hypit/hypit/spatial";
+import type { Timeline } from "@hypit/hypit/timeline";
 
 import { filmProducers } from "./manifest.js";
 import { appendFilmAudioTrack, appendFilmVisualTrack, compileFilmComposition, createFilmTrackSet } from "./program.js";
@@ -50,7 +51,7 @@ export const filmComponent = {
       handler: ({ inputs }) => ({
         outputs: { composition: { kind: "inline", value: canonicalize(compileFilmComposition(
           inline<FilmProgram>(inputs.program?.value, "FilmProgram"),
-          inline<CanvasSpace>(inputs.canvas?.value, "CanvasSpace"),
+          inline<Canvas>(inputs.canvas?.value, "Canvas"),
           inline<Timeline>(inputs.timeline?.value, "Timeline"),
           inline<FilmTrackSet>(inputs.set?.value, "FilmTrackSet"),
         )) } },
@@ -58,4 +59,4 @@ export const filmComponent = {
       }),
     },
   ],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

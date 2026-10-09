@@ -1,4 +1,6 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 
 import {
   decodeElevenLabsVoiceDesignSurface,
@@ -10,12 +12,12 @@ import {
 } from "./index.js";
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{ manifest: elevenLabsSpeechManifest }],
-  components: [elevenLabsSpeechComponent],
-  hostFacets: [
-    elevenLabsSpeechDefinition.hostFacet,
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[elevenLabsSpeechComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    elevenLabsSpeechDefinition.facet,
+    createMarkupSurfaceFacet({
       module: elevenLabsSpeechModuleRef,
       declaration: elevenLabsSpeechMarkupSurfaces.find((item) => item.name === "voiceDesign")!,
       handler: decodeElevenLabsVoiceDesignSurface,

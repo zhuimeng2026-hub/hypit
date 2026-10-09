@@ -1,9 +1,9 @@
-import { artifactTypes } from "@hypit/artifact";
-import { sealGenerationPortRequest, sealGenerationRequestDraft, sealGenerationPortTable } from "@hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
-import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/markup";
-import { defineExactModelModule } from "@hypit/model-kit";
-import { textTypes } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { sealGenerationPortRequest, sealGenerationRequestDraft, sealGenerationPortTable } from "@hypit/hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/hypit/markup";
+import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { textTypes } from "@hypit/hypit/text";
 
 export const fishAudioSpeechModuleRef = { name: "@hypit/fishaudio-speech", version: "1" } as const;
 export const fishAudioSpeechModels = [
@@ -92,13 +92,13 @@ const spokenAttributes: readonly SurfaceAttributeVocabulary[] = [
 
 const referencePort: readonly SurfacePortVocabulary[] = [{
   name: "reference",
-  type: artifactTypes.blob,
+  type: blobTypes.blob,
   summary: "The designed voice reference, addressed as `<id>.reference`.",
 }];
 
 const audioPort: readonly SurfacePortVocabulary[] = [{
   name: "audio",
-  type: artifactTypes.blob,
+  type: blobTypes.blob,
   summary: "The independent speech, addressed as `<id>.audio`.",
 }];
 
@@ -135,7 +135,7 @@ export const fishAudioSpeechMarkupSurfaces = [
           kind: "reference",
           required: true,
           summary: "The audio Resource carrying the voice identity to reproduce.",
-          accepts: [artifactTypes.blob],
+          accepts: [blobTypes.blob],
         },
       ],
       ports: audioPort,

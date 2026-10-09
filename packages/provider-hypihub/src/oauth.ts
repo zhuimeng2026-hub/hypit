@@ -1,7 +1,9 @@
-import type { EndpointCredential } from "@hypit/endpoint-kit";
-import { EndpointTransportError, transport } from "@hypit/endpoint-kit";
-import { decodeOAuth2Credential, encodeOAuth2Credential } from "@hypit/runtime";
-import { requestDeadline } from "@hypit/runtime-kit";
+import type { EndpointCredential } from "@hypit/hypit/endpoint";
+import {
+  decodeOAuth2Credential,
+  encodeOAuth2Credential,
+} from "@hypit/hypit/endpoint";
+import { EndpointResponseError, EndpointTransportError, withRequestDeadline } from "@hypit/hypit/endpoint/http";
 import { HypiHubHttpError } from "./errors.js";
 
 const OAUTH_CLIENT_ID = "hyc_d5d5e8e7131b0c877756e66c";
@@ -67,9 +69,8 @@ export function createHypiHubAuth(options: {
       throw new Error("HypiHub OAuth credential is read-only; run hypit auth login with a writable Credential Store");
     }
     refreshing = (async () => {
-      const deadline = requestDeadline(options.requestTimeoutMs, () => new EndpointTransportError("HypiHub OAuth refresh timed out"));
-      try {
-        const response = await transport(deadline.wait(options.fetch(tokenEndpoint, {
+      return await withRequestDeadline(options.requestTimeoutMs, async ({ signal, wait }) => {
+        const response = await wait(options.fetch(tokenEndpoint, {
           method: "POST",
           headers: { "content-type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
@@ -77,15 +78,15 @@ export function createHypiHubAuth(options: {
             refresh_token: refreshToken!,
             client_id: OAUTH_CLIENT_ID,
           }),
-          signal: deadline.signal,
-        })));
-        const text = await transport(deadline.wait(response.text()));
+          signal,
+        }));
+        const text = await wait(response.text());
         if (!response.ok) throw new HypiHubHttpError(response.status, response, text, {
           method: "POST", url: tokenEndpoint,
         });
         let body: OAuthTokenResponse;
         try { body = JSON.parse(text) as OAuthTokenResponse; }
-        catch { throw new Error(`HypiHub OAuth refresh returned invalid JSON (${response.status})`); }
+        catch { throw new EndpointResponseError(`HypiHub OAuth refresh returned invalid JSON (${response.status})`); }
         assert(typeof body.access_token === "string" && body.access_token.length > 0,
           "HypiHub OAuth refresh returned no access token");
         accessToken = body.access_token;
@@ -102,9 +103,7 @@ export function createHypiHubAuth(options: {
           ...(expiresAt === undefined ? {} : { expiresAt }),
         });
         return accessToken;
-      } finally {
-        deadline.finish();
-      }
+      }, () => new EndpointTransportError("HypiHub OAuth refresh timed out", { timeout: true }));
     })();
     try { return await refreshing; }
     finally { refreshing = undefined; }

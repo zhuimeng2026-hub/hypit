@@ -2,7 +2,7 @@ import {
   createRuntimeCredentialStoreAdapterFacet,
   runtimeConfigExact,
   runtimeConfigObject,
-} from "@hypit/runtime-kit";
+} from "@hypit/runtime-local/extension";
 
 import { EnvironmentCredentialStore } from "./index.js";
 
@@ -18,8 +18,8 @@ const environmentCredentialStoreAdapter = createRuntimeCredentialStoreAdapterFac
 });
 
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
-  hostFacets: [environmentCredentialStoreAdapter],
+  format: "hypit.package@1" as const,
+  facets: [environmentCredentialStoreAdapter],
 };
 
 export default hypitPackage;

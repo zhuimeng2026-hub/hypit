@@ -1,5 +1,5 @@
 import { compositionTypes } from "@hypit/hypit/composition";
-import { textLayer, temporalLineageFor } from "@hypit/hypit/studio-adapter";
+import { textLayer, temporalLineageFor } from "@hypit/studio-companion";
 const fields = {
   PosterTitle: [
     ["text", "Title", "text"],

@@ -1,10 +1,12 @@
 import { narrativeManifest } from "@hypit/narrative";
-import type { Narrative, NarrativeExcerpt } from "@hypit/narrative";
+import { captionManifest } from "@hypit/caption";
+import { narrativeCaptionManifest } from "@hypit/narrative-caption";
+import type { Narrative, NarrativeSegmentRef } from "@hypit/narrative";
 import { textManifest } from "@hypit/text";
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createResolvedClosure } from "@hypit/core";
+import { createResolvedClosure } from "@hypit/kernel";
 import type { ModuleManifest } from "@hypit/protocol";
 import {
   decodeScriptSurface,
@@ -22,7 +24,7 @@ import {
 } from "@hypit/markup";
 
 function scriptContext() {
-  const closure = createResolvedClosure([narrativeManifest, textManifest, scriptManifest]);
+  const closure = createResolvedClosure([captionManifest, narrativeManifest, narrativeCaptionManifest, textManifest, scriptManifest]);
   const registry = new MarkupSurfaceRegistry();
   registry.registerRaw({
     module: scriptModuleRef,
@@ -62,17 +64,23 @@ test("Script teaches Markup <script> only through its imported Manifest", async 
     scriptContext(),
   );
 
-  assert.equal(result.records.length, 5);
+  assert.equal(result.records.length, 6);
   assert.equal(result.records[0]?.id, "story");
   assert.equal(result.records[0]?.type.name, "Narrative");
   assert.equal(result.records.some((record) =>
-    record.id === "story.segment.opening" && record.type.name === "NarrativeExcerpt"), true);
+    record.id === "story.segment.opening" && record.type.name === "NarrativeSegmentRef"), true);
   assert.equal(result.records.some((record) =>
     record.id === "story.segment.opening.dialogue" && record.type.name === "Text"), true);
   assert.equal(result.records.some((record) =>
     record.id === "story.segment.opening.speech" && record.type.name === "Text"), true);
   assert.equal(result.records.some((record) =>
     record.id === "story.caption" && record.type.name === "CaptionDocument"), true);
+  const captionBinding = result.records.find((record) => record.id === "story.caption-binding");
+  assert.equal(captionBinding?.type.name, "NarrativeCaptionBinding");
+  assert.equal(captionBinding?.value.kind, "inline");
+  if (captionBinding?.value.kind === "inline") {
+    assert.equal((captionBinding.value.value as { readonly id?: string }).id, "story.caption-binding");
+  }
   assert.deepEqual(result.identities, [{ namespace: narrativeType, id: "story" }]);
 });
 
@@ -87,7 +95,7 @@ test("without the import, Markup has no hard-coded knowledge of Script", async (
 });
 
 test("a raw Surface cannot consume the Markup document close", async () => {
-  const closure = createResolvedClosure([narrativeManifest, textManifest, scriptManifest]);
+  const closure = createResolvedClosure([captionManifest, narrativeManifest, narrativeCaptionManifest, textManifest, scriptManifest]);
   const registry = new MarkupSurfaceRegistry();
   registry.registerRaw({
     module: scriptModuleRef,
@@ -231,6 +239,6 @@ test("a wordless Script publishes its Segment and an empty CaptionDocument", asy
   assert.ok(result.records.some((record) => record.id === "story.segment.empty"));
   assert.deepEqual(result.records.find((record) => record.id === "story.caption")?.value, {
     kind: "inline",
-    value: { narrativeId: "story", id: "story.caption", units: [], words: [], cueBreaks: [] },
+    value: { id: "story.caption", units: [], words: [], cues: [] },
   });
 });

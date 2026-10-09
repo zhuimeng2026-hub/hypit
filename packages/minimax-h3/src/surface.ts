@@ -1,11 +1,11 @@
-import { artifactTypes } from "@hypit/artifact";
-import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
-import type { GenerationMediaPort, GenerationMediaRole, GenerationPortValue } from "@hypit/generation";
-import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames, exactModelTextInputName } from "@hypit/model-kit";
-import type { ExactModelMediaInput } from "@hypit/model-kit";
-import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/markup";
-import type { CanonicalValue, TypeRef } from "@hypit/protocol";
-import { textTypes, verifyText } from "@hypit/text";
+import { blobTypes } from "@hypit/hypit/blob";
+import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationMediaPort, GenerationMediaRole, GenerationPortValue } from "@hypit/hypit/generation";
+import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
+import type { ExactModelMediaInput } from "@hypit/hypit/generation/model";
+import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
+import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { textTypes, verifyText } from "@hypit/hypit/text";
 import { minimaxH3Endpoints } from "./index.js";
 
 type Media = { readonly port: "referenceImage" | "referenceVideo" | "referenceAudio" | "firstFrame" | "lastFrame"; readonly role: GenerationMediaRole; readonly source: SurfaceResolvedReference };
@@ -26,7 +26,7 @@ function ref(element: StructuredElement, name: string, type: TypeRef, resolve: (
   const result = resolve(value.path); assert(result !== undefined && sameType(result.type, type), `${element.name}.${name} has the wrong type`); return result;
 }
 function mediaRef(element: StructuredElement, name: string, role: GenerationMediaRole, resolve: (path: string) => SurfaceResolvedReference | undefined): SurfaceResolvedReference {
-  const result = ref(element, name, artifactTypes.blob, resolve);
+  const result = ref(element, name, blobTypes.blob, resolve);
   if (result.record !== undefined) assert(result.record.value.kind === "blob" && result.record.value.mediaType.startsWith(`${role}/`), `${element.name}.${name} must be ${role} media`);
   return result;
 }

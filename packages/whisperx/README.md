@@ -1,63 +1,63 @@
-# @hypit/whisperx
+# `@hypit/whisperx`
 
-Explicit WhisperX model-family capability for the official speech program. Importing this package
-selects WhisperX; Runtime registration only binds the resulting alignment Need to a concrete
-execution endpoint. The default Hypit Skill path uses the HypiHub-hosted WhisperX endpoint; the
-trusted local worker remains an explicit deployment choice.
+Explicit WhisperX model-family capability for speech alignment. Importing this package selects
+WhisperX; Runtime registration binds the resulting evidence Need to a concrete Endpoint. The package
+contains no credentials, Python environment or queue.
 
-The package contains no credentials, Python environment or queue. Providers translate the typed
-request directly into provider-neutral `AlignedTranscriptEvidence`. There is no vendor-shaped
-Evidence wrapper or pass-through normalization node in the graph.
+The package implementation consumes only public `@hypit/hypit/*` author/domain APIs and can be
+released independently from the Host. Providers that interpret this exact capability may declare a
+normal compatible dependency or peer range on this package; npm/pnpm and the project lockfile own the
+resolved physical version. The logical capability remains `@hypit/whisperx@1`.
 
-`<whisperx:SemanticTake>` is the real-media semantic Surface. It consumes one normalized
-`SynchronizedMedia` and exactly one Script Segment. When that Segment contains Tokens, it also
-requires an explicit lowercase two- or three-letter language code, such as `language="ko"`.
-This package checks the code's form, not a cross-Provider support list. The language is passed directly to
-WhisperX; Script text and audio are not used to choose it implicitly. `@hypit/media-pipeline`
-projects the Take's audio to canonical 16 kHz mono `SpeechEvidenceAudio`; WhisperX sees only those
-bytes. A deterministic local alignment then combines the returned evidence with the Segment and
-emits one self-contained `SemanticTake`.
+The official Distribution currently obtains this package as a default npm dependency because its CLI
+and default HypiHub Provider use the capability contract. Its source is not embedded in the root
+tarball, and its npm version can advance independently.
 
-For Chinese speech, select `zh` (also `hypit transcribe --language zh` for a reference). WhisperX's
-Chinese alignment emits character-sized words, including letters inside some Latin names. The
-evidence adapter preserves those windows; the local alignment maps them onto Script's units, so
-a complete Latin name can consume several evidence words while neighboring Han characters retain
-their own times. Caption gets its displayed wording and Cue breaks from Script, independently of
-the recognizer's punctuation or simplified/traditional spelling.
+The package also owns `@hypit/whisperx/cli` and therefore `hypit transcribe`. That command projects an
+explicit audio or video file to canonical evidence audio through `@hypit/media-local`, invokes the
+selected WhisperX alignment Endpoint, and writes an ordinary `hypit.transcript@1` file. It is an
+immediate authoring operation: it creates no Author Graph, Build or Result, and its transcript stays
+on the input file's local clock.
 
-When the authored Segment has no Tokens, write the same Surface without `language`. Its start and
-end Anchors map directly to the prepared media's first and final frame. There are no words to align,
-so this branch requests no evidence audio and no WhisperX capability:
-
-```svml
-<whisperx:SemanticTake id="pause" narrative={story}
-  segment={story.segment.pause} media={pause-media.media}/>
+```bash
+hypit transcribe reference.mp4 --language en --to notes/reference.transcript.json
 ```
 
-There is no whole-program WhisperX pass. Timeline assembly only receives already-semantic Takes and later
-translates their local frames when assembling the final ProgramSpace and complete semantic map.
+The reusable transcript document and phrase-range operations belong to `@hypit/speech-evidence`.
+WhisperX owns only how evidence is obtained through this model family; media decoding remains with
+the local-media executor.
 
-`@hypit/provider-hypihub` is the default concrete adapter; it uploads the canonical evidence audio
-and requests verbose JSON with segment- and word-level timestamps. `@hypit/provider-whisperx-local`
-remains available as an explicit local deployment.
-
-
-## Language selection and local preparation
+`<whisperx:Alignment>` consumes one normalized `SynchronizedMedia`, its `LocalTemporalDomain`, one
+authored Script Segment and the owning Narrative. For a Segment containing Tokens it also requires an
+explicit lowercase two- or three-letter language code. The provider receives canonical evidence audio
+tagged with the selected local domain identity and returns provider-neutral
+`AlignedTranscriptEvidence` preserving that identity and exact sample span. The ordinary dependency
+`@hypit/narrative-speech-alignment` then performs the deterministic authored-Narrative mapping and
+publishes one `NarrativeAlignment`:
 
 ```svml
-<whisperx:SemanticTake id="opening" narrative={story}
-  segment={story.segment.opening} media={opening-media.media} language="ko"/>
+<whisperx:Alignment id="opening" narrative={story}
+  segment={story.segment.opening}
+  media={opening-media.media} domain={opening-media.domain}
+  language="ko"/>
 ```
 
-The selected service owns which languages it can align. The local service uses its pinned WhisperX
-version's default language-to-alignment-model mapping: the author does not choose weight URLs in
-SVML. ASR size and hardware are separate deployment choices (`expectedModel`, `expectedDevice`,
-`expectedCompute`). A multilingual ASR such as `small` can serve Korean; an English-only `.en`
-model cannot and is rejected explicitly. Unknown alignment languages fail in the service without
-switching language, model family or Provider. Locale aliases such as `zh-CN`, language names and
-`auto` are not interpreted by this Surface; use the service's explicit code.
+The result is `opening.alignment`. It contains semantic timing on the media-local domain, not media,
+not a Timeline and not presentation policy. `@hypit/narrative-temporal` Projection explicitly combines
+one or more `NarrativeAlignment + LocalTemporalDomain + equal-length Window` relations for a chosen
+Timeline and publishes ordinary absolute values.
 
-For local execution, merge this into the existing Runtime Profile:
+When the Segment has no Tokens, omit `language`. Its start and end map directly to the local domain's
+first and final frame, no evidence audio or WhisperX capability is requested, and the same
+`NarrativeAlignment` type is published.
+
+For Chinese speech use `zh`. WhisperX may emit character-sized evidence units; local alignment maps
+them to Script's authored units while Caption continues to use Script's display wording and authored Cue boundaries.
+The package validates only the language-code form; the selected Endpoint owns actual language support.
+
+## Local deployment
+
+`@hypit/provider-hypihub` is the normal hosted adapter. A local deployment may bind the same Need:
 
 ```json
 {
@@ -73,22 +73,12 @@ For local execution, merge this into the existing Runtime Profile:
 }
 ```
 
-`alignmentLanguages` declares resources to prepare on this machine. Each SVML `language` states
-what that particular Take uses; the preparation list never supplies an implicit author language.
-
 ```bash
 hypit programs prepare --runtime hypit.runtime.json --endpoint whisperx.local
 hypit runtime up --runtime hypit.runtime.json --endpoint whisperx.local
 hypit build video.svrun --runtime hypit.runtime.json --follow
 ```
 
-The Run references the authored SVML. Preparation downloads missing resources without starting the
-service; `runtime up` prepares if needed and starts the helper and Worker. Build only uses prepared
-resources. Adding a language to the same cache requires preparation, not a service restart.
-See the [local Provider README](../provider-whisperx-local/README.md) for cache and hardware choices.
-Other Endpoints needed by the Run must also be prepared and available.
-
-For reference analysis rather than an authored SemanticTake, use the same language code with
-`hypit transcribe source.mp4 --language ko --to transcript.json --runtime hypit.runtime.json`.
-Hosted execution uses the selected hosted deployment's models and preparation; the local
-`alignmentLanguages` option does not configure a remote service.
+The Provider README owns model cache and hardware choices. For reference analysis rather than an
+authored alignment, use `hypit transcribe source.mp4 --language ko --to transcript.json` with the
+selected Runtime.

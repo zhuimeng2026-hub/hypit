@@ -1,9 +1,9 @@
-import type { Timeline } from "@hypit/timeline";
-import { assertProgramSpaceIdentity } from "@hypit/program-space";
-import { assertCanvasSpace } from "@hypit/spatial";
-import type { CanvasSpace } from "@hypit/spatial";
-import { assertAudioTrackIdentity, assertCompositionIdentity, assertVisualTrackIdentity, sealComposition } from "@hypit/composition";
-import type { AudioTrack, Composition, Track, VisualTrack } from "@hypit/composition";
+import { assertAudioTrackIdentity, assertCompositionIdentity, assertVisualTrackIdentity, sealComposition } from "@hypit/hypit/composition";
+import type { AudioTrack, Composition, Track, VisualTrack } from "@hypit/hypit/composition";
+import { assertCanvas } from "@hypit/hypit/spatial";
+import type { Canvas } from "@hypit/hypit/spatial";
+import { assertTimelineIdentity } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/hypit/timeline";
 
 import type { FilmProgram, FilmTrackSet } from "./types.js";
 
@@ -64,11 +64,11 @@ export function createFilmTrackSet(): FilmTrackSet {
   });
 }
 
-function appendTrack(set: FilmTrackSet, programSpace: Timeline, track: Track): FilmTrackSet {
+function appendTrack(set: FilmTrackSet, timeline: Timeline, track: Track): FilmTrackSet {
   assertFilmTrackSetIdentity(set);
-  assertProgramSpaceIdentity(programSpace);
-  if (track.kind === "visual") assertVisualTrackIdentity(track, programSpace);
-  else assertAudioTrackIdentity(track, programSpace);
+  assertTimelineIdentity(timeline);
+  if (track.kind === "visual") assertVisualTrackIdentity(track, timeline);
+  else assertAudioTrackIdentity(track, timeline);
   if (set.tracks.some((existing) => existing.id === track.id)) {
     throw new Error(`FilmTrackSet already contains Track id ${track.id}.`);
   }
@@ -78,23 +78,23 @@ function appendTrack(set: FilmTrackSet, programSpace: Timeline, track: Track): F
   });
 }
 
-export function appendFilmVisualTrack(set: FilmTrackSet, programSpace: Timeline, track: VisualTrack): FilmTrackSet {
-  return appendTrack(set, programSpace, track);
+export function appendFilmVisualTrack(set: FilmTrackSet, timeline: Timeline, track: VisualTrack): FilmTrackSet {
+  return appendTrack(set, timeline, track);
 }
 
-export function appendFilmAudioTrack(set: FilmTrackSet, programSpace: Timeline, track: AudioTrack): FilmTrackSet {
-  return appendTrack(set, programSpace, track);
+export function appendFilmAudioTrack(set: FilmTrackSet, timeline: Timeline, track: AudioTrack): FilmTrackSet {
+  return appendTrack(set, timeline, track);
 }
 
 export function compileFilmComposition(
   program: FilmProgram,
-  canvas: CanvasSpace,
-  programSpace: Timeline,
+  canvas: Canvas,
+  timeline: Timeline,
   set: FilmTrackSet,
 ): Composition {
   assertFilmProgramIdentity(program);
-  assertCanvasSpace(canvas);
-  assertProgramSpaceIdentity(programSpace);
+  assertCanvas(canvas);
+  assertTimelineIdentity(timeline);
   assertFilmTrackSetIdentity(set);
   const composition = sealComposition({
     id: program.id,
@@ -105,6 +105,6 @@ export function compileFilmComposition(
     },
     tracks: set.tracks,
   });
-  assertCompositionIdentity(composition, programSpace);
+  assertCompositionIdentity(composition, timeline);
   return composition;
 }

@@ -2,28 +2,26 @@ import { installPortraitTransition } from "./portrait-transition.js";
 import { installPortraitInset } from "./portrait-inset.js";
 import { installReframe } from "./reframe.js";
 import { installPullback } from "./pullback.js";
-import {
-  assertAttributes,
-  assertEmptyElement,
-  canonicalize,
-  createMarkupSurfaceHostFacet,
-  sameType,
-  sealGraphFragment,
-  textAttribute,
-} from "@hypit/hypit/author-kit";
+import { installPresenter } from "./presenter.js";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { assertAttributes, assertEmptyElement, createMarkupSurfaceFacet, textAttribute } from "@hypit/hypit/markup";
+import { canonicalize, sameType } from "@hypit/hypit/protocol";
+import { sealGraphFragment } from "@hypit/hypit/author";
 import { compositionTypes } from "@hypit/hypit/composition";
 import { mediaTypes } from "@hypit/hypit/media";
 import { timelineTypes } from "@hypit/hypit/timeline";
 import { spatialTypes } from "@hypit/hypit/spatial";
 import { temporalTypes } from "@hypit/hypit/temporal";
+import { visualTrackModuleRef } from "@hypit/visual-track";
 import {
-  createTemporalWindowProjection,
-  createTemporalInstantProjection,
+  resolveTemporalWindowReference,
+  resolveTemporalInstantReference,
   resolveTemporalContext,
   temporalWindowAttributeNames,
   temporalWindowAttributeVocabulary,
   temporalContextAttributeVocabulary,
-} from "@hypit/hypit/temporal-markup";
+} from "@hypit/hypit/temporal/markup";
 import { renderTitle, renderTimer, renderFlag, renderStage, renderVeil } from "./render.js";
 import { module, defaults } from "./definition.js";
 import { studioFacet } from "./studio.js";
@@ -33,8 +31,8 @@ const optionsType = type("Options"),
 const producer = (name) => ({ module, name });
 const port = (name, type) => ({ name, type });
 const common = [
-  port("timeline", timelineTypes.track),
-  port("canvas", spatialTypes.canvas),
+  port("timeline", timelineTypes.timeline),
+  port("within", spatialTypes.frame),
   port("window", temporalTypes.window),
   port("options", optionsType),
 ];
@@ -48,9 +46,11 @@ export const manifest = {
         mediaTypes.fontArtifact,
         mediaTypes.synchronized,
         mediaTypes.blobArtifact,
-        timelineTypes.track,
-        spatialTypes.canvas,
+        timelineTypes.timeline,
+        spatialTypes.frame,
         temporalTypes.window,
+        temporalTypes.duration, temporalTypes.extent, temporalTypes.shiftSpec,
+        { module: visualTrackModuleRef, name: "VisualTrackProgram" },
       ].map((t) => [t.module.name, { module: t.module }]),
     ).values(),
   ],
@@ -118,7 +118,7 @@ const val = (v) => ({ kind: "inline", value: canonicalize(v) });
 const output = (name, v) => ({ outputs: { [name]: val(v) }, needs: {} });
 const component = {
   producers: [
-    { producer: producer("flag"), handler: ({inputs: i}) => output("track", renderFlag(inline(i.timeline), inline(i.canvas), inline(i.window), inline(i.options), i.logo.value)) },
+    { producer: producer("flag"), handler: ({inputs: i}) => output("track", renderFlag(inline(i.timeline), inline(i.within), inline(i.window), inline(i.options), i.logo.value)) },
     ...[
       ["title", renderTitle],
       ["timer", renderTimer],
@@ -129,7 +129,7 @@ const component = {
           "track",
           fn(
             inline(i.timeline),
-            inline(i.canvas),
+            inline(i.within),
             inline(i.window),
             inline(i.font),
             inline(i.options),
@@ -145,7 +145,7 @@ const component = {
           "track",
           renderVeil(
             inline(i.timeline),
-            inline(i.canvas),
+            inline(i.within),
             inline(i.window),
             inline(i.options),
           ),
@@ -172,7 +172,7 @@ const component = {
           "track",
           renderStage(
             inline(i.timeline),
-            inline(i.canvas),
+            inline(i.within),
             inline(i.window),
             inline(i.items),
             inline(i.options),
@@ -188,7 +188,7 @@ function decode(kind) {
     assertAttributes(element, [
       "id",
       "timeline",
-      "canvas",
+      "within",
       ...(kind === "Title" ? ["bounce-at"] : []),
       ...(kind === "Timer" ? ["stop-at"] : []),
       ...(["Title", "Timer"].includes(kind) ? ["font"] : []),
@@ -198,13 +198,7 @@ function decode(kind) {
     ]);
     const id = textAttribute(element, "id"),
       context = resolveTemporalContext({ element, resolveReference });
-    const win = createTemporalWindowProjection({
-      id: id + ".window",
-      subjectId: id,
-      element,
-      ...context,
-      resolveReference,
-    });
+    const win = resolveTemporalWindowReference({ element, resolveReference });
     const ref = (el, name, t) => {
       const raw = el.attributes[name];
       if (typeof raw !== "object" || raw.kind !== "reference")
@@ -262,35 +256,26 @@ function decode(kind) {
         "Veil needs mesh/dots/hatch, positive cell size, opacity from zero to one, and a nonnegative fade frame count",
       );
     const records = [
-        ...win.records,
         {
           id: id + ".options",
           type: optionsType,
           value: val(o),
           range: element.range,
         },
-      ],
-      components = [...win.components],
-      fragments = [...win.fragments];
+      ];
     const inputs = [...common],
       bindings = {
         timeline: context.timeline.ref,
-        canvas: ref(element, "canvas", spatialTypes.canvas),
+        within: ref(element, "within", spatialTypes.frame),
         window: win.ref,
         options: { kind: "record", id: id + ".options" },
       };
     if (kind === "Title") {
-      const bounce = createTemporalInstantProjection({
-        id: id + ".bounce", subjectId: id + ".bounce",
-        element: { ...element, attributes: { at: element.attributes["bounce-at"] ?? "program.start" } },
-        ...context, resolveReference,
-      });
-      records.push(...bounce.records); components.push(...bounce.components); fragments.push(...bounce.fragments);
+      const bounce = resolveTemporalInstantReference({ element, resolveReference, attribute: "bounce-at" });
       inputs.push(port("bounce", temporalTypes.instant)); bindings.bounce = bounce.ref;
     }
     if (kind === "Timer") {
-      const stop = createTemporalInstantProjection({id:id+".stop",subjectId:id+".stop",element:{...element,attributes:{at:element.attributes["stop-at"]??"program.end"}},...context,resolveReference});
-      records.push(...stop.records);components.push(...stop.components);fragments.push(...stop.fragments);
+      const stop = resolveTemporalInstantReference({ element, resolveReference, attribute: "stop-at" });
       inputs.push(port("stop",temporalTypes.instant));bindings.stop=stop.ref;
     }
     const input = (name) => ({ kind: "fragment-input", name }),
@@ -324,16 +309,7 @@ function decode(kind) {
           isImage = child.attributes.image !== undefined;
         if (isImage === (child.attributes.video !== undefined))
           throw Error("Item needs exactly one image or normalized video");
-        const iw = createTemporalWindowProjection({
-          id: `${id}.${cid}.window`,
-          subjectId: cid,
-          element: child,
-          ...context,
-          resolveReference,
-        });
-        records.push(...iw.records);
-        components.push(...iw.components);
-        fragments.push(...iw.fragments);
+        const iw = resolveTemporalWindowReference({ element: child, resolveReference });
         const key = "item" + ++n,
           optsId = id + "." + key,
           sourceStart = Number(child.attributes["source-start-frame"] ?? 0);
@@ -406,7 +382,7 @@ function decode(kind) {
       operations,
       exports: [
         {
-          name: "track",
+          name: "visual",
           type: compositionTypes.visualTrack,
           root: operation("render"),
         },
@@ -414,18 +390,17 @@ function decode(kind) {
     });
     return {
       records,
-      fragments: [...fragments, fragment],
+      fragments: [fragment],
       components: [
-        ...components,
         {
           id,
           fragment: fragment.id,
           inputs: bindings,
-          outputs: { track: id + ".track" },
+          outputs: { visual: id + ".visual" },
           range: element.range,
         },
       ],
-      exports: [id + ".track"],
+      exports: [id + ".visual"],
     };
   };
 }
@@ -437,11 +412,6 @@ const declarations = Object.keys(defaults).map((tag) => ({
     optionsType,
     itemsType,
     compositionTypes.visualTrack,
-    timelineTypes.track,
-    temporalTypes.window,
-    temporalTypes.instant,
-    temporalTypes.windowSpec,
-    temporalTypes.instantSpec,
   ],
   vocabulary: {
     summary: {
@@ -455,13 +425,13 @@ const declarations = Object.keys(defaults).map((tag) => ({
         "Clear foreground media with the same moving picture enlarged, blurred and dimmed behind it.",
     }[tag],
     attributes: [
-      ...(tag === "Title" ? [{ name: "bounce-at", kind: "expression", required: false, summary: "Moment or time when the title jumps." }] : []),
-      ...(tag === "Timer" ? [{name:"stop-at",kind:"expression",required:false,summary:"Freeze the overtime display and flash on this instant."}] : []),
+      ...(tag === "Title" ? [{ name: "bounce-at", kind: "reference", required: true, accepts: [temporalTypes.instant], summary: "Resolved Instant when the title jumps." }] : []),
+      ...(tag === "Timer" ? [{name:"stop-at",kind:"reference",required:true,accepts:[temporalTypes.instant],summary:"Resolved Instant that freezes the overtime display and flashes."}] : []),
       ...temporalContextAttributeVocabulary,
       ...temporalWindowAttributeVocabulary,
       ...[
         "id",
-        "canvas",
+        "within",
         ...(["Title", "Timer"].includes(tag) ? ["font"] : []),
         ...(["Timer", "Flag"].includes(tag) ? ["logo"] : []),
       ].map((name) => ({
@@ -517,7 +487,7 @@ const declarations = Object.keys(defaults).map((tag) => ({
         : [],
     ports: [
       {
-        name: "track",
+        name: "visual",
         type: compositionTypes.visualTrack,
         summary: "Visual contribution, explicitly connected to Film",
       },
@@ -529,13 +499,15 @@ const fadeOut = installPullback(module, manifest, component, optionsType, "fade-
 const reframe = installReframe(module, manifest, component);
 const portraitTransition = installPortraitTransition(module, manifest, component);
 const portraitInset = installPortraitInset(module, manifest, component);
+const presenter = installPresenter(module, manifest, component);
 export const hypitPackage = {
-  format: "hypit.node-package@1",
+  format: "hypit.package@1",
   modules: [{ manifest }],
-  components: [component],
-  hostFacets: [
+  facets: [
+    createProducerPackageFacet(component),
+    createAdmissionPackageFacet(component),
     ...declarations.map((declaration) =>
-      createMarkupSurfaceHostFacet({
+      createMarkupSurfaceFacet({
         module,
         declaration,
         handler: decode(declaration.tag),
@@ -546,6 +518,8 @@ export const hypitPackage = {
     reframe,
     portraitTransition,
     portraitInset,
+    presenter.styleFacet,
+    presenter.presenterFacet,
     studioFacet,
   ],
 };

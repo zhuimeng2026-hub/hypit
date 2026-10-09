@@ -1,37 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { canonicalize } from "@hypit/protocol";
-import {
-  assertCaptionProgramForDocument,
-  captionUnitsForRole,
-  captionUnitsForSelection,
-  sealCaptionStyle,
-} from "@hypit/caption";
-import { captionDocument, narrativeValue, parseScript } from "@hypit/script";
-import type { Narrative } from "@hypit/narrative";
+import { assertCaptionDocumentIdentity, captionUnitsForRole } from "@hypit/caption";
+import type { CaptionDocument } from "@hypit/caption";
 
-test("Caption uses complete semantic selections and authored cue breaks", () => {
-  const parsed = parseScript("caption.svml", "<line>one @{focus} two three @{/focus} || four</line>");
-  const narrative = narrativeValue(parsed, "story") as unknown as Narrative;
-  const document = captionDocument(parsed, "story.caption", "story");
-  const selection = narrative.selections[0]!;
-  const subset = captionUnitsForSelection(narrative, selection);
-  assert.equal(subset.unitIds.length, 2);
-  assert.equal(document.cueBreaks.length, 1);
-});
+const document: CaptionDocument = {
+  id: "captions",
+  words: [
+    { id: "word-a", unitId: "unit-a", text: "Shown", separatorBefore: "", attributes: [] },
+    { id: "word-b", unitId: "unit-a", text: "words", separatorBefore: " ", attributes: [] },
+    { id: "word-c", unitId: "unit-b", text: "Next", separatorBefore: " ", attributes: [] },
+  ],
+  units: [
+    { id: "unit-a", wordIds: ["word-a", "word-b"] },
+    { id: "unit-b", wordIds: ["word-c"] },
+  ],
+  cues: [
+    { id: "cue-a", unitIds: ["unit-a"], role: "HOST" },
+    { id: "cue-b", unitIds: ["unit-b"], role: "GUEST" },
+  ],
+};
 
-test("Caption selects complete Segments and the program through structural anchors", () => {
-  const parsed = parseScript("caption-ranges.svml", `@{~whole}
-@{opening} <intro><HOST>One idea.</intro> @{/opening}
-<answer><GUEST>Another view.</answer>
-@{/whole~}`);
-  const narrative = narrativeValue(parsed, "story") as unknown as Narrative;
-  const document = captionDocument(parsed, "story.caption", "story");
-  const whole = narrative.selections.find((selection) => selection.id === "whole")!;
-  const opening = narrative.selections.find((selection) => selection.id === "opening")!;
-  assert.deepEqual(captionUnitsForSelection(narrative, whole).unitIds,
-    document.units.map((unit) => unit.id));
-  assert.deepEqual(captionUnitsForSelection(narrative, opening).unitIds,
-    document.units.filter((unit) => unit.segmentId === "intro").map((unit) => unit.id));
+test("CaptionDocument partitions Words into Units and Units into authored Cues", () => {
+  assert.doesNotThrow(() => assertCaptionDocumentIdentity(document));
+  assert.deepEqual(captionUnitsForRole(document, "HOST"), {
+    documentId: document.id,
+    unitIds: ["unit-a"],
+  });
+  assert.throws(() => assertCaptionDocumentIdentity({
+    ...document,
+    cues: [{ id: "cue", unitIds: ["unit-b", "unit-a"] }],
+  }), /Cues must partition units in order/u);
 });

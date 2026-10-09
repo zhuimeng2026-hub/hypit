@@ -1,5 +1,7 @@
 import { ScriptSyntaxError } from "./error.js";
 import {
+  captionDocumentValue,
+  narrativeCaptionBinding,
   narrativeDialogueTextValue,
   narrativeSegmentExcerptValue,
   narrativeMomentValue,
@@ -9,12 +11,14 @@ import {
 } from "./narrative.js";
 import {
   captionDocumentType,
-  narrativeExcerptType,
+  narrativeCaptionBindingType,
+  narrativeSegmentRefType,
   narrativeMomentType,
   narrativeSelectionType,
   narrativeType,
 } from "./manifest.js";
-import { textTypes } from "@hypit/text";
+import { canonicalize } from "@hypit/hypit/protocol";
+import { textTypes } from "@hypit/hypit/text";
 import { parseScript } from "./parser.js";
 import type { ScriptSurfaceInput, ScriptSurfaceOutput } from "./types.js";
 
@@ -75,7 +79,13 @@ export function decodeScriptSurface(input: ScriptSurfaceInput): ScriptSurfaceOut
     input.contentStart,
   );
   const narrative = narrativeValue(parsed, rawId);
-  const caption = (narrative as { readonly caption: import("@hypit/protocol").CanonicalValue }).caption;
+  const caption = captionDocumentValue(parsed, `${rawId}.caption`, rawId);
+  const captionBinding = canonicalize(narrativeCaptionBinding(
+    parsed,
+    `${rawId}.caption`,
+    rawId,
+    `${rawId}.caption-binding`,
+  ));
   const captionId = `${rawId}.caption`;
   return {
     nextOffset: close.end,
@@ -88,7 +98,7 @@ export function decodeScriptSurface(input: ScriptSurfaceInput): ScriptSurfaceOut
       },
       ...parsed.segments.map((segment) => ({
         id: `${rawId}.segment.${segment.id}`,
-        type: narrativeExcerptType,
+        type: narrativeSegmentRefType,
         value: { kind: "inline" as const, value: narrativeSegmentExcerptValue(parsed, segment, rawId) },
         range: segment.range,
       })),
@@ -110,6 +120,12 @@ export function decodeScriptSurface(input: ScriptSurfaceInput): ScriptSurfaceOut
         id: captionId,
         type: captionDocumentType,
         value: { kind: "inline" as const, value: caption },
+        range: { start: input.openingStart, end: close.end },
+      },
+      {
+        id: `${rawId}.caption-binding`,
+        type: narrativeCaptionBindingType,
+        value: { kind: "inline" as const, value: captionBinding },
         range: { start: input.openingStart, end: close.end },
       },
       ...parsed.selections.map((selection) => ({

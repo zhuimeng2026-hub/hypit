@@ -1,16 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { adjustScriptSelection, captionDocument, parseScript, serializeCaption, serializeSpeech } from "@hypit/script";
+import { adjustScriptSelection, captionDocument, narrativeCaptionBinding, parseScript, serializeCaption, serializeSpeech } from "@hypit/script";
 
 function displayed(body: string) {
   const parsed = parseScript("display", `<line>${body}</line>`);
   const document = captionDocument(parsed, "caption", "story");
-  return { parsed, document, text: document.words.map(word => word.separatorBefore + word.text).join("") };
+  const binding = narrativeCaptionBinding(parsed, "caption", "story");
+  return { parsed, document, binding, text: document.words.map(word => word.separatorBefore + word.text).join("") };
 }
 
 for (const text of [
@@ -46,11 +42,11 @@ test("markers, properties and Dual Text boundaries never invent or discard a sep
 });
 
 test("shared groups keep punctuation, properties, internal anchors and speech correspondence", () => {
-  const { parsed, document, text } = displayed("<组@{beat!}件{emphasis}化|>");
+  const { parsed, document, binding, text } = displayed("<组@{beat!}件{emphasis}化|>");
   assert.equal(text, "组件化");
   assert.equal(serializeSpeech(parsed), "组件化");
   assert.equal(document.units.length, 1);
-  assert.equal(document.units[0]!.sourceTokenIds.length, 3);
+  assert.equal(binding.units[0]!.sourceTokenIds.length, 3);
   assert.equal(parsed.moments[0]!.anchorId, parsed.tokens[1]!.startAnchorId);
   assert.deepEqual(document.words[1]!.attributes, [{ name: "emphasis", value: true }]);
 });
@@ -81,20 +77,4 @@ test("moving a Selection inside shared text preserves spelling, properties and u
   assert.equal(serializeCaption(after), serializeCaption(parsed));
   assert.equal(serializeSpeech(after), serializeSpeech(parsed));
   assert.deepEqual(captionDocument(after, "c", "s"), captionDocument(parsed, "c", "s"));
-});
-
-test("explicit migration changes only Script markers and leaves the original file untouched by default", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "hypit-script-migrate-"));
-  try {
-    const path = join(directory, "film.svml");
-    const source = '<prompt>@image1 stays</prompt>\n<script id="s">@whole<line>是的 @part <3D|>@/part @beat!好</line>@/whole~</script>';
-    const expected = '<prompt>@image1 stays</prompt>\n<script id="s">@{whole}<line>是的 @{part} <3D|>@{/part} @{beat!}好</line>@{/whole~}</script>';
-    await writeFile(path, source);
-    const tool = fileURLToPath(new URL("../bin/migrate-0.2.mjs", import.meta.url));
-    assert.equal(execFileSync(process.execPath, [tool, path], { encoding: "utf8" }), expected);
-    assert.equal(await readFile(path, "utf8"), source);
-    execFileSync(process.execPath, [tool, path, "--write"]);
-    assert.equal(await readFile(path, "utf8"), expected);
-    assert.equal(execFileSync(process.execPath, [tool, path], { encoding: "utf8" }), expected);
-  } finally { await rm(directory, { recursive: true, force: true }); }
 });

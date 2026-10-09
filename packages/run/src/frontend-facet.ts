@@ -1,23 +1,23 @@
 import {
-  createFrontendHostFacet,
-  frontendsFromHostFacets,
-} from "@hypit/host";
+  createFrontendFacet,
+  frontendsFromFacets,
+} from "@hypit/facet";
 import type {
-  FrontendHostFacet,
-  HostFacet,
-} from "@hypit/host";
+  FrontendFacet,
+  Facet,
+} from "@hypit/facet";
 import { sourceFrontendPackageAbi } from "@hypit/source";
 
 import type { RunFrontend } from "./types.js";
 
-export type RunFrontendHostFacet = FrontendHostFacet<"run", RunFrontend> & {
+export type RunFrontendFacet = FrontendFacet<"run", RunFrontend> & {
   readonly abi: typeof sourceFrontendPackageAbi;
 };
 
-export function createRunFrontendHostFacet(frontend: RunFrontend): RunFrontendHostFacet {
-  return createFrontendHostFacet(sourceFrontendPackageAbi, "run", frontend) as RunFrontendHostFacet;
+export function createRunFrontendFacet(frontend: RunFrontend): RunFrontendFacet {
+  return createFrontendFacet(sourceFrontendPackageAbi, "run", frontend) as RunFrontendFacet;
 }
 
-export function runFrontendsFromHostFacets(facets: readonly HostFacet[]): readonly RunFrontend[] {
-  return frontendsFromHostFacets<"run", RunFrontend>(sourceFrontendPackageAbi, "run", facets);
+export function runFrontendsFromFacets(facets: readonly Facet[]): readonly RunFrontend[] {
+  return frontendsFromFacets<"run", RunFrontend>(sourceFrontendPackageAbi, "run", facets);
 }

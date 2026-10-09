@@ -1,9 +1,9 @@
 import type { FontStackRef } from "@hypit/hypit/media";
-import type { SvsRecipe } from "@hypit/hypit/svs";
+import type { Recipe } from "@hypit/hypit/recipe";
 
 /** The two values a Style decoder receives after author references are resolved. */
 export type ExampleStyleInput = {
-  readonly recipe: { readonly path: string; readonly properties: SvsRecipe["properties"] };
+  readonly recipe: { readonly path: string; readonly properties: Recipe["properties"] };
   readonly fonts: FontStackRef;
 };
 

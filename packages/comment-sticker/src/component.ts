@@ -1,9 +1,10 @@
-import type { Timeline } from "@hypit/timeline";
-import type { ComponentPackage, ProducerHandlerContext } from "@hypit/component-kit";
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, StoredValue } from "@hypit/protocol";
-import type { CanvasSpace, SpatialFrame } from "@hypit/spatial";
-import type { Text } from "@hypit/text";
+import type { Timeline } from "@hypit/hypit/timeline";
+import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, StoredValue } from "@hypit/hypit/protocol";
+import type { SpatialFrame } from "@hypit/hypit/spatial";
+import type { Text } from "@hypit/hypit/text";
 
 import { commentStickerProducers, commentStickerTypes } from "./manifest.js";
 import { appendProjectedCommentSticker, assertCommentStickerProgram, createCommentStickerSet, createCommentStickerContent, setCommentStickerContentText, finalizeCommentSticker, renderCommentSticker } from "./program.js";
@@ -15,7 +16,7 @@ import type {
   CommentStickerSet,
   CommentStickerStyle,
 } from "./types.js";
-import type { TemporalWindow } from "@hypit/temporal";
+import type { TemporalWindow } from "@hypit/hypit/temporal";
 
 function inline<T>(value: StoredValue | undefined, label: string): T {
   if (value?.kind !== "inline") throw new Error(`${label} must be inline.`);
@@ -84,7 +85,6 @@ export const commentStickerComponent = {
     {
       producer: commentStickerProducers.render,
       handler: ({ inputs }) => ({ outputs: { track: output(renderCommentSticker(
-        inline<CanvasSpace>(inputs.canvas?.value, "CanvasSpace"),
         inline<Timeline>(inputs.timeline?.value, "Timeline"),
         inline<CommentStickerProgram>(inputs.program?.value, "CommentStickerProgram"),
       )) }, needs: {} }),
@@ -94,4 +94,4 @@ export const commentStickerComponent = {
     type: commentStickerTypes.program,
     handler: ({ value }) => assertCommentStickerProgram(inline<CommentStickerProgram>(value, "CommentStickerProgram")),
   }],
-} satisfies ComponentPackage;
+} satisfies ProducerPackage & AdmissionPackage;

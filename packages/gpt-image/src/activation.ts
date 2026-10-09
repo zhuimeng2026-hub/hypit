@@ -1,4 +1,6 @@
-import { createMarkupSurfaceHostFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 
 import {
   gptImageCleanManifest,
@@ -15,21 +17,21 @@ import {
   decodeGptImageSurface,
 } from "./surface.js";
 export const hypitPackage = {
-  format: "hypit.node-package@1" as const,
+  format: "hypit.package@1" as const,
   modules: [{
     manifest: gptImageManifest,
   }, {
     manifest: gptImageCleanManifest,
   }],
-  components: [gptImageComponent],
-  hostFacets: [
-    gptImageDefinition.hostFacet,
-    createMarkupSurfaceHostFacet({
+  facets: [
+    ...[gptImageComponent].flatMap((component) => [createProducerPackageFacet(component), createAdmissionPackageFacet(component)]),
+    gptImageDefinition.facet,
+    createMarkupSurfaceFacet({
       module: gptImageModuleRef,
     declaration: gptImageMarkupSurfaces.find((item) => item.name === "image")!,
       handler: decodeGptImageSurface,
     }),
-    createMarkupSurfaceHostFacet({
+    createMarkupSurfaceFacet({
       module: gptImageCleanModuleRef,
     declaration: gptImageCleanMarkupSurfaces.find((item) => item.name === "image")!,
       handler: decodeCleanGptImageSurface,
