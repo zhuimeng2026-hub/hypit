@@ -2,23 +2,24 @@
   "format": "hypit.runtime-local@1",
   "dataRoot": ".hypit/runtimes/local",
   "credentials": {
-    "platform": {
-      "use": "@hypit/credential-store-platform"
+    "env": {
+      "use": "@hypit/credential-store-env"
     }
   },
   "endpoints": {
     "media.local": {
-      "use": "@hypit/provider-media-local",
-      "config": { "defaultConcurrency": 2 }
+      "use": "@hypit/media-local",
+      "config": {
+        "defaultConcurrency": 2
+      }
     },
-    "hyperframes.local": {
-      "use": "@hypit/provider-hyperframes-local",
+    "html.local": {
+      "use": "@hypit/provider-html-local",
       "config": {
         "workers": 2,
         "quality": "standard",
         "defaultConcurrency": 1,
-        "browserDownloadBaseUrl": "http://127.0.0.1:8088/",
-        "browserVersion": "152.0.7928.2"
+        "chromePath": "/root/.cache/hypit/html-rasterizer/chrome/chrome-headless-shell/linux-152.0.7928.2/chrome-headless-shell-linux64/chrome-headless-shell"
       }
     },
     "whisperx.local": {

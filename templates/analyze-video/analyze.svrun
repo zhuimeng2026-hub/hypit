@@ -1,0 +1,8 @@
+<?svml using="@hypit/markup/run@1"?>
+
+<svrun version="1">
+  <author source="./analyze.svml"/>
+  <!-- ⚠️ 必须指向 alignment 导出。指向 media 等中间产物会让引擎把对齐整个
+       剪掉：构建照样 complete，但 whisperx.local 一次都不跑。见 make-analyze.py 顶部。 -->
+  <target output="seg-1.alignment"/>
+</svrun>

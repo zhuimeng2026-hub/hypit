@@ -1,0 +1,4 @@
+# 与兄弟 example 一致：.hypit/ 由仓库根 .gitignore 统一忽略
+# 这里只挡本目录的生成物
+out/
+*.mp4

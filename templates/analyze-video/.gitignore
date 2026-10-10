@@ -1,0 +1,5 @@
+.hypit/
+out/
+assets/*.mp3
+assets/*.mp4
+assets/*.wav

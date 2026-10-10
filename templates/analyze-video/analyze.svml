@@ -1,0 +1,41 @@
+<?svml using="@hypit/markup@1"?>
+
+<svml>
+  <import from="@hypit/script@1"/>
+  <import as="asset" from="@hypit/media@1"/>
+  <import as="mediaop" from="@hypit/media-operations@1"/>
+  <import as="whisperx" from="@hypit/whisperx@1"/>
+  <import as="time" from="@hypit/timeline-author@1"/>
+
+  <time:Clock id="clock" frame-rate="30"/>
+
+  <!-- ===== 口播分段 ===== -->
+  <script id="story">
+    <seg-1>Welcome to Guangzhou.</seg-1>
+    <seg-2>Number one: Canton Tower.</seg-2>
+    <seg-3>Six hundred metres of glass and steel rising above the Pearl River.</seg-3>
+  </script>
+
+  <!-- ===== 音频准备 ===== -->
+  <asset:Audio id="narration" src="./assets/sample.mp3"/>
+  <mediaop:Normalize id="narration-media" source={narration}
+    video="none" audio="default" span-authority="audio" clock={clock}/>
+
+  <!-- ===== 词级对齐：每段一个，把该段的词边界落到 narration-media 的时间域 ===== -->
+  <whisperx:Alignment id="seg-1" narrative={story}
+    segment={story.segment.seg-1} media={narration-media.media}
+    domain={narration-media.domain} language="en"/>
+  <whisperx:Alignment id="seg-2" narrative={story}
+    segment={story.segment.seg-2} media={narration-media.media}
+    domain={narration-media.domain} language="en"/>
+  <whisperx:Alignment id="seg-3" narrative={story}
+    segment={story.segment.seg-3} media={narration-media.media}
+    domain={narration-media.domain} language="en"/>
+
+  <!-- ===== 时间轴：按段序排布 ===== -->
+  <time:Timeline id="timeline" clock={clock} end="seg-3.end">
+    <time:Window id="seg-1" from="start" for={narration-media.extent}/>
+    <time:Window id="seg-2" from="seg-1.end" for={narration-media.extent}/>
+    <time:Window id="seg-3" from="seg-2.end" for={narration-media.extent}/>
+  </time:Timeline>
+</svml>
