@@ -5,9 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Overview
 
 `hypit` is the `@hypit/hypit` npm Distribution — an open-source video authoring system for AI coding
-agents (Claude Code, Codex, etc.). It supplies the executable, official components, Provider packages
-and Skills that let an agent turn a reference video or a brief into an editable, re-runnable video
-project (`.svml`/`.svs`/`.svrun` source, rendered via headless Chromium).
+agents (Claude Code, Codex, etc.). It supplies the executable, official components, Model and Provider
+packages and Skills that let an agent turn a reference video or a brief into an editable, re-runnable
+video project (`.svml`/`.svs`/`.svrun` source, rendered via headless Chromium).
 
 Real video projects live **outside** this repo as their own npm/pnpm-managed projects; this checkout
 contains the SDK packages, the `hypit` CLI, official components/models/providers, Python services,
@@ -19,15 +19,16 @@ The Skill is the primary agent entry point. Install it once with:
 npx skills add hypit-ai/hypit -g
 ```
 
-On first use, the agent checks for the `hypit` executable and helps prepare it if needed. The Skill,
-the npm Distribution and a saved video project update independently.
+The Skill, the npm Distribution and a saved video project update independently.
 
 ## Tooling requirements
 
-- Node.js **22.15+** (see `.node-version`: 24.14.1)
+- Node.js **22.15+** (`.node-version` pins 24.14.1)
 - pnpm **10.33** (selected by the root `packageManager` field — enable with `corepack enable`)
 - Python 3.10–3.13 + `uv` only for live local Builds (WhisperX / OpenCV services)
-- ffmpeg/ffprobe and a Chromium downloaded by `hypit runtime up` for local HyperFrames rendering
+- ffmpeg/ffprobe and a Chromium downloaded by `hypit runtime up` for local HTML rendering
+
+Node and pnpm are the only hard requirements; everything else is needed only for live Builds.
 
 ## Common commands
 
@@ -35,228 +36,381 @@ the npm Distribution and a saved video project update independently.
 corepack enable
 pnpm install --frozen-lockfile        # workspace setup (CI command)
 
-pnpm check                            # TypeScript type-check (tsc --noEmit, all packages)
-pnpm test                             # full test suite (Node built-in node:test, not Jest/Vitest)
-pnpm test:runtime-scale               # suites: node test/run.mjs runtime-scale (env HYPIT_RUNTIME_SCALE_TESTS=1)
-pnpm test:image-opencv                # suites: node test/run.mjs image-opencv (env HYPIT_OPENCV_TESTS=1)
-pnpm test:whisperx-service            # Python tests under services/whisperx
+pnpm check                            # tsc --noEmit over the whole workspace
+pnpm test                             # full suite via test/run.mjs (node:test, 120s per-test timeout)
+pnpm hypit -- <args>                  # run the CLI directly
+pnpm studio                           # launch Studio
 
-# Run one test file directly (bypasses the suite gate)
+pnpm test:runtime-scale               # env-gated: HYPIT_RUNTIME_SCALE_TESTS=1
+pnpm test:image-opencv                # env-gated: needs the Provider's uv interpreter
+pnpm test:whisperx-service            # Python unittests under packages/provider-whisperx-local
+
+# One test file, bypassing the suite gate:
 node --import tsx --test packages/<pkg>/test/<file>.test.ts
 
-pnpm pack:distribution                # builds dist/public/**/*.d.ts + writes dist/release/hypit-hypit-<v>.tgz
-pnpm check:distribution               # installs and exercises the packaged tarball outside the checkout
-pnpm build:public-types               # regenerate .d.ts (also runs on prepack)
+# Local browser rendering (Chrome/ffmpeg required):
+HYPIT_BROWSER_TESTS=1 node --import tsx --test packages/provider-html-local/test/provider.test.ts
 
-pnpm docs:dev / docs:build            # VitePress docs site
-pnpm studio                           # launch Studio locally
-pnpm hypit -- <args>                  # run the CLI directly (alias for node bin/hypit.mjs)
+pnpm docs:dev / docs:build            # VitePress site
 ```
 
-Local browser-render tests (Chrome/ffmpeg required):
+**Packaging scripts must be invoked through npm, not pnpm.** They assert
+`process.env.npm_execpath` ends in `npm-cli.js` and fail otherwise:
+
 ```bash
-HYPIT_BROWSER_TESTS=1 node --import tsx --test packages/provider-hyperframes-local/test/provider.test.ts
+npm run pack:distribution            # build dist/public/**/*.d.ts + dist/release/hypit-hypit-<v>.tgz
+npm run pack:release-candidate       # every independent package + the Distribution + release-plan.json
+npm run check:release-candidate      # verify the plan's tarball closure, then check:distribution
+npm run check:distribution <tarball> # install + exercise the tarball outside this checkout
+npm run pack:independent -- packages/<name>
 ```
 
-For a profile that uses local rendering, run `hypit programs up --runtime <profile> --endpoint <render-instance>`
-(or `hypit runtime up --runtime <profile>`) once before the first render to prepare Chrome and start
-the Worker. `hypit doctor --runtime <profile>` diagnoses missing setup without installing anything.
+The nine `npm run check:*-package` scripts (`check:author-packages`, `check:component-packages`,
+`check:hypihub-package`, `check:ranking-package`, `check:runtime-packages`, `check:seedance-package`,
+`check:visual-track-package`, `check:audio-track-package`, `check:fine-packages`) each verify one
+invariant: **an independently versioned package is genuinely installable and consumable outside the
+repo**. They pack the package, `npm install` it into a scratch consumer, and assert on the *installed*
+manifest (`private` removed, `exports` rewritten `.ts`→`.dist/.js`, `hypit.activation` rewritten,
+`devDependencies` stripped, `workspace:`→caret ranges, no `src/*.ts`, `LICENSE` present). **These are
+not wired into CI** — `ci.yml` runs only `pnpm check` and `pnpm test`.
+
+Before the first local render: `hypit runtime up --runtime <profile>` (prepares programs + starts the
+Worker) or `hypit programs up --runtime <profile> --endpoint <render-instance>`. `hypit doctor`
+diagnoses missing setup without installing anything.
+
+## `ls packages/` lies — this is the single biggest trap
+
+Commit `db4e545d` ("refactor: rebuild the domain-neutral language host", 2026-10-07) renamed and
+removed ~30 packages. **The working tree still contains 67 empty directories that hold nothing but a
+stale `node_modules/`**: `core`, `compiler-node`, `compiler-markup-node`, `elaborator`, `validation`,
+`host`, `core`, `artifact`, `file-io-node`, `driver-node`, `author-kit`, `component-kit`, `model-kit`,
+`endpoint-kit`, `runtime-kit`, `build-result*`, `resource-store-*`, `store-sqlite`,
+`workspace-fs-node`, `package-loader-node`, `runtime-host-node`, `hyperframes`, `render-hyperframes`,
+`raster`, `fonts-open`, `transport-aws-lambda`, `studio-adapter`, `video-cli`, `visual-ir`, `speech`,
+`speech-alignment`, `sound`, `performance`, `program-space`, `media-execution`, `media-pipeline`,
+`media-track*`, `deck-track*`, `typography-track*`, `screen-overlay*`, `*-studio`, `semantic-take-adjust`,
+`image-compose`, `image-transform`, `background-removal`, `svs`, `estimate`, `run-markup`.
+
+`ls packages/` shows **152 directories; only 85 are real.** Always confirm with:
+
+```bash
+git ls-tree HEAD --name-only packages/     # authoritative
+git ls-files packages/<name>               # is this package real?
+```
+
+Rename map from that commit (useful when reading older docs, issues or git history):
+
+| Old | New |
+|---|---|
+| `validation` | `admission` |
+| `compiler-node` | `compiler` |
+| `elaborator` | `author` (its `source.ts` folded into `compiler`) |
+| `driver-node` | `executor` |
+| `host` | `facet` (now a zero-dep leaf, was the runtime layer) |
+| `artifact` | `blob` |
+| `file-io-node` | `atomic-file` |
+| `author-kit` / `model-kit` / `endpoint-kit` / `component-kit` | deleted — roles moved into the `@hypit/hypit/*` public subpaths |
+| `run-markup`, `compiler-markup-node` | `@hypit/markup/run` subpath export |
+| `svs` | `recipe` |
+| `media-track` | `visual-track` (`Item` → `Clip`) |
+| `program-space` | merged into `timeline-author` (`program:Clock` → `time:Clock`) |
+| `render-hyperframes` | `html-video` (`render:Video` → `html:Video`) |
+| `hyperframes` | `html-program` |
+| `provider-hyperframes-local` | `provider-html-local` |
+| `build-result*` / `resource-store-*` | `result` / `result/node` |
+| `speech`, `speech-alignment` | `speech-estimate`, `narrative-speech-alignment` |
+| `whisperx:SemanticTake`, `time:Take` | deleted outright (not renamed) |
+
+`docs/guide/renderer-choice.md` is also stale for the same reason — it cites
+`packages/hyperframes/src/document.ts` and `packages/provider-hyperframes-local/src/capture.ts`. The
+same contracts now live at `packages/html-program/src/document.ts:752` and
+`packages/html-program/src/text.ts:1186` / `packages/provider-html-local/src/capture.ts`. The four
+C-category render blockers it describes (the per-seek `waitUntil` barrier, paused-CSS seek-and-cancel,
+the `VisualProgram` escape hatch, source-frame video slot injection) are all still real.
 
 ## Repository layout
 
 ```
 hypit/
-├── bin/hypit.mjs              CLI entrypoint (dispatches to studio / video-cli)
-├── packages/                  ~122 workspace packages (see Architecture below)
-├── services/                  Python services (whisperx, image-opencv, yt-dlp)
-├── examples/                  runnable end-to-end projects + authoring/Provider templates
-├── skills/hypit/              Production-directing Skill for AI agents
-│   ├── SKILL.md
-│   ├── agents/                openai.yaml etc.
-│   └── references/            creation/, environment/, playbooks/, production/
+├── bin/hypit.mjs              CLI entrypoint (tsx register + Distribution resolution + command table)
+├── packages/                  85 real workspace packages (see Architecture)
+├── services/whisperx/         Python service (source of truth for the WhisperX runtime)
+├── examples/                  runnable end-to-end projects + the two canonical package templates
+├── skills/hypit/              Production-directing Skill for AI agents (git-distributed, not npm)
+├── skills/url-to-video/       Narrower URL→video orchestrator Skill that defers to `hypit`
+├── utils/                     LAN mirror stack (Verdaccio, nginx proxies, read-only git mirror)
+├── tools/dub-server/          Video-dubbing pipeline, as MCP + CLI (see CLAUDE.local.md)
 ├── docs/                      VitePress site (English + docs/zh/ Chinese mirror)
-├── test/                      Repository-boundary tests + shared fixtures (not unit tests)
-├── scripts/                   pack-distribution, check-distribution, build-public-types
-├── package.json               root workspace manifest (declares public exports of @hypit/hypit/*)
-├── pnpm-workspace.yaml        globs: packages/*, services/*, examples/*/packages/*
-└── tsconfig.json              strict ES2023/NodeNext workspace type-check
+├── test/                      Shared fixtures + one boundary test + the suite runner
+├── scripts/                   pack-distribution, check-distribution, release-candidate, ownership
+└── pnpm-workspace.yaml        globs: packages/*, services/*, examples/*/packages/*
 ```
+
+`docs/guide/` is the maintained prose documentation and is current where the root CLAUDE.md used to
+be. Read `docs/guide/develop.md`, `packages.md`, `runtime.md`, `conventions.md`, `testing.md`,
+`component-anatomy.md`, `author-packages.md`, `providers.md` rather than re-deriving the model.
+`docs/` and `docs/zh/` are side-by-side twins — a change to one belongs with the change to its
+counterpart, in the same commit.
 
 ### Examples
 
-`examples/*/packages/*/test/**/*.test.ts` is part of the default test suite (`test/run.mjs`), so
-project-package behavior is ordinary authoring. Two examples are canonical starters for new packages:
+`examples/*/packages/*/test/**/*.test.ts` is part of the default suite, because project-package
+behavior is ordinary authoring. Two examples are canonical templates for new packages:
 
-- `examples/minimal-author-package/` — new Author Package template; see `docs/guide/author-packages.md`.
-- `examples/provider-package/` — new Provider template; see `docs/guide/providers.md`.
+- `examples/minimal-author-package/` — new Author component template (see `docs/guide/author-packages.md`)
+- `examples/provider-package/` — new Provider template (see `docs/guide/providers.md`)
 
 The rest (`interview/`, `podcast/`, `ranking-football/`, `complex-explainer/`, `guangzhou-clone/`,
-`guizou-clone/`, `semantic-composition/`) are runnable reference projects with their own `.svml` /
-`.svs` / `.svrun` and `hypit.runtime.json`.
+`guizou-clone/`, `semantic-composition/`, `gz-exbi-en/`) are runnable reference projects with their own
+`.svml`/`.svs`/`.svrun` and `hypit.runtime.json`.
+
+## Source formats
+
+The extensions are unchanged by the refactor: **27 `.svml`, 29 `.svs`, 32 `.svrun`** across `examples/`.
+What changed is the grammar. Every file starts with a self-describing Source Header — the *only*
+bootstrap, parsed by `packages/source/src/header.ts`:
+
+```
+[optional UTF-8 BOM] <?svml using="@hypit/<frontend>@1"?>
+```
+
+There are deliberately **no comments, aliases, interpolation or defaults**, and the Frontend is never
+guessed. Roles:
+
+| File | Frontend | Root element | Role |
+|---|---|---|---|
+| `.svml` | `@hypit/markup@1` | `<svml>` | Author Source: timeline, semantic anchors, placed media, script |
+| `.svs` | `@hypit/recipe@1` | `<sheet version="1">` | Style recipes: `{ path { prop: value } }` blocks |
+| `.svrun` | `@hypit/markup/run@1` | `<svrun version="1">` | Run: targets, candidates, reuse selections, overrides |
+
+A `.svml` imports logical Module addresses (`<import as="time" from="@hypit/timeline-author@1"/>`) and
+references a `.svs` by path (`<import as="style" source="./chat.svs"/>`). See
+`examples/semantic-composition/chat.{svml,svs,svrun}` for a small, current, post-refactor example.
 
 ## Architecture
 
-The Distribution is organized around three owners: **Project** (authored sources, package deps,
-selected Runtime Profile), **Distribution** (the installed executable + public SDKs — this repo),
-and **Runtime Profile** (selected Provider Endpoints, credential refs, bindings). One Build is one
-execution attempt that produces a `BuildResult` in a configured Result repository.
+Three owners: **Project** (authored sources, package deps, selected Runtime Profile), **Distribution**
+(the installed executable + public SDKs — this repo), **Runtime Profile** (selected Provider Endpoints,
+credential refs, bindings). One Build is one execution attempt producing a `BuildResult` in a
+configured Result repository.
 
-### Source formats
+### Package layering
 
-- `.svml` — Source: timeline, semantic anchors (Selections/Moments), placed media, script.
-- `.svs` — Style values: recipes (visual recipes, column recipes, board styles…).
-- `.svrun` — Run: targets, candidates, reuse selections, Endpoint/binding overrides.
+Derived from package manifests; nothing enforces it (there is no layering or circular-dependency test
+in `test/`, and `docs/guide/testing.md` explicitly rejects source-text regex tests as a substitute for
+dependency analysis):
 
-### Package boundaries (what lives in `packages/`)
+```
+L0  protocol · facet · project · atomic-file       (no @hypit deps)
+L1  kernel · source · blob · result · loader       (→ protocol)
+L2  runtime · workspace · endpoint                 (→ kernel/protocol/source)
+L3  author · admission · producer                  (→ kernel/facet/protocol/source)
+L4  run · markup · compiler · executor             (→ L2 + L3)
+L5  cli                                            (→ everything; depends on 14 internal packages)
+```
 
-| Layer | Representative packages | Role |
-|---|---|---|
-| Protocol / core | `protocol`, `core`, `host` | Immutable wire types (`@1` format), runtime-neutral contracts |
-| Compiler / elaborator | `compiler-node`, `compiler-markup-node`, `markup`, `elaborator`, `validation` | Compile `.svml`/`.svrun` into a plan graph |
-| Author SDK | `author-kit`, `composition`, `temporal`, `temporal-markup`, `timeline`, `timeline-author`, `spatial`, `visual-ir`, `caption`, `text`, `sound`, `performance`, `narrative`, `program-space`, `svs` | Public subpaths under `@hypit/hypit/*` consumed by external components |
-| Model + Provider SDK | `model-kit`, `endpoint-kit`, `generation`, `speech`, `media`, `studio-adapter` | Author a Model or Endpoint package |
-| Authoring components | `ranking`, `ranking-studio`, `caption-fine`, `comment-sticker`, `deck-track`, `audio-track`, `media-track`, `typography-track`, `screen-overlay`, `script`, `film`, `interview-emoji-reveal`, `image-compose`, `image-transform`, `semantic-take-adjust`, `run-markup` | Official components, each with a Studio Companion (`*-studio`) |
-| Generation Models | `seedance`, `seedance-kits`, `gpt-image`, `grok-imagine`, `nano-banana`, `pixverse`, `wan`, `seedream`, `minimax-h3`, `volcengine-mating`, `image-transform`, `image-compose`, `background-removal` | Describe generation request shapes |
-| Speech | `speech`, `elevenlabs-speech`, `fishaudio-speech`, `mimo-speech`, `speech-alignment`, `speech-evidence`, `whisperx` | TTS + word-level alignment |
-| Providers (services) | `provider-hypihub`, `provider-beatapi`, `provider-hiapi`, `provider-monid`, `provider-pollo`, `provider-tokendance`, `provider-hyperframes-local`, `provider-image-opencv-local`, `provider-media-local`, `provider-whisperx-local` | Map Model requests to a specific service API; configured as Endpoints in `hypit.runtime.json` |
-| Runtime | `runtime`, `runtime-kit`, `runtime-local`, `runtime-host-node`, `driver-node`, `host`, `project-context-node`, `package-loader-node`, `component-kit`, `file-io-node` | Worker, scheduler, plan execution |
-| Persistence | `build-result`, `build-result-fs`, `build-result-s3`, `build-result-kit`, `resource-store-fs`, `resource-store-s3`, `store-sqlite`, `workspace`, `workspace-fs-node`, `credentials-store-*` | Build Result + resource + credential stores |
-| Rendering | `render-hyperframes`, `raster`, `hyperframes`, `transport-aws-lambda`, `fonts-open` | Headless-Chromium local render, raster ops, lambda transport |
-| CLI / Studio | `cli` (shared error rendering), `video-cli` (commands), `studio`, `studio-adapter`, `run`, `source` | CLI surface + Studio timeline editor |
+Two contracts carry most of the design weight:
+
+- **`facet`** is the entire plugin envelope: an opaque `{ abi, offers?, implementation }` bag, "understood
+  only by the owner of its exact ABI". Package loading **never interprets** a Facet — each consumer
+  filters by exact ABI string (`hypit.producer-package@1`, `hypit.admission-package@1`,
+  `hypit.markup-surface@1`, `hypit.exact-model@1`, `hypit.studio-companion@1`,
+  `hypit.runtime-local-endpoint-adapter@1`, `hypit.source-frontend@1`, `hypit.cli-command@1`).
+- **`producer`**: `ProducerHandlerContext` is a *pure* compute context — "artifact bytes, credentials,
+  network and stores are deliberately absent; those effects must cross an explicit Need into a
+  Provider." This is why Providers own bounded transport retries and all I/O.
+
+### The three kinds of package
+
+Distinguished by which facet ABIs the activation entry emits **and** which axis selects them.
+
+| Kind | Selected by | Built with | Examples |
+|---|---|---|---|
+| **Author component** | Source import (`<import from="..."/>`) | `createProducerPackageFacet` + `createAdmissionPackageFacet` + `createMarkupSurfaceFacet` | `ranking`, `film`, `caption-fine`, `visual-track`, `audio-track`, `script`, `text-fine`, `comment-sticker`, `depth-stack`, `minimal-author-package` |
+| **Model** | Source import | `defineExactModelModule` from `@hypit/hypit/generation/model` (emits `hypit.exact-model@1`) | `seedance`, `gpt-image`, `nano-banana`, `grok-imagine`, `pixverse`, `wan`, `seedream`, `minimax-h3` |
+| **Provider** | Runtime Profile `endpoints` + `bindings` | `defineEndpoint` + `createRuntimeEndpointAdapterFacet` from `@hypit/runtime-local/extension` | `provider-hypihub`, `provider-html-local`, `provider-whisperx-local`, `provider-image-opencv-local`, `media-local`, and the `provider-beatapi/hiapi/monid/pollo/tokendance` family |
+
+A Provider declares its own narrower support via `supports`; the Model owns request meaning and the
+Provider owns service mapping and pricing. A failed service request never silently selects another
+account.
+
+### Package activation
+
+`package.json` → `hypit.activation` (package-relative, must not escape). The loader imports it and
+requires `format === "hypit.package@1"` on the **default export**, then transitively resolves every
+`manifest.dependencies` Module. `verifyPackageContributions` rejects duplicate Module
+`name@version`, duplicate module specifiers and empty/duplicate facet offers — "validates declarations
+and logical offers without interpreting any executable Facet."
+
+There is no global plugin registry and no auto-discovery: a contribution is inert until some consumer
+routes it by ABI. `packages/cli/src/application.ts` is explicit that "project packages never acquire
+CLI authority merely by being installed or imported."
+
+### Studio companion
+
+The old `foo` + `foo-studio` package pairs are **gone**. A component is one package with two export
+subpaths — `"."` → `src/index.ts` and `"./studio"` → `src/studio.ts` — and the Studio contribution is
+an extra facet in the same `activation.ts`:
+
+```ts
+import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
+// or createStudioCompanionFacet({ tracks, parameters })
+```
+
+Packages with a `./studio` export: `audio-track`, `caption-fine`, `comment-sticker`, `depth-stack`,
+`film`, `ranking`, `script`, `text-fine`, `visual-track`. Packages depending on `@hypit/studio-companion`:
+those nine plus `timeline-author`, `narrative-temporal`, `fontsource`.
+
+### CLI composition
+
+There is **one** CLI package: `packages/cli` (private). `bin/hypit.mjs` `realpath`s the Distribution
+root (Windows short-path guard), registers `tsx`, installs Distribution package resolution so
+`@hypit/hypit/*` resolves to this checkout's TS sources, then builds one flat command table from the
+`hypit.cli.use` arrays of two manifests:
+
+- **Distribution** (root `package.json`): `@hypit/runtime-local/cli`, `@hypit/browser-capture/cli`,
+  `@hypit/yt-dlp/cli`, `@hypit/media-local/cli`, `@hypit/speech-estimate/cli`, `@hypit/whisperx/cli`,
+  `@hypit/video/cli`, `@hypit/studio/cli`
+- **Project** (the video project's own `package.json`), additionally gated by `requireDirectDependency`
+
+Each specifier must export a non-empty `cliCommandModules` array of `hypit.cli-command@1` objects.
+`indexCliCommandModules` enforces **one owner per root command** and reserves `help` plus
+`genericCliCommandNames`. `@hypit/video` owns only `vocabulary` and supplies `createVideoDistribution`
+(the default Profile: `hypihub.default`, `media.local`, `html.local`, `image.opencv.local`); `@hypit/studio`
+owns `studio` and `snapshot`. Manage with `hypit cli status|use|remove`, which only edits
+`package.json`.
+
+Commands owned by `packages/cli` itself: `version`, `cli`, `check`, `plan`, `pricing`, `build`,
+`builds`, `history`, `inspect`, `get`, `result`, `logs`, `status`, `activity`, `cancel`, `auth`,
+`doctor`.
+
+### Runtime execution
+
+`hypit.runtime.json` (`format: "hypit.runtime-local@1"`) declares `dataRoot`, `credentials` (a store
+name), `endpoints` (each `{ use, config }`), and optional `bindings`. A binding pins a capability to a
+specific endpoint when several offer it:
+
+```json
+"bindings": { "@hypit/whisperx@1#whisperx-alignment": "whisperx.local" }
+```
+
+A project is marked by `package.json` → `"hypit": { "project": true }`; the CLI searches upward for
+that marker and never invents a boundary. Results live with the project in `.hypit/results/<date>/bld_<id>/`
+(`result.json`, `execution.jsonl`, `files/`, `values/`).
+
+Key invariants (`docs/guide/runtime.md`, `docs/guide/conventions.md`): a failed attempt stays failed —
+continuation is a new Run/Build that explicitly reuses completed Outputs. Compilation failures throw
+with source location; runtime failures are recorded as Operation failures in the Build state machine.
+Builds run on a Worker and are not cancelled by closing a watching terminal.
 
 ### Public surface
 
-The root `package.json` `exports` field defines `@hypit/hypit/<subpath>` — those point at
-`packages/<subpath>/src/index.ts` and are the SDK surface external components and providers depend on.
-Adding a public subpath = adding an `exports` entry + a `packages/<subpath>/package.json`. Each
-package's own `package.json` may also have its own subpath exports for internal-only APIs.
+Root `package.json` `exports` defines **44 subpaths** `@hypit/hypit/<subpath>`, each mapping to a
+`packages/<subpath>/src/index.ts`. The `hypit-source` condition points at raw TS; `types` points at
+`./dist/public/*.d.ts` built by `build:public-types`. **Adding a public subpath = an `exports` entry +
+a `packages/<subpath>/package.json`.** The root `tsconfig.json` has no `paths` registry — every
+package declares its own cross-package deps.
 
-### Plugin/extension model
+The less obvious ones: `kernel` (pure sealing/planning + `BuildMachine`), `executor` (drives handlers
+against real endpoints), `facet` (the plugin envelope), `source` + `source/text` (byte-oriented units
+and the header parser), `author` (graph elaboration, `GraphFragment` sealing), `admission` (type
+validation keyed by `` `${module.name}@${version}#${name}` ``), `producer`, `markup` + `markup/run`,
+`recipe` (the `.svs` frontend), `run`, `blob`, `project`, `result` + `result/node`, `endpoint` +
+`endpoint/http` (transport-evidence helpers that make no retry or service-verdict decision),
+`generation` + `generation/model`, `loader` + `loader/node` + `loader/node/module-scope` (independent
+loaded bindings in one trusted process — explicitly *not* a security sandbox), `html-program`
+(does not launch a browser, encode video, mix audio, or select a Provider), `atomic-file`,
+`spatial`, `temporal` + `temporal/markup`, `region-evidence`, `speech-evidence`, `text`.
 
-External packages (and the `examples/` templates) develop against the public subpaths above. They
-ship with an activation entry that registers contributions at load time. The active Distribution
-supplies the Hypit APIs; the extension supplies its own implementation.
+When packing an independent package, `scripts/build-public-type-entry.mjs` rewrites any `.d.ts` that
+leaks an embedded identity like `@hypit/protocol` into the public `@hypit/hypit/protocol` export; the map
+is derived from the root `exports`, not hand-maintained.
 
-## Conventions (apply in-repo; external packages use owner scopes)
+## Conventions
 
-- Package directory: kebab-case (`packages/speech-alignment/`).
-- Package name: `@hypit/` scope (`@hypit/speech-alignment`); Provider packages keep the `provider-` prefix.
-- TypeScript file names: kebab-case. Exported types: PascalCase. Exported functions: camelCase.
-- Internal modules use explicit `.js` extensions (NodeNext resolution).
-- Cross-package imports use `@hypit/*` — never relative paths across package boundaries.
-- **No circular production dependencies.** Every package must declare every cross-package import in
-  its own `dependencies` / `devDependencies` — the root `tsconfig.json` has no `paths` registry.
-- `tsconfig.json`: target ES2023, module/resolution NodeNext, `strict`, `noUncheckedIndexedAccess`,
-  `exactOptionalPropertyTypes`, `verbatimModuleSyntax`. Adding a package does **not** require changing
-  the root tsconfig.
+- Package directory kebab-case (`packages/narrative-speech-alignment/`); name `@hypit/<dir>`; Provider
+  packages keep a `provider-` prefix.
+- TypeScript files kebab-case; exported types PascalCase; exported functions camelCase.
+- Internal modules use explicit `.js` extensions (NodeNext).
+- Cross-package imports use `@hypit/*`, never relative paths across package boundaries.
+- **No circular production dependencies.** Every package declares every cross-package import in its own
+  `dependencies`/`devDependencies`.
+- `tsconfig.json`: ES2023, NodeNext module+resolution, `strict`, `noUncheckedIndexedAccess`,
+  `exactOptionalPropertyTypes`, `verbatimModuleSyntax`. Adding a package does not require editing it.
 - All persisted wire data uses the `@1` logical version. Wire types live in `@hypit/protocol` and are
   immutable. Project-owned Module/Frontend ids use the literal logical version `1`; physical npm
   versions are independent.
-- Compilation failures throw with source location. Runtime failures are recorded as Operation
-  failures in the Build state machine. Providers own bounded transport retries. A failed attempt ends
-  the Build — continuation uses a new Run/Build with completed Outputs explicitly reused.
-- Error rendering helper lives in `packages/cli`; both `hypit` (video-cli) and `studio` route their
-  errors through it.
-- Branch and commit subjects share the prefix: `feat/`, `fix/`, `docs/` for branches; `feat:`,
-  `fix:`, `docs:` for commits.
-- English and Chinese documentation live side by side under `docs/` and `docs/zh/`. A change to one
-  page belongs with the change to its counterpart — touch both in the same commit.
+- Nominal types are owned by Modules, not registered in a central union. Type schemas are
+  JSON-compatible structures, not TS interfaces.
+- Branch and commit subjects share a prefix: `feat/`, `fix/`, `docs/` for branches; `feat:`, `fix:`,
+  `docs:` for commits.
+- English and Chinese docs live side by side under `docs/` and `docs/zh/` — touch both in one commit.
 
 ## Testing
 
-Uses **Node.js built-in `node:test`**, not Jest/Vitest/Mocha. Test files: `packages/<name>/test/**/*.test.ts`.
-The runner is `test/run.mjs`; it globs `packages/*/test/**/*.test.ts`, `services/*/test/**/*.test.ts`,
-`test/**/*.test.ts`, and `examples/*/packages/*/test/**/*.test.ts`. The runner enforces a 120s
-per-test timeout (`--test-timeout=120_000`).
+Node's built-in `node:test` — not Jest/Vitest/Mocha. Test files: `packages/<name>/test/**/*.test.ts`.
+`test/run.mjs` globs `packages/*/test/**` (211 files), `services/*/test/**`, `test/**`, and
+`examples/*/packages/*/test/**`, with `--test-timeout=120_000`.
 
-A test belongs in the default suite only when it protects an observable contract, an architectural
-boundary, or a failure mode that could corrupt work / repeat paid execution / make an environment
-unsafe. Pure compilation tests are the most common pattern: compile a fixture `.svml`/`.svs`/`.svrun`
-and assert on the resulting graph.
+**Admission rule** (`docs/guide/testing.md`): a test belongs in the default suite only when it
+protects an observable contract, an architectural boundary, or a failure mode that could corrupt work,
+repeat paid execution, or make an environment unsafe. Test that fact once at its owning layer and
+reuse one checked-in graph fixture across higher layers instead of rebuilding the same partial video
+everywhere. Do not add tests to make every package appear covered, mirror a Manifest array, preserve a
+removed pre-release flag, or exercise documentation-only UI helpers. Obsolete tests are deleted with
+obsolete behavior.
 
-Fixtures: ordinary `.svml`/`.svs`/`.svrun` files in `packages/<name>/test/fixtures/`. Integration
-fixtures live in `examples/` (interview, podcast, ranking-football, minimal-author-package).
+The dominant pattern is a **pure compilation test**: compile a fixture `.svml`/`.svs`/`.svrun` and
+assert on the resulting graph. Never calls an external service. Fixtures live in
+`packages/<name>/test/fixtures/` as ordinary source files.
 
-`examples/*/packages/*/test/` is included in the default suite because project-package behavior is
-ordinary authoring.
+Do not commit customer or brand fixtures, credential traces, paid output artifacts, absolute
+workstation paths or one-off delivery harnesses.
 
 ## Releasing
 
-1. Bump version in root `package.json`, commit to `main`.
-2. `npm run pack:distribution` builds public types and writes `dist/release/hypit-hypit-<v>.tgz`.
-3. Open **Releases → Draft a new release** on that commit with tag `v<version>`. `Publish npm`
-   workflow verifies tag/version match, runs Linux/Windows checks, installs and exercises the
-   packaged tarball, publishes to npm as `latest`, and attaches the tarball to the Release.
-   Publication uses OIDC; no npm token secret is required. Trusted Publisher must allow org
-   `hypit-ai`, repo `hypit`, workflow `publish-npm.yml`.
-4. `Actions → Publish npm → Run workflow` on `main` is the manual fallback (checks only when
-   "Publish to npm" is unchecked; publication if checked). An existing version is skipped — npm
-   versions cannot be overwritten.
+This is a **multi-package independent release** driven by a generated plan, not a single tarball. CI
+(`.github/workflows/ci.yml`) runs a ubuntu+windows matrix with ffmpeg on both legs, then `pnpm check`
+and `pnpm test`. `.github/workflows/npm-package.yml` runs `pack:release-candidate`, uploads the tarballs
++ `release-plan.json`, and validates them via `check:release-candidate` on both platforms.
 
-The npm Distribution, the Skill, and a saved video project update independently.
+1. Bump version in root `package.json`, commit to `main`.
+2. `npm run pack:release-candidate` → every independent package tarball + the Distribution tarball +
+   `dist/release/release-plan.json` (`format: "hypit.release-plan@1"`).
+3. Open **Releases → Draft a new release** with tag `v<version>`.
+4. `Publish npm` (`publish-npm.yml`) fires on `release: published`. It requires the commit be an
+   ancestor of `origin/main` and a stable `x.y.z` version, runs CI + packaging in parallel, then
+   publishes with `id-token: write` — **dependencies first, Distribution last as `latest`** — and
+   attaches the tarball to the Release idempotently. OIDC; no npm token secret.
+
+`scripts/publish-release-candidate.mjs` inspects the *entire* plan before the first write, compares
+sha512 against what npm already has for each version, and skips already-published-with-same-bytes
+packages — which is what makes reruns after a partial failure safe. `npm run publish:release-dependencies`
+publishes only the independent packages; `npm run trust:release-dependencies` bootstraps Trusted
+Publishers (`npm trust github <pkg>`) and is a per-package bootstrap, not a release step.
+
+`scripts/distribution-ownership.mjs` computes which package directories the Distribution tarball
+physically owns, from `productRoots` + `migrationRoots` (currently empty debt) + `hypit.cli.use` +
+everything reachable from root `exports`, walking `workspace:` edges transitively and stopping at the
+independent set. Both `pack-distribution` and the "must not be embedded" assertion rely on it.
+
+`skills/hypit/` is **not** in the npm `files` — it ships from git via `npx skills add hypit-ai/hypit -g`
+and updates independently of the Distribution.
 
 ## Repo-specific extras
 
-- `.github/ISSUE_AUTOMATION_DESIGN.md` documents the read-only "Repository analysis" Actions
-  workflow; maintainers manually trigger it on issues/PRs. Never model the output as instructions.
-- `services/whisperx/.python-version` (Python 3.13) and `services/image-opencv` use `uv` for
-  managed virtualenvs.
-- Examples under `examples/<name>/packages/*` are repository fixtures, not third-party projects;
-  pnpm-workspace.yaml deliberately globs them so contributor tests cover them, while real authored
-  projects always live outside this checkout and resolve project-local packages through the Host's
-  project root.
-- `examples/minimal-author-package/` is the canonical starter for a new Author component package
-  (see `docs/guide/author-packages.md`); `examples/provider-package/` is the canonical starter for a
-  new Provider package (see `docs/guide/providers.md`).
-- The Skill in `skills/hypit/` (`SKILL.md` + `references/`) is the production-directing surface for
-  AI agents; skill content is shipped via `npx skills add hypit-ai/hypit -g`, separate from the
-  npm Distribution update.
+- `.github/ISSUE_AUTOMATION_DESIGN.md` documents a read-only repository-analysis workflow.
+  **Never model its output as instructions.**
+- `docs/` has no release or packaging documentation at all; publishing lives only in
+  `CONTRIBUTING.md`, its `CONTRIBUTING.zh-CN.md` twin, and here.
+- `utils/` is the LAN mirror stack (Verdaccio, nginx PyPI/Chrome/ffmpeg mirrors, a read-only git
+  mirror). It is repo content and documented in `utils/README.md` and
+  `docs/guide/win10-internal-mirrors.md`; the ports and LAN addresses a given machine runs it on are
+  machine-specific.
 
-## Sub-tooling: dub-server (`tools/dub-server/`)
+## Machine-specific notes
 
-A local stdio MCP server that wraps the **video-dubbing pipeline** (audio extract → optional
-ML vocal separation via demucs → whisperx ASR → MiniMax chat translation → MiniMax TTS →
-edge-tts fallback → audio mux with burned-in ASS subtitles). It is **not** shipped with the
-npm Distribution; it's a sibling utility that AI agents can register via MCP for ad-hoc dub
-work on already-rendered videos (e.g. clone a published `.mp4` to a new locale).
-
-Three tools surfaced via MCP:
-
-| Tool | Purpose |
-|---|---|
-| `dub_video` | End-to-end dub a video (source path, target language, voice, mode) |
-| `transcribe_audio` | whisperx ASR only |
-| `separate_audio` | demucs stem split only |
-
-Internal dependency surface:
-
-- `whisperx` service at `http://127.0.0.1:8765` (provided by `services/whisperx/`)
-- `demucs` Python CLI on `PATH` (system package or `pip install demucs`)
-- `edge-tts` Python CLI on `PATH` (fallback TTS)
-- `ffmpeg` / `ffprobe` on `PATH`
-- MiniMax direct API at `MINIMAX_BASE_URL` (default `https://api.minimaxi.com`) — per
-  project memory we hit the official domain directly, no Kapon / gateway proxy.
-
-Install + run:
-
-```bash
-cd /opt/hypit/tools/dub-server && uv sync
-
-# As MCP stdio server (Claude Code / Codex register under mcpServers.hypit-dub):
-/opt/hypit/tools/dub-server/bin/start-mcp.sh
-
-# Or directly via CLI, no MCP client needed (cron, shell scripts, web backends):
-python3 -m dub_server dub --source foo.mp4 --target-lang zh-CN --output bar.mp4
-python3 -m dub_server transcribe --audio foo.wav
-python3 -m dub_server separate --audio foo.wav --model htdemucs_ft
-```
-
-Configuration: the server reads from `/opt/hypit/.env` via the
-`bin/start-mcp.sh` wrapper. Required: `MINIMAX_API_KEY`. See the
-`MINIMAX_TTS_*` block in `.env` for the system-voice catalog the pipeline
-maps to when callers don't pass an explicit voice id.
-
-Project-local MCP registration already wired in `/opt/hypit/.mcp.json`. After
-restarting Claude Code / Codex you'll have `mcp__hypit-dub__dub_video` etc.
-available in tool lists. The dub-server never imports Anthropic / Claude —
-it just exposes dumb tools for the agent to drive.
+`CLAUDE.local.md` in this directory records this checkout's environment: absolute paths, the LAN
+mirror ports, the locally-running whisperx service, the `dub-server` MCP wiring and its credentials,
+and the local artifact directories not to commit. Read it when a task touches local infrastructure —
+it is gitignored by design and never travels with the repo.

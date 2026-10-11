@@ -113,6 +113,9 @@ examples/guizou-clone/.tmp-cpu/
 tools/dub-server/_smoke/
 tools/dub-server/jobs
 
+# Machine-specific agent notes (LAN ports, absolute paths, credential locations)
+/CLAUDE.local.md
+
 # Debug outputs from dub-server smoke tests and short-form dub runs
 examples/**/out-zh*.mp4
 examples/**/out-*-wav2vec2*.mp4
