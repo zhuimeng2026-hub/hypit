@@ -225,7 +225,7 @@ L1  kernel · source · blob · result · loader       (→ protocol)
 L2  runtime · workspace · endpoint                 (→ kernel/protocol/source)
 L3  author · admission · producer                  (→ kernel/facet/protocol/source)
 L4  run · markup · compiler · executor             (→ L2 + L3)
-L5  cli                                            (→ everything; depends on 14 internal packages)
+L5  cli                                            (→ everything; depends on 16 internal packages)
 ```
 
 Two contracts carry most of the design weight:
@@ -246,7 +246,7 @@ Distinguished by which facet ABIs the activation entry emits **and** which axis 
 | Kind | Selected by | Built with | Examples |
 |---|---|---|---|
 | **Author component** | Source import (`<import from="..."/>`) | `createProducerPackageFacet` + `createAdmissionPackageFacet` + `createMarkupSurfaceFacet` | `ranking`, `film`, `caption-fine`, `visual-track`, `audio-track`, `script`, `text-fine`, `comment-sticker`, `depth-stack`, `minimal-author-package` |
-| **Model** | Source import | `defineExactModelModule` from `@hypit/hypit/generation/model` (emits `hypit.exact-model@1`) | `seedance`, `gpt-image`, `nano-banana`, `grok-imagine`, `pixverse`, `wan`, `seedream`, `minimax-h3` |
+| **Model** | Source import | `defineExactModelModule` from `@hypit/generation/model` (emits `hypit.exact-model@1`) | `seedance`, `gpt-image`, `nano-banana`, `grok-imagine`, `pixverse`, `wan`, `seedream`, `minimax-h3` |
 | **Provider** | Runtime Profile `endpoints` + `bindings` | `defineEndpoint` + `createRuntimeEndpointAdapterFacet` from `@hypit/runtime-local/extension` | `provider-hypihub`, `provider-html-local`, `provider-whisperx-local`, `provider-image-opencv-local`, `media-local`, and the `provider-beatapi/hiapi/monid/pollo/tokendance` family |
 
 A Provider declares its own narrower support via `supports`; the Model owns request meaning and the
@@ -277,8 +277,8 @@ import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 ```
 
 Packages with a `./studio` export: `audio-track`, `caption-fine`, `comment-sticker`, `depth-stack`,
-`film`, `ranking`, `script`, `text-fine`, `visual-track`. Packages depending on `@hypit/studio-companion`:
-those nine plus `timeline-author`, `narrative-temporal`, `fontsource`.
+`film`, `ranking`, `script`, `temporal`, `text-fine`, `visual-track`. Packages depending on
+`@hypit/studio-companion`: those ten plus `timeline-author`, `fontsource` and `studio` itself.
 
 ### CLI composition
 
@@ -324,26 +324,44 @@ Builds run on a Worker and are not cancelled by closing a watching terminal.
 
 ### Public surface
 
-Root `package.json` `exports` defines **44 subpaths** `@hypit/hypit/<subpath>`, each mapping to a
-`packages/<subpath>/src/index.ts`. The `hypit-source` condition points at raw TS; `types` points at
-`./dist/public/*.d.ts` built by `build:public-types`. **Adding a public subpath = an `exports` entry +
-a `packages/<subpath>/package.json`.** The root `tsconfig.json` has no `paths` registry — every
-package declares its own cross-package deps.
+Root `package.json` `exports` defines **29 subpaths** `@hypit/hypit/<subpath>`. The `hypit-source`
+condition points at raw TS; `types` points at `./dist/public/*.d.ts` built by `build:public-types`.
+**Adding a public subpath = an `exports` entry + a `packages/<subpath>/package.json`.** The root
+`tsconfig.json` has no `paths` registry — every package declares its own cross-package deps.
+
+Most entries map to `packages/<subpath>/src/index.ts`, but eight are exceptions and point elsewhere:
+`cli` → `cli/src/public.ts`, `source/text` → `source/src/header.ts`, `endpoint/http` →
+`endpoint/src/http.ts`, `loader/node` → `loader/src/node/public.ts`, `loader/node/module-scope`,
+`result/node`, `workspace/node` and `markup/run` each under their own `src/<name>/index.ts`.
+
+As of 0.3.1 the video-domain packages are **no longer on this map** — `caption`, `composition`,
+`generation` (+ `/model`), `media`, `narrative` (+ `-caption`, `-temporal`), `timeline`, `spatial`,
+`temporal` (+ `/markup`), `region-evidence`, `speech-evidence` and `html-program` are published as
+independently versioned packages and are imported by their own names (`@hypit/generation`,
+`@hypit/html-program`, …). All 13 are marked `private` in place — they ship inside the Distribution
+tarball but are not separately installable. `scripts/distribution-ownership.mjs` is what enforces
+the boundary, so a package that is genuinely independently versioned must be reachable from
+`productRoots`/`exports`/`hypit.cli.use` rather than from this list.
+
+The full list: `admission`, `atomic-file`, `author`, `blob`, `cli`, `compiler`, `endpoint` +
+`endpoint/http`, `executor`, `facet`, `kernel`, `loader` + `loader/node` +
+`loader/node/module-scope`, `markup` + `markup/run`, `producer`, `project`, `protocol`, `recipe`,
+`result` + `result/node`, `run`, `runtime`, `source` + `source/text`, `text`, `workspace` +
+`workspace/node`.
 
 The less obvious ones: `kernel` (pure sealing/planning + `BuildMachine`), `executor` (drives handlers
-against real endpoints), `facet` (the plugin envelope), `source` + `source/text` (byte-oriented units
-and the header parser), `author` (graph elaboration, `GraphFragment` sealing), `admission` (type
-validation keyed by `` `${module.name}@${version}#${name}` ``), `producer`, `markup` + `markup/run`,
-`recipe` (the `.svs` frontend), `run`, `blob`, `project`, `result` + `result/node`, `endpoint` +
-`endpoint/http` (transport-evidence helpers that make no retry or service-verdict decision),
-`generation` + `generation/model`, `loader` + `loader/node` + `loader/node/module-scope` (independent
-loaded bindings in one trusted process — explicitly *not* a security sandbox), `html-program`
-(does not launch a browser, encode video, mix audio, or select a Provider), `atomic-file`,
-`spatial`, `temporal` + `temporal/markup`, `region-evidence`, `speech-evidence`, `text`.
+against real endpoints), `facet` (the plugin envelope), `author` (graph elaboration, `GraphFragment`
+sealing), `admission` (type validation keyed by `` `${module.name}@${version}#${name}` ``),
+`producer`, `compiler`, `recipe` (the `.svs` frontend), `run`, `blob`, `project`, `result` +
+`result/node`, `endpoint` + `endpoint/http` (transport-evidence helpers that make no retry or
+service-verdict decision), `loader` + `loader/node` + `loader/node/module-scope` (independent loaded
+bindings in one trusted process — explicitly *not* a security sandbox), `runtime`, `atomic-file`,
+`text`, `cli`.
 
-When packing an independent package, `scripts/build-public-type-entry.mjs` rewrites any `.d.ts` that
-leaks an embedded identity like `@hypit/protocol` into the public `@hypit/hypit/protocol` export; the map
-is derived from the root `exports`, not hand-maintained.
+When packing an independent package, `scripts/build-public-types.mjs` derives its entry list from the
+root `exports` and hands each entry to `scripts/build-public-type-entry.mjs`, which rewrites any
+`.d.ts` that leaks an embedded identity like `@hypit/protocol` into the public `@hypit/hypit/protocol`
+export; that map is derived, not hand-maintained.
 
 ## Conventions
 
