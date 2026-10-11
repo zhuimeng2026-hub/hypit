@@ -83,13 +83,19 @@ diagnoses missing setup without installing anything.
 Commit `db4e545d` ("refactor: rebuild the domain-neutral language host", 2026-10-07) renamed and
 removed ~30 packages. **The working tree still contains 67 empty directories that hold nothing but a
 stale `node_modules/`**: `core`, `compiler-node`, `compiler-markup-node`, `elaborator`, `validation`,
-`host`, `core`, `artifact`, `file-io-node`, `driver-node`, `author-kit`, `component-kit`, `model-kit`,
+`artifact`, `file-io-node`, `driver-node`, `author-kit`, `component-kit`, `model-kit`,
 `endpoint-kit`, `runtime-kit`, `build-result*`, `resource-store-*`, `store-sqlite`,
 `workspace-fs-node`, `package-loader-node`, `runtime-host-node`, `hyperframes`, `render-hyperframes`,
-`raster`, `fonts-open`, `transport-aws-lambda`, `studio-adapter`, `video-cli`, `visual-ir`, `speech`,
+`provider-hyperframes-local`, `provider-media-local`, `raster`, `fonts-open`,
+`credential-store-file`, `credential-store-os`, `credential-store-platform`, `temporal-markup`,
+`transport-aws-lambda`, `studio-adapter`, `video-cli`, `visual-ir`, `speech`,
 `speech-alignment`, `sound`, `performance`, `program-space`, `media-execution`, `media-pipeline`,
 `media-track*`, `deck-track*`, `typography-track*`, `screen-overlay*`, `*-studio`, `semantic-take-adjust`,
 `image-compose`, `image-transform`, `background-removal`, `svs`, `estimate`, `run-markup`.
+
+`host` is the one name in this family that is *gone entirely* rather than empty — its files moved to
+`facet`, and the directory was removed. An empty dir has a stale `node_modules/`; a missing dir has
+nothing at all, and both will fool a glob.
 
 `ls packages/` shows **152 directories; only 85 are real.** Always confirm with:
 
@@ -127,6 +133,19 @@ same contracts now live at `packages/html-program/src/document.ts:752` and
 `packages/html-program/src/text.ts:1186` / `packages/provider-html-local/src/capture.ts`. The four
 C-category render blockers it describes (the per-seek `waitUntil` barrier, paused-CSS seek-and-cancel,
 the `VisualProgram` escape hatch, source-frame video slot injection) are all still real.
+
+The vocabulary drifted further than the paths did, so following the old file paths is not enough — read
+the current names off the code instead:
+
+| `renderer-choice.md` says | Actually now |
+|---|---|
+| `hf-seek` event (5 mentions) | `hypit-frame` — dispatched in-page by `frameProgramRuntime` (`html-program/src/document.ts:750`), not by the Renderer over CDP |
+| `packages/hyperframes/src/browser-program.ts` | `packages/html-program/src/html-visual.ts`; the `(root, data) => render(localFrame)` escape hatch is enforced there |
+| Renderer "dispatches `hf-seek`, awaits `detail.waitUntil`" | The page owns the loop. It exposes `window.__hypitFrameProgram.{prepare,applyFrame}` (`document.ts:755-760`); `capture.ts:205` calls `prepare()` once and `applyFrame` per frame. `waitUntil` is still the per-frame barrier contract — `applyFrame` dispatches, `await Promise.all(pending)`, then forces layout. |
+
+So the *contract* CLAUDE.md and your memory record (per-seek `waitUntil` barrier) is intact; only the
+event name and the dispatch direction changed. Treat the four blockers as real, and grep for
+`hypit-frame`, not `hf-seek`.
 
 ## Repository layout
 
