@@ -8,11 +8,11 @@ import { createProducerPackageFacet } from "@hypit/hypit/producer";
 import { assertAttributes, assertEmptyElement, createMarkupSurfaceFacet, textAttribute } from "@hypit/hypit/markup";
 import { canonicalize, sameType } from "@hypit/hypit/protocol";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { mediaTypes } from "@hypit/hypit/media";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { compositionTypes } from "@hypit/composition";
+import { mediaTypes } from "@hypit/media";
+import { timelineTypes } from "@hypit/timeline";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes } from "@hypit/temporal";
 import { visualTrackModuleRef } from "@hypit/visual-track";
 import {
   resolveTemporalWindowReference,
@@ -21,7 +21,7 @@ import {
   temporalWindowAttributeNames,
   temporalWindowAttributeVocabulary,
   temporalContextAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
+} from "@hypit/temporal/markup";
 import { renderTitle, renderTimer, renderFlag, renderStage, renderVeil } from "./render.js";
 import { module, defaults } from "./definition.js";
 import { studioFacet } from "./studio.js";

@@ -1,8 +1,8 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
 import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/hypit/markup";
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { defineExactModelModule } from "@hypit/generation/model";
 import { textTypes } from "@hypit/hypit/text";
 
 export const wanModuleRef = { name: "@hypit/wan", version: "1" } as const;

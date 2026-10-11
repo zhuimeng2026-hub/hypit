@@ -1,11 +1,11 @@
-import type { Timeline } from "@hypit/hypit/timeline";
-import type { CaptionDocument, CaptionProgram, CaptionTiming } from "@hypit/hypit/caption";
+import type { Timeline } from "@hypit/timeline";
+import type { CaptionDocument, CaptionProgram, CaptionTiming } from "@hypit/caption";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
 import { canonicalize } from "@hypit/hypit/protocol";
-import type { RegionEvidence } from "@hypit/hypit/region-evidence";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import type { RegionEvidence } from "@hypit/region-evidence";
+import type { SpatialFrame } from "@hypit/spatial";
 
 import { captionFineProducers } from "./manifest.js";
 import { renderFineCaption } from "./render.js";

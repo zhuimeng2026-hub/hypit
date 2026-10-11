@@ -1,4 +1,4 @@
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 
 const number = { kind: "number" } as const;
 const positiveInteger = { kind: "number", integer: true, minimum: 1 } as const;

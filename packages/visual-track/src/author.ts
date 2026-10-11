@@ -1,6 +1,6 @@
 import type { Recipe } from "@hypit/hypit/recipe";
-import { decodeContentFitProperties } from "@hypit/hypit/spatial";
-import type { ContentFit } from "@hypit/hypit/spatial";
+import { decodeContentFitProperties } from "@hypit/spatial";
+import type { ContentFit } from "@hypit/spatial";
 
 import {
   sealMediaPaintLayerSpec,

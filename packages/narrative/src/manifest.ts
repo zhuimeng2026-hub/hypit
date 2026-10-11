@@ -1,4 +1,4 @@
-import type { ModuleManifest, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, TypeRef } from "@hypit/hypit/protocol";
 import {
   narrativeSegmentRefSchema,
   narrativeSchema,

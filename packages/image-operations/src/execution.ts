@@ -1,5 +1,5 @@
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
-import { assertCanvas, assertSpatialFrame } from "@hypit/hypit/spatial";
+import { assertCanvas, assertSpatialFrame } from "@hypit/spatial";
 
 import type {
   ImageComposeExecutionLayer, ImageComposeRequest, ImageEncodeOperation,

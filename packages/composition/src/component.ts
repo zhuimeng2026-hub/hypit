@@ -1,5 +1,5 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 import { compositionTypes } from "./manifest.js";
 import { assertAudioTrackIdentity, assertCompositionIdentity, assertVisualTrackIdentity } from "./track.js";
 import type { AudioTrack, Composition, VisualTrack } from "./track.js";

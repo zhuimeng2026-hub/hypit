@@ -1,4 +1,4 @@
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 
 import {
   visualBoxSchema,

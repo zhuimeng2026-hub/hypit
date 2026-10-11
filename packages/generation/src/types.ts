@@ -1,4 +1,4 @@
-import type { BlobRef } from "@hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
 
 export type GeneratedImageSet = {
   readonly images: readonly BlobRef[];

@@ -1,10 +1,10 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 
 import { blobTypes } from "@hypit/hypit/blob";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes } from "@hypit/temporal";
 
 import { visualTrackProducers, visualTrackTypes } from "./manifest.js";
 

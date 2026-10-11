@@ -7,7 +7,7 @@ import test from "node:test";
 import type { CaptionProgram, CaptionTiming } from "@hypit/caption";
 import type { FontArtifactRef } from "@hypit/media";
 import { captionDocument, parseScript } from "@hypit/script";
-import type { RegionEvidence } from "@hypit/hypit/region-evidence";
+import type { RegionEvidence } from "@hypit/region-evidence";
 import type { Recipe } from "@hypit/recipe";
 
 import { fixtureResource } from "../../../test/fixture-resource.js";
@@ -444,7 +444,7 @@ test("Caption Surface wires one Timeline to both ordinary and tracked-region ren
   const { decodeFineCaptionTrackSurface } = await import("../src/surface.js");
   const { timelineTypes } = await import("@hypit/timeline");
   const { captionTypes } = await import("@hypit/caption");
-  const { regionEvidenceTypes } = await import("@hypit/hypit/region-evidence");
+  const { regionEvidenceTypes } = await import("@hypit/region-evidence");
   const { spatialTypes } = await import("@hypit/spatial");
   const types = { timeline: timelineTypes.timeline, document: captionTypes.document,
     timing: captionTypes.timing, within: spatialTypes.frame, program: captionTypes.program, regions: regionEvidenceTypes.evidence };

@@ -1,9 +1,9 @@
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation } from "@hypit/hypit/author";
-import { compositionTypes } from "@hypit/hypit/composition";
-import type { Track } from "@hypit/hypit/composition";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { compositionTypes } from "@hypit/composition";
+import type { Track } from "@hypit/composition";
+import { spatialTypes } from "@hypit/spatial";
+import { timelineTypes } from "@hypit/timeline";
 
 import { filmProducers, filmTypes } from "./manifest.js";
 import type { FilmAssemblyFragmentOptions, FilmTrackInput } from "./types.js";

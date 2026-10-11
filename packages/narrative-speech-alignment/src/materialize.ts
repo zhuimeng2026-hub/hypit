@@ -1,8 +1,8 @@
-import type { Narrative, NarrativeSegmentRef } from "@hypit/hypit/narrative";
-import { sealNarrativeAlignment } from "@hypit/hypit/narrative-temporal";
-import type { NarrativeAlignment } from "@hypit/hypit/narrative-temporal";
-import { assertLocalTemporalDomain } from "@hypit/hypit/temporal";
-import type { LocalTemporalDomain } from "@hypit/hypit/temporal";
+import type { Narrative, NarrativeSegmentRef } from "@hypit/narrative";
+import { sealNarrativeAlignment } from "@hypit/narrative-temporal";
+import type { NarrativeAlignment } from "@hypit/narrative-temporal";
+import { assertLocalTemporalDomain } from "@hypit/temporal";
+import type { LocalTemporalDomain } from "@hypit/temporal";
 
 import type { NarrativeAlignmentTiming } from "./types.js";
 

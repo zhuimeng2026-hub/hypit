@@ -4,7 +4,8 @@ import type { StudioEditHandle, StudioTemporalDomainAnchor, StudioTemporalInstan
 import { adjustScriptSelection, parseScript } from "@hypit/script";
 import { projectProgramInstant } from "@hypit/temporal";
 import { parseTemporalInstant } from "@hypit/temporal/markup";
-import { chooseDomainGesture, formatTemporalPointEdit, domainGestureSpan } from "../src/temporal-edit.js";
+import { chooseDomainGesture, domainGestureSpan } from "../src/temporal-edit.js";
+import { formatTemporalPointEdit } from "@hypit/temporal/studio";
 
 const source = '<one><HOST>@{proof} One two @{/proof} three.</one>';
 const narrative = parseScript("gesture", source);

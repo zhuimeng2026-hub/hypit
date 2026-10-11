@@ -4,8 +4,8 @@ import { EndpointRegistry, MemoryResourceStore } from "@hypit/executor";
 import { sealSeedanceRequest } from "@hypit/seedance";
 import type { BlobRef, EndpointStartContext } from "@hypit/hypit/endpoint";
 import { canonicalize } from "@hypit/hypit/endpoint";
-import { generationTypes } from "@hypit/hypit/generation";
-import { assertMappingCoversPorts } from "@hypit/hypit/generation";
+import { generationTypes } from "@hypit/generation";
+import { assertMappingCoversPorts } from "@hypit/generation";
 import { seedancePorts } from "@hypit/seedance";
 import { capability, createVideoProvider, mapping } from "../src/provider.js";
 

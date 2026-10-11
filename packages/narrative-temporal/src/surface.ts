@@ -1,11 +1,11 @@
-import { sealGraphFragment } from "@hypit/author";
-import type { FragmentOperation, GraphFragment } from "@hypit/author";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation, GraphFragment } from "@hypit/hypit/author";
 import {
   assertAttributes, assertEmptyElement, localName, textAttribute,
   type StructuredElement, type StructuredSurfaceHandler, type SurfaceResolvedReference,
-} from "@hypit/markup";
+} from "@hypit/hypit/markup";
 import { narrativeTypes } from "@hypit/narrative";
-import { canonicalize, sameType, type TypeRef } from "@hypit/protocol";
+import { canonicalize, sameType, type TypeRef } from "@hypit/hypit/protocol";
 import { temporalProducers, temporalTypes } from "@hypit/temporal";
 import { timelineTypes } from "@hypit/timeline";
 

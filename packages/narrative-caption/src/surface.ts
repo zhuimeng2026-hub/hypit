@@ -1,13 +1,13 @@
 import { captionTypes } from "@hypit/caption";
-import { sealGraphFragment } from "@hypit/author";
+import { sealGraphFragment } from "@hypit/hypit/author";
 import {
   assertAttributes,
   assertEmptyElement,
   textAttribute,
   type StructuredSurfaceHandler,
   type SurfaceResolvedReference,
-} from "@hypit/markup";
-import { sameType, type TypeRef } from "@hypit/protocol";
+} from "@hypit/hypit/markup";
+import { sameType, type TypeRef } from "@hypit/hypit/protocol";
 import { narrativeTemporalTypes } from "@hypit/narrative-temporal";
 
 import { narrativeCaptionProducers, narrativeCaptionTypes } from "./manifest.js";

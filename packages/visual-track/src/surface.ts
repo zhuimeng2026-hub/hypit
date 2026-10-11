@@ -1,16 +1,16 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import { assertEmptyElement as empty, assertAttributes as allowed, textAttribute as text, optionalTextAttribute as optionalText, type StructuredElement, type StructuredSurfaceHandler, type SurfaceComponentDraft, type SurfaceRecordDraft, type SurfaceResolvedReference, type MarkupAttributeValue } from "@hypit/hypit/markup";
 import { sameType, type CanonicalValue, type TypeRef } from "@hypit/hypit/protocol";
 import { blobTypes } from "@hypit/hypit/blob";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation } from "@hypit/hypit/author";
-import { mediaTypes } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { mediaTypes } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import { resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/hypit/temporal/markup";
+import { temporalTypes } from "@hypit/temporal";
+import { resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/temporal/markup";
 
 import {
   decodeMediaFit,

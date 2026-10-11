@@ -12,14 +12,20 @@ Providers, and users can connect their own services through project Providers.
 
 The services introduced below are independent partners. They have their own accounts, terms,
 prices, model availability and APIs. A partnership is an introduction, not a shared HypiHub account.
-Each service Provider below is an independently versioned npm package. Install the one the project
+These Providers are independently versioned optional npm packages, not installed with Hypit. Install the one the project
 selects with the ordinary package manager, then name it in the Runtime Profile; merely installing it
 does not activate the service. Each Provider maps the installed models that service offers and reports
 that service's input limits, and its README lists both. A model the service offers beyond that set connects through the ordinary
 [Model and Provider](./providers.md) extension path.
 
+In the video project, run only the command for the selected service:
+
 ```bash
 npm install @hypit/provider-tokendance
+npm install @hypit/provider-hiapi
+npm install @hypit/provider-pollo
+npm install @hypit/provider-beatapi
+npm install @hypit/provider-monid
 ```
 
 ## Model and tool API partners

@@ -1,7 +1,7 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
-import type { GenerationPortValue } from "@hypit/hypit/generation";
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
+import type { GenerationPortValue } from "@hypit/generation";
+import { defineExactModelModule } from "@hypit/generation/model";
 
 export const volcengineMattingModuleRef = { name: "@hypit/volcengine-matting", version: "1" } as const;
 

@@ -8,6 +8,7 @@ import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { EventEmitter } from "node:events";
 import type { ViteDevServer } from "vite";
 import { studioFeedbackPlugin } from "../src/feedback-server.js";
 import { allowsStudioMutation, allowsStudioMutationWithToken } from "../src/mutation-origin.js";
@@ -26,7 +27,7 @@ test("Studio mutations reject other pages even when they use a loopback hostname
 });
 
 test("the feedback write endpoint rejects a foreign page before reading its mutation", async (t) => {
-  t.mock.method(fs, "watch", () => ({ close() {} }) as FSWatcher);
+  t.mock.method(fs, "watch", () => Object.assign(new EventEmitter(), { close() {} }) as FSWatcher);
   syncBuiltinESMExports();
   t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
   const root = await mkdtemp(join(tmpdir(), "hypit-studio-origin-"));
@@ -85,3 +86,75 @@ test("token-asserted writes reject a wrong or missing token", () => {
   assert.equal(allowsStudioMutationWithToken({ ...foreign, authorization: "Bearer wrong" }, "s3cret"), false);
   assert.equal(allowsStudioMutationWithToken({ ...foreign, authorization: "bearer s3cret" }, "s3cret"), false);
 });
+
+for (const failure of ["opening", "watching"] as const) {
+  // Watch capacity is a finite OS resource. Exhausting it must degrade to
+  // "no external-edit notification", never take the feedback endpoint down.
+  test(`feedback watch failure while ${failure} warns without disabling the endpoint`, async (t) => {
+    const root = await mkdtemp(join(tmpdir(), "hypit-studio-watch-"));
+    let closed = false;
+    const watcher = Object.assign(new EventEmitter(), { close() { closed = true; } });
+    const error = new Error("watch capacity exhausted");
+    t.mock.method(fs, "watch", () => {
+      if (failure === "opening") throw error;
+      return watcher as FSWatcher;
+    });
+    syncBuiltinESMExports();
+    t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+
+    const warnings: string[] = [];
+    let middleware: ((request: IncomingMessage, response: ServerResponse, next: () => void) => void) | undefined;
+    const server = createServer((_request, response) => { response.statusCode = 404; response.end(); });
+    const workspaceId = "ws_watch";
+    const plugin = studioFeedbackPlugin({
+      workspaces: new Map([[workspaceId, { workspaceRoot: root, runPath: join(root, "main.svrun") }]]),
+      defaultWorkspaceId: workspaceId,
+      corsConfig: { mode: "none" },
+      authToken: undefined,
+      sseHub: new SseHub(),
+    });
+    (plugin.configureServer as (server: ViteDevServer) => void)({
+      config: { logger: { warn(message: string) { warnings.push(message); } } },
+      httpServer: server,
+      ws: { send() {} },
+      middlewares: { use(handler: typeof middleware) { middleware = handler; } },
+    } as unknown as ViteDevServer);
+    try {
+      assert.ok(middleware);
+      // The watcher is created lazily on first request; opening the workspace
+      // still answers 200 with an empty document.
+      const body = await new Promise<string>((resolve) => {
+        middleware!({ url: `/__studio/${workspaceId}/feedback`, method: "GET", headers: { host: "127.0.0.1:5179" } } as IncomingMessage, {
+          statusCode: 0,
+          setHeader() {},
+          end(chunk?: string) { resolve(chunk ?? ""); },
+        } as unknown as ServerResponse, () => resolve(""));
+      });
+      assert.deepEqual(JSON.parse(body), { file: "FEEDBACK.json", run: "main.svrun", comments: [] });
+
+      if (failure === "watching") {
+        // The watcher exists now (it was created on first request), so an
+        // async error must warn and close it without taking the endpoint down.
+        watcher.emit("error", error);
+      }
+      assert.equal(warnings.length, 1, "the failure warns exactly once");
+      assert.match(warnings[0]!, /watch capacity exhausted/);
+      assert.equal(closed, failure === "watching");
+
+      // The endpoint keeps answering after the watcher is gone.
+      const after = await new Promise<string>((resolve) => {
+        middleware!({ url: `/__studio/${workspaceId}/feedback`, method: "GET", headers: { host: "127.0.0.1:5179" } } as IncomingMessage, {
+          statusCode: 0,
+          setHeader() {},
+          end(chunk?: string) { resolve(chunk ?? ""); },
+        } as unknown as ServerResponse, () => resolve(""));
+      });
+      assert.deepEqual(JSON.parse(after), { file: "FEEDBACK.json", run: "main.svrun", comments: [] });
+      assert.equal(warnings.length, 1, "a repeat read does not re-watch or re-warn");
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+}

@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 
 import type { StructuredElement, StructuredSurfaceHandler } from "@hypit/hypit/markup";
 import { assertAttributes, assertEmptyElement } from "@hypit/hypit/markup";
-import { assertFontArtifactRef, mediaTypes } from "@hypit/hypit/media";
-import type { FontArtifactRef } from "@hypit/hypit/media";
+import { assertFontArtifactRef, mediaTypes } from "@hypit/media";
+import type { FontArtifactRef } from "@hypit/media";
 import {
   NodePackageNotFoundError,
   resolveNodePackageResource,

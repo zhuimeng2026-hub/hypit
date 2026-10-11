@@ -1,6 +1,6 @@
 import { commentStickerMarkupSurfaces, commentStickerModuleRef, commentStickerTypes } from "./index.js";
 import type { CommentStickerProgram } from "./index.js";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { StudioTrackCompanion, StudioTrackCompanionContext, StudioItemDraft, StudioInspectorFieldDeclaration, StudioSourceBindingDeclaration } from "@hypit/studio-companion";
 import { artifactPreview, childItems, previewLayer, requiredSurfaceValue, temporalLineageFor, temporalDomainSource, textLayer } from "@hypit/studio-companion";
 

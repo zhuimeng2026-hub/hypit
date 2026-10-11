@@ -28,18 +28,23 @@ of this video's source, not an official Screen Overlay family or an ecosystem de
 
 ## Build a fresh result
 
-[reference.svs](reference.svs) owns this entry's Recipes. The copied Kits are under `kits/`.
+[reference.svs](reference.svs) owns this entry's Recipes. The Source imports
+`@hypit/gpt-image-kits/phone-ugc-v1` and `@hypit/seedance-kits/street-interview`.
+Run `npm ci` in this directory to install the locked Hypit, font,
+[`@hypit/interview-emoji-reveal`](https://www.npmjs.com/package/@hypit/interview-emoji-reveal)
+and project-local Flash dependencies.
 
 ```bash
-hypit check reference.svrun
-hypit estimate reference.svml --segment manifest-rule --language en --pace fast --rounding ceil
-hypit estimate reference.svml --segment real-estate-rule --language en --pace fast --rounding ceil
-hypit estimate reference.svml --segment bitcoin-rule --language en --pace fast --rounding ceil
-hypit plan reference.svrun --runtime ./hypit.runtime.json
+npm ci
+npx hypit check reference.svrun
+npx hypit estimate reference.svml --segment manifest-rule --language en --pace fast --rounding ceil
+npx hypit estimate reference.svml --segment real-estate-rule --language en --pace fast --rounding ceil
+npx hypit estimate reference.svml --segment bitcoin-rule --language en --pace fast --rounding ceil
+npx hypit plan reference.svrun --runtime ./hypit.runtime.json
 ```
 
 Those estimates are eleven, eight and eight seconds. Review the selected Endpoints and pricing;
-under spending authorization, `hypit build reference.svrun --runtime ./hypit.runtime.json --follow`
+under spending authorization, `npx hypit build reference.svrun --runtime ./hypit.runtime.json --follow`
 generates and composes the work. The initial result uses fixed Caption positions. Watch it to judge
 performance, cuts, reading and reveal timing.
 

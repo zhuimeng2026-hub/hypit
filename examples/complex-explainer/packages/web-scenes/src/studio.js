@@ -1,4 +1,4 @@
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { textLayer, temporalLineageFor } from "@hypit/studio-companion";
 const scenes = {
   ComponentWorkshop: ["Components in use", "Motion → components → library → another video"],

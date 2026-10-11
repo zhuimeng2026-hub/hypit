@@ -1,6 +1,6 @@
 import { depthStackMarkupSurfaces, depthStackModuleRef } from "./index.js";
 import type { DepthStackProgram } from "./index.js";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { StudioTrackCompanion, StudioTrackCompanionContext, StudioItemDraft, StudioInspectorFieldDeclaration } from "@hypit/studio-companion";
 import { requiredSurfaceValue, temporalLineageFor, temporalDomainSource } from "@hypit/studio-companion";
 

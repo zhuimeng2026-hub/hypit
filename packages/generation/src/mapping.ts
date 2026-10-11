@@ -1,5 +1,5 @@
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CanonicalValue, CapabilityRef } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CanonicalValue, CapabilityRef } from "@hypit/hypit/protocol";
 
 import { isMediaPort } from "./ports.js";
 import type { GenerationMediaValue, GenerationPortTable } from "./ports.js";

@@ -1,10 +1,10 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import { plannedNeedInputs } from "@hypit/producer";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import { plannedNeedInputs } from "@hypit/hypit/producer";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 import { synchronizedMediaSampleFrames, verifySynchronizedMedia } from "@hypit/media";
 import type { SynchronizedMedia } from "@hypit/media";
-import { canonicalize } from "@hypit/protocol";
-import type { StoredValue } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { StoredValue } from "@hypit/hypit/protocol";
 import { assertLocalTemporalDomain } from "@hypit/temporal";
 import type { LocalTemporalDomain } from "@hypit/temporal";
 

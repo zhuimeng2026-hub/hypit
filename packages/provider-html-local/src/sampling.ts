@@ -1,5 +1,5 @@
-import type { MediaFrameRange } from "@hypit/hypit/media";
-import type { HtmlFrameSource } from "@hypit/hypit/html-program";
+import type { MediaFrameRange } from "@hypit/media";
+import type { HtmlFrameSource } from "@hypit/html-program";
 import { FrameSpanIndex } from "./frame-span-index.js";
 import { assert } from "./process.js";
 

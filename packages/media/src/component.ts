@@ -1,9 +1,9 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 import { verifyMediaInspection, verifyMediaStreamSelection, verifyMuxedMedia, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "./identity.js";
 import { mediaLocalTemporalDomain } from "./domain.js";
 import type { MediaDomainSpec, SynchronizedMedia } from "./types.js";
-import { canonicalize } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
 import { mediaProducers } from "./manifest.js";
 import { mediaTypes } from "./manifest.js";
 import { verifyMediaFrameRange } from "./frame-range.js";

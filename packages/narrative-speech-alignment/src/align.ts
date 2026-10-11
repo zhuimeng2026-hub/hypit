@@ -1,5 +1,5 @@
-import type { NarrativeToken } from "@hypit/hypit/narrative";
-import type { SpeechWordEvidence } from "@hypit/hypit/speech-evidence";
+import type { NarrativeToken } from "@hypit/narrative";
+import type { SpeechWordEvidence } from "@hypit/speech-evidence";
 
 import { editDistance, normalizeForAlignment } from "./normalize.js";
 import type { AlignmentGroup, AlignmentRelation } from "./types.js";

@@ -5,7 +5,7 @@ import type { CliIo } from "@hypit/hypit/cli";
 import {
   animatableLocalStyles,
   visualCompositionVocabulary,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import { markupSurfaceFacetAbi } from "@hypit/hypit/markup";
 import type {
   RegisteredSurface,
@@ -13,12 +13,12 @@ import type {
   SurfacePortVocabulary,
   SurfaceVocabulary,
 } from "@hypit/hypit/markup";
-import { exactModelFacetAbi } from "@hypit/hypit/generation/model";
-import { loadNodePackageSelection, locateNodePackage } from "@hypit/hypit/loader/node";
+import { exactModelFacetAbi } from "@hypit/generation/model";
+import { loadNodePackageSelection, locateNodePackage, distributionPackageRoots } from "@hypit/hypit/loader/node";
 import type { NodePackageLoadOptions } from "@hypit/hypit/loader/node";
 import type { ValueSchema } from "@hypit/hypit/protocol";
 import { findProjectRoot } from "@hypit/hypit/project";
-import { VISUAL_STYLE_ENUM_VALUES_V1, VISUAL_STYLE_NAMES_V1 } from "@hypit/hypit/composition";
+import { VISUAL_STYLE_ENUM_VALUES_V1, VISUAL_STYLE_NAMES_V1 } from "@hypit/composition";
 
 /**
  * What a Source may write: the installed packages, and the Surfaces each one declares.
@@ -55,7 +55,7 @@ export async function listPackages(projectRoot: string, distributionRoot?: strin
   // Discover installed scopes and unlinked packages in both the project and the Distribution.
   const roots = [...new Set([
     projectRoot,
-    ...(distributionRoot === undefined ? [] : [distributionRoot]),
+    ...(distributionRoot === undefined ? [] : distributionPackageRoots(distributionRoot)),
   ])];
   const candidates: { readonly name: string; readonly directory: string }[] = [];
   for (const root of roots) {

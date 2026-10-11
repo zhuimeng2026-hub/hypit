@@ -2,9 +2,9 @@ import { canonicalize } from "@hypit/hypit/protocol";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
-import type { AudioTrack, VisualTrack } from "@hypit/hypit/composition";
-import type { Canvas } from "@hypit/hypit/spatial";
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { AudioTrack, VisualTrack } from "@hypit/composition";
+import type { Canvas } from "@hypit/spatial";
+import type { Timeline } from "@hypit/timeline";
 
 import { filmProducers } from "./manifest.js";
 import { appendFilmAudioTrack, appendFilmVisualTrack, compileFilmComposition, createFilmTrackSet } from "./program.js";

@@ -1,7 +1,7 @@
-import type { CanonicalValue } from "@hypit/protocol";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
 import { assertSpatialFrame } from "@hypit/spatial";
 import type { SpatialFrame } from "@hypit/spatial";
-import type { Recipe } from "@hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
 import { assertTimelineIdentity, timelineFrameCount } from "@hypit/timeline";
 import type { Timeline } from "@hypit/timeline";
 

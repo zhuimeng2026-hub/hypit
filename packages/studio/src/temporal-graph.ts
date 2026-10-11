@@ -1,6 +1,6 @@
 import { sameType } from "@hypit/hypit/protocol";
 import type { BuildState, ProducerRef, ProducerStep, StoredValue, TypeRef, TypedRecord } from "@hypit/hypit/protocol";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 import type {
   StudioTemporalBinding,
   StudioTemporalInstantProjection,

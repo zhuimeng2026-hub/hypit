@@ -1,10 +1,10 @@
-import { sealGraphFragment } from "@hypit/author";
-import type { FragmentOperation, FragmentOperationRef, GraphFragment } from "@hypit/author";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { FragmentOperation, FragmentOperationRef, GraphFragment } from "@hypit/hypit/author";
 import type {
   MarkupAttributeValue, StructuredElement, SurfaceAttributeVocabulary, SurfaceComponentDraft,
   SurfaceRecordDraft, SurfaceResolvedReference,
-} from "@hypit/markup";
-import { sameType, type TypeRef } from "@hypit/protocol";
+} from "@hypit/hypit/markup";
+import { sameType, type TypeRef } from "@hypit/hypit/protocol";
 import { temporalProducers, temporalTypes } from "@hypit/temporal";
 import type { TemporalAuthorParameter, TemporalDuration, TemporalInstantExpression } from "@hypit/temporal";
 import { timelineTypes } from "@hypit/timeline";

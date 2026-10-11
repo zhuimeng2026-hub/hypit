@@ -1,7 +1,7 @@
 import { canonicalize, defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
 import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint";
-import { compileWireRequest, generationTypes, sealGeneratedImageSet, selectWireModelForRequest } from "@hypit/hypit/generation";
-import type { GenerationRequest, GenerationWireMapping } from "@hypit/hypit/generation";
+import { compileWireRequest, generationTypes, sealGeneratedImageSet, selectWireModelForRequest } from "@hypit/generation";
+import type { GenerationRequest, GenerationWireMapping } from "@hypit/generation";
 
 export const providerModule = { name: "@example/provider-images", version: "1" } as const;
 export const capability = { module: { name: "@hypit/gpt-image", version: "1" }, name: "gpt-image-2" } as const;

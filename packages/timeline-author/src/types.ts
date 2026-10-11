@@ -1,4 +1,4 @@
-import type { TemporalDuration } from "@hypit/hypit/temporal";
+import type { TemporalDuration } from "@hypit/temporal";
 
 export type TimelineAuthorHeader = { readonly id: string };
 export type ConstructionPoint = { readonly frame: number };

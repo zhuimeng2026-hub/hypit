@@ -1,5 +1,11 @@
 # `@hypit/provider-beatapi`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-beatapi
+```
+
 Hypit Runtime Provider for a [BeatAPI](https://docs.beatapi.io/quick-guide) account. Each capability
 posts one task to `https://api.beatapi.io` with a `Bearer` API key, polls `GET /v1/tasks/{task_id}`
 until it reaches `succeeded`, downloads every entry of `output.media` and stores the files in the

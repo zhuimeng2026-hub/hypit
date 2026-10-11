@@ -1,6 +1,6 @@
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
-import { timelineDependency, timelineTypes } from "@hypit/hypit/timeline";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
+import { timelineDependency, timelineTypes } from "@hypit/timeline";
 
 export const timelineAuthorModuleRef = { name: "@hypit/timeline-author", version: "1" } as const;
 export const timelineAuthorTypes = {

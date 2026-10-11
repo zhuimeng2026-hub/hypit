@@ -4,8 +4,8 @@ import {
   generationTypes,
   sealGeneratedImageSet,
   sealGeneratedVideoSet,
-} from "@hypit/hypit/generation";
-import type { GenerationArtifactUrlResolver, GenerationRequest } from "@hypit/hypit/generation";
+} from "@hypit/generation";
+import type { GenerationArtifactUrlResolver, GenerationRequest } from "@hypit/generation";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, CapabilityRef, CanonicalValue, StoredValue, TypeRef } from "@hypit/hypit/protocol";
 import type { EndpointRequest, EndpointSupport } from "@hypit/hypit/endpoint";

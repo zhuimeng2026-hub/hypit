@@ -4,7 +4,7 @@ export type {
   SpeechCharacterEvidence,
   SpeechTranscriptPassage,
   SpeechWordEvidence,
-} from "@hypit/hypit/speech-evidence";
+} from "@hypit/speech-evidence";
 /** Private vocabulary of the alignment implementation, not part of the public alignment value. */
 export type AlignmentRelation =
   | "exact"

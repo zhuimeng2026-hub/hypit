@@ -16,8 +16,8 @@
     "activation": "./src/activation.ts"
   },
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^",
-    "@hypit/runtime-local": "workspace:^"
+    "@hypit/hypit": "workspace:^0.3.0",
+    "@hypit/runtime-local": "workspace:^0.1.1"
   },
   "devDependencies": {
     "@hypit/atomic-file": "workspace:*",

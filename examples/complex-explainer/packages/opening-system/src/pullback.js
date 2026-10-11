@@ -3,11 +3,11 @@ import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfac
 import { canonicalize } from "@hypit/hypit/protocol";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import { presenterStyle, presenterTypes } from "./presenter.js";
-import { sealVisualTrack, compositionTypes } from "@hypit/hypit/composition";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import { htmlVisual } from "@hypit/hypit/html-program";
+import { sealVisualTrack, compositionTypes } from "@hypit/composition";
+import { timelineTypes } from "@hypit/timeline";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes } from "@hypit/temporal";
+import { htmlVisual } from "@hypit/html-program";
 const styles = (o) =>
   Object.entries(o).map(([name, value]) => ({ name, value }));
 // A local Use owns the pullback's clock; media continues from its Source Window.

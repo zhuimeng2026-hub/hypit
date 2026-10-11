@@ -1,4 +1,4 @@
-import type { CanonicalValue } from "@hypit/protocol";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
 
 /** One author-visible word surface. Punctuation owned by the surface is preserved. */
 export type CaptionDisplayWord = {

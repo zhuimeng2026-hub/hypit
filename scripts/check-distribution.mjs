@@ -17,7 +17,8 @@ await mkdir(project);
 const env = {
   ...process.env,
   HYPIT_STATE_HOME: join(root, "state"),
-  npm_config_cache: join(root, "npm-cache"),
+  // Downloaded package bytes may be reused; project, node_modules and Runtime state stay fresh.
+  npm_config_cache: process.env.npm_config_cache || join(root, "npm-cache"),
 };
 // Old shell hints must not redirect the installed launcher, Worker or capture child.
 env.HYPIT_DISTRIBUTION_ROOT = join(root, "stale-distribution");
@@ -93,7 +94,13 @@ try {
   await cp(join(example, "packages", "chat-scene"), component, { recursive: true });
   const installed = installedDistribution;
   const componentPackage = JSON.parse(await readFile(join(component, "package.json"), "utf8"));
-  componentPackage.devDependencies["@hypit/hypit"] = installed.version;
+  for (const field of ["dependencies", "peerDependencies", "devDependencies"]) {
+    for (const [name, range] of Object.entries(componentPackage[field] ?? {})) {
+      if (!range.startsWith("workspace:")) continue;
+      const selected = JSON.parse(await readFile(join(project, "node_modules", ...name.split("/"), "package.json"), "utf8"));
+      componentPackage[field][name] = selected.version;
+    }
+  }
   await writeFile(join(component, "package.json"), JSON.stringify(componentPackage, null, 2));
   const projectPackage = JSON.parse(await readFile(join(project, "package.json"), "utf8"));
   projectPackage.workspaces = ["packages/chat-scene"];

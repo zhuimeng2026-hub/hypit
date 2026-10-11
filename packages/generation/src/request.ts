@@ -1,7 +1,7 @@
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, ObjectFieldSchema, ValueSchema } from "@hypit/protocol";
-import { verifyText } from "@hypit/text";
-import type { Text } from "@hypit/text";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, ObjectFieldSchema, ValueSchema } from "@hypit/hypit/protocol";
+import { verifyText } from "@hypit/hypit/text";
+import type { Text } from "@hypit/hypit/text";
 
 import { assertGenerationBlobRef, sealGenerationRequest } from "./identity.js";
 import { generationBlobRefSchema, generationObjectSchema } from "./schema.js";

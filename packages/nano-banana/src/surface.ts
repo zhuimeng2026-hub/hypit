@@ -1,12 +1,12 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
-import type { GenerationMediaPort } from "@hypit/hypit/generation";
+import { generationPort, sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
+import type { GenerationMediaPort } from "@hypit/generation";
 import {
   createExactModelPrimaryGenerationFragment,
   exactModelMediaInputNames,
   exactModelTextInputName,
-} from "@hypit/hypit/generation/model";
-import type { ExactModelEndpoint } from "@hypit/hypit/generation/model";
+} from "@hypit/generation/model";
+import type { ExactModelEndpoint } from "@hypit/generation/model";
 import type { CanonicalValue, TypeRef } from "@hypit/hypit/protocol";
 import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
 import { textTypes, verifyText } from "@hypit/hypit/text";

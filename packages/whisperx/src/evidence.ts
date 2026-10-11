@@ -1,5 +1,5 @@
-import { assertSpeechEvidenceAudioIdentity } from "@hypit/hypit/speech-evidence";
-import type { SpeechEvidenceAudio } from "@hypit/hypit/speech-evidence";
+import { assertSpeechEvidenceAudioIdentity } from "@hypit/speech-evidence";
+import type { SpeechEvidenceAudio } from "@hypit/speech-evidence";
 import type { WhisperXAlignmentRequest, WhisperXLanguage } from "./types.js";
 import { parseWhisperXLanguage } from "./types.js";
 

@@ -1,6 +1,6 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
-import type { StoredValue } from "@hypit/protocol";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import type { StoredValue } from "@hypit/hypit/protocol";
 import { timelineTypes } from "./manifest.js";
 import { assertTimelineIdentity } from "./identity.js";
 import type { Timeline } from "./types.js";

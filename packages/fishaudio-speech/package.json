@@ -1,6 +1,6 @@
 {
   "name": "@hypit/fishaudio-speech",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "README.md"
   ],
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^"
+    "@hypit/hypit": "workspace:^0.3.1"
   },
   "devDependencies": {
     "@hypit/blob": "workspace:*",
@@ -24,5 +24,8 @@
     "@hypit/protocol": "workspace:*",
     "@hypit/text": "workspace:*",
     "@hypit/markup": "workspace:*"
+  },
+  "dependencies": {
+    "@hypit/generation": "workspace:^0.1.0"
   }
 }

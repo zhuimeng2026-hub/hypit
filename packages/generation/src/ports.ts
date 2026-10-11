@@ -1,4 +1,4 @@
-import type { BlobRef } from "@hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
 
 /**
  * The closed vocabulary describing what one exact generation model accepts.

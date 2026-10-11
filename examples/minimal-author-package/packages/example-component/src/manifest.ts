@@ -1,12 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import { mediaTypes } from "@hypit/hypit/media";
+import { timelineTypes } from "@hypit/timeline";
+import { temporalTypes } from "@hypit/temporal";
+import { mediaTypes } from "@hypit/media";
 import { recipeType } from "@hypit/hypit/recipe";
 import { blobTypes } from "@hypit/hypit/blob";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 
 const previewImage = (file: string) => ({
   mediaType: "image/png",

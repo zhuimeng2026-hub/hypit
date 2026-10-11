@@ -1,8 +1,8 @@
 import { palette } from "@explainer/visual-language";
 import { flagSetup } from "./flag-cloth.js";
-import { sealVisualTrack } from "@hypit/hypit/composition";
-import { htmlVisual } from "@hypit/hypit/html-program";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
+import { sealVisualTrack } from "@hypit/composition";
+import { htmlVisual } from "@hypit/html-program";
+import { assertTemporalWindowFor } from "@hypit/temporal";
 
 const digits = {
   0: ["11111", "10001", "10001", "10001", "10001", "10001", "11111"],

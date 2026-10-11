@@ -1,5 +1,5 @@
-import type { CanonicalValue, BlobRef } from "@hypit/protocol";
-import { isResourceId } from "@hypit/protocol";
+import type { CanonicalValue, BlobRef } from "@hypit/hypit/protocol";
+import { isResourceId } from "@hypit/hypit/protocol";
 import { verifyMediaFrameRange } from "@hypit/media";
 import type { MediaFrameRange } from "@hypit/media";
 import { assertHtmlProgram } from "./document.js";

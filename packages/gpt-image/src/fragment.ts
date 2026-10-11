@@ -1,9 +1,9 @@
 import { blobTypes } from "@hypit/hypit/blob";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { generationProducers } from "@hypit/hypit/generation";
+import { generationProducers } from "@hypit/generation";
 import { imageTransformProducers, imageTransformTypes } from "@hypit/image-operations";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
-import type { ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/generation/model";
+import type { ExactModelMediaInput, ExactModelTextInput } from "@hypit/generation/model";
 import type { FragmentOperation } from "@hypit/hypit/author";
 import { textTypes } from "@hypit/hypit/text";
 

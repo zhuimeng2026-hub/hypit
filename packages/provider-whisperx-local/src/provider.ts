@@ -1,8 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
-import type { AlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
+import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/speech-evidence";
+import type { AlignedTranscriptEvidence } from "@hypit/speech-evidence";
 import type { EndpointInvocationContext, EndpointFulfillment } from "@hypit/hypit/endpoint";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { CanonicalValue } from "@hypit/hypit/protocol";

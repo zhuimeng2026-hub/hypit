@@ -1,7 +1,7 @@
-import { narrativeDependency, narrativeTypes } from "@hypit/hypit/narrative";
-import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/hypit/narrative-temporal";
-import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
+import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
+import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/narrative-temporal";
+import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/speech-evidence";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
 import type { ModuleManifest, ProducerRef } from "@hypit/hypit/protocol";
 
 export const speechAlignmentModuleRef = { name: "@hypit/narrative-speech-alignment", version: "1" } as const;

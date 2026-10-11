@@ -1,9 +1,9 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
-import { canonicalize } from "@hypit/protocol";
-import type { StoredValue } from "@hypit/protocol";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { StoredValue } from "@hypit/hypit/protocol";
 import type { SpatialFrame } from "@hypit/spatial";
-import type { Recipe } from "@hypit/recipe";
+import type { Recipe } from "@hypit/hypit/recipe";
 import type { Timeline } from "@hypit/timeline";
 
 import { regionEvidenceProducers, regionEvidenceTypes } from "./manifest.js";

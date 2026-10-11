@@ -1,7 +1,7 @@
 import { assertAudioLevelAutomation } from "./audio-level-automation.js";
 import type { AudioLevelAutomation, AudioSampleSpan } from "./audio-level-automation.js";
-import { canonicalStringify, isResourceId } from "@hypit/protocol";
-import type { BlobRef, CanonicalValue } from "@hypit/protocol";
+import { canonicalStringify, isResourceId } from "@hypit/hypit/protocol";
+import type { BlobRef, CanonicalValue } from "@hypit/hypit/protocol";
 
 import {
   assertVisualStyleV1,

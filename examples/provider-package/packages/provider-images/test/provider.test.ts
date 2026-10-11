@@ -4,7 +4,7 @@ import { EndpointRegistry, MemoryResourceStore } from "@hypit/executor";
 import { sealGptImage2Request } from "@hypit/gpt-image";
 import type { BlobRef, EndpointStartContext } from "@hypit/hypit/endpoint";
 import { canonicalize } from "@hypit/hypit/endpoint";
-import { generationTypes } from "@hypit/hypit/generation";
+import { generationTypes } from "@hypit/generation";
 import { capability, createImageProvider } from "../src/provider.js";
 
 test("project Provider maps a reference, retains its receipt and collects through the public resource port", async () => {

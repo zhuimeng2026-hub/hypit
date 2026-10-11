@@ -1,9 +1,9 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/hypit/generation";
-import type { GenerationMediaPort } from "@hypit/hypit/generation";
+import { sealGenerationMediaBinding, sealGenerationRequestDraft } from "@hypit/generation";
+import type { GenerationMediaPort } from "@hypit/generation";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { StructuredSurfaceHandler } from "@hypit/hypit/markup";
-import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames } from "@hypit/hypit/generation/model";
+import { createExactModelPrimaryGenerationFragment, exactModelMediaInputNames } from "@hypit/generation/model";
 import { portraitMattingEndpoint as endpoint } from "./index.js";
 
 function assert(condition: unknown, message: string): asserts condition {

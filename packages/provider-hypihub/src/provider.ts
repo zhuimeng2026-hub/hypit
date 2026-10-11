@@ -3,11 +3,11 @@ import type { RuntimeDoctorDiagnostic } from "@hypit/runtime-local/extension";
 import type { AsyncEndpoint, CredentialRef, EndpointCredential, EndpointFulfillment, EndpointInvocationContext, EndpointPollContext, EndpointPricingReader, EndpointStartContext, EndpointOutcome, ImmediateEndpointHandler, ResourceStore } from "@hypit/hypit/endpoint";
 import { credentialRef, EndpointServiceError, defineEndpoint, wakeAfter } from "@hypit/hypit/endpoint";
 import { EndpointHttpError, EndpointResponseError, EndpointTransportError, withRequestDeadline } from "@hypit/hypit/endpoint/http";
-import { selectWireModelForRequest } from "@hypit/hypit/generation";
-import type { GenerationRequest } from "@hypit/hypit/generation";
+import { selectWireModelForRequest } from "@hypit/generation";
+import type { GenerationRequest } from "@hypit/generation";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, CanonicalValue, CapabilityRef } from "@hypit/hypit/protocol";
-import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
+import { sealAlignedTranscriptEvidence, speechEvidenceTypes } from "@hypit/speech-evidence";
 import {
   assertWhisperXEvidenceWav,
   interpretWhisperXTranscript,

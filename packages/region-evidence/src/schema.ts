@@ -1,4 +1,4 @@
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 import { spatialFrameSchema } from "@hypit/spatial";
 
 const object = (fields: Readonly<Record<string, { readonly schema: ValueSchema; readonly optional?: boolean }>>): ValueSchema => ({ kind: "object", fields });

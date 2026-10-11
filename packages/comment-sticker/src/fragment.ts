@@ -1,13 +1,13 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 
 import { blobTypes } from "@hypit/hypit/blob";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation } from "@hypit/hypit/author";
 import type { TypeRef } from "@hypit/hypit/protocol";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 import { textTypes } from "@hypit/hypit/text";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 
 import { commentStickerProducers, commentStickerTypes } from "./manifest.js";
 

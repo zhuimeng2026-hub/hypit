@@ -1,5 +1,11 @@
 # `@hypit/comment-sticker`
 
+Install in the video project alongside Hypit:
+
+```bash
+npm install @hypit/comment-sticker
+```
+
 The Track Surface accepts `timeline={program.timeline}`. Each Sticker consumes an already declared
 absolute Window; semantic or other domain coordinates are projected upstream.
 

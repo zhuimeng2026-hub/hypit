@@ -1,9 +1,9 @@
 import type { CanonicalValue, SourceRange, StoredValue, TypeRef } from "@hypit/hypit/protocol";
-import type { CaptionWordAttribute } from "@hypit/hypit/caption";
-import type { Narrative, NarrativeMoment, NarrativeSegment, NarrativeSelection, NarrativeToken, NarrativeTurn } from "@hypit/hypit/narrative";
+import type { CaptionWordAttribute } from "@hypit/caption";
+import type { Narrative, NarrativeMoment, NarrativeSegment, NarrativeSelection, NarrativeToken, NarrativeTurn } from "@hypit/narrative";
 
-export type { CaptionWordAttribute } from "@hypit/hypit/caption";
-export type { Narrative, SemanticAnchor } from "@hypit/hypit/narrative";
+export type { CaptionWordAttribute } from "@hypit/caption";
+export type { Narrative, SemanticAnchor } from "@hypit/narrative";
 
 export type Affinity = "left" | "right";
 

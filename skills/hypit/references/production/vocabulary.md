@@ -84,11 +84,12 @@ for an implementation example. Give the new package its own Module identity and 
 owner's scope; `@hypit/*` is the Hypit project's publishing namespace, not a scope for project packages.
 
 TypeScript imports use public SDK paths such as `@hypit/hypit/author`, `@hypit/hypit/producer`,
-`@hypit/hypit/admission`, `@hypit/hypit/markup`, `@hypit/hypit/composition`,
-`@hypit/hypit/text` or `@hypit/hypit/caption`; Studio Companions use the independent
+`@hypit/hypit/admission`, `@hypit/hypit/markup`, `@hypit/composition`,
+`@hypit/hypit/text` or `@hypit/caption`; Studio Companions use the independent
 `@hypit/studio-companion` package. Source imports instead name logical Modules,
-such as `@hypit/caption@1`. When learning from installed official source, translate its internal
-workspace imports to the corresponding public SDK paths in the project package.
+such as `@hypit/caption@1`. Declare the domain packages you import as ordinary dependencies;
+declare compatibility with the Hypit and Companion host APIs through peer dependencies. When learning
+from language-internal source, translate its private workspace imports to public Hypit SDK paths.
 
 Describe the Surface's role, attributes and outputs with a small valid example so a future author
 can select it. A visual preview makes its appearance recognizable; Studio shows the actual

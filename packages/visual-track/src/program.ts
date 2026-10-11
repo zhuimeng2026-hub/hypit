@@ -1,12 +1,12 @@
-import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/hypit/composition";
-import type { VisualTrack } from "@hypit/hypit/composition";
+import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/composition";
+import type { VisualTrack } from "@hypit/composition";
 import { canonicalize } from "@hypit/hypit/protocol";
-import { assertSpatialFrame, assertSpatialPath } from "@hypit/hypit/spatial";
-import type { SpatialPath } from "@hypit/hypit/spatial";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
-import { assertTimelineIdentity, timelineFrameCount } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertSpatialFrame, assertSpatialPath } from "@hypit/spatial";
+import type { SpatialPath } from "@hypit/spatial";
+import { assertTemporalWindowFor } from "@hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
+import { assertTimelineIdentity, timelineFrameCount } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 import {
   assertMediaIdentity,

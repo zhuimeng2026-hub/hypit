@@ -1,6 +1,6 @@
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import { spatialDependency, spatialTypes } from "@hypit/spatial";
-import { recipeType } from "@hypit/recipe";
+import { recipeType } from "@hypit/hypit/recipe";
 import { timelineDependency, timelineTypes } from "@hypit/timeline";
 
 export const regionEvidenceModuleRef = { name: "@hypit/region-evidence", version: "1" } as const;

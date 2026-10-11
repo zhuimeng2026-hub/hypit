@@ -15,8 +15,8 @@ import type {
   VisualStyleDeclaration,
   VisualTrack,
 } from "@hypit/composition";
-import { canonicalStringify, isResourceId } from "@hypit/protocol";
-import type { BlobRef, ResourceId } from "@hypit/protocol";
+import { canonicalStringify, isResourceId } from "@hypit/hypit/protocol";
+import type { BlobRef, ResourceId } from "@hypit/hypit/protocol";
 import { VISUAL_IR_V1 } from "@hypit/composition";
 import { readHtmlVisual, htmlVisualHtml, htmlVisualScript } from "./html-visual.js";
 import { presentationCaptureScopeRuntime } from "./capture-scope.js";

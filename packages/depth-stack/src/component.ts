@@ -1,10 +1,10 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import type { TemporalInstant } from "@hypit/hypit/temporal";
+import type { SpatialFrame } from "@hypit/spatial";
+import type { TemporalInstant } from "@hypit/temporal";
 import type { MediaLayerSet } from "@hypit/visual-track";
 import type { Text } from "@hypit/hypit/text";
 

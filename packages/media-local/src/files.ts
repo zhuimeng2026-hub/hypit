@@ -8,8 +8,8 @@ import sharp from "sharp";
 import { decodeMediaFrames } from "./file-frames.js";
 import { writeFrameGrid } from "./frame-grid.js";
 import { runProcess, runProcessOutput, runProcessWithInput } from "./process.js";
-import { parseTranscriptWords, phraseRanges, wordsAt } from "@hypit/hypit/speech-evidence";
-import type { FrameWords, TranscriptWord } from "@hypit/hypit/speech-evidence";
+import { parseTranscriptWords, phraseRanges, wordsAt } from "@hypit/speech-evidence";
+import type { FrameWords, TranscriptWord } from "@hypit/speech-evidence";
 
 /**
  * Local views of media at chosen times and scales. Transcript annotations use the same seconds as

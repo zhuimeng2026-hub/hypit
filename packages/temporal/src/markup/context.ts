@@ -1,5 +1,5 @@
-import type { StructuredElement, SurfaceAttributeVocabulary, SurfaceResolvedReference } from "@hypit/markup";
-import { sameType } from "@hypit/protocol";
+import type { StructuredElement, SurfaceAttributeVocabulary, SurfaceResolvedReference } from "@hypit/hypit/markup";
+import { sameType } from "@hypit/hypit/protocol";
 import { timelineTypes } from "@hypit/timeline";
 
 export type TemporalContext = { readonly timeline: SurfaceResolvedReference };

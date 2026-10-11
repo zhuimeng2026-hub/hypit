@@ -3,14 +3,14 @@ import {
   generationPort,
   sealGenerationMediaBinding,
   sealGenerationRequestDraft,
-} from "@hypit/hypit/generation";
+} from "@hypit/generation";
 import type {
   GenerationMediaPort,
   GenerationMediaRole,
   GenerationPortTable,
-} from "@hypit/hypit/generation";
-import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/hypit/generation/model";
-import type { ExactModelEndpoint, ExactModelMediaInput } from "@hypit/hypit/generation/model";
+} from "@hypit/generation";
+import { exactModelMediaInputNames, exactModelTextInputName } from "@hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput } from "@hypit/generation/model";
 import { textTypes, verifyText } from "@hypit/hypit/text";
 import type { CanonicalValue } from "@hypit/hypit/protocol";
 import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";

@@ -1,12 +1,12 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation, GraphFragment } from "@hypit/hypit/author";
-import { mediaTypes } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { mediaTypes } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { textTypes } from "@hypit/hypit/text";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 
 import { rankingProducers, rankingTypes } from "./manifest.js";
 import type { RankingVariant } from "./types.js";

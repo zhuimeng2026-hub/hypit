@@ -1,12 +1,12 @@
-import { assertTimelineIdentity, timelineFrameSampleBoundary, timelineSampleFrames } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { assertAudioTrackIdentity, sealAudioTrack } from "@hypit/hypit/composition";
-import type { AudioClip, AudioTrack } from "@hypit/hypit/composition";
-import { synchronizedMediaSampleFrames, verifySynchronizedMedia } from "@hypit/hypit/media";
-import type { SynchronizedMedia } from "@hypit/hypit/media";
+import { assertTimelineIdentity, timelineFrameSampleBoundary, timelineSampleFrames } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
+import { assertAudioTrackIdentity, sealAudioTrack } from "@hypit/composition";
+import type { AudioClip, AudioTrack } from "@hypit/composition";
+import { synchronizedMediaSampleFrames, verifySynchronizedMedia } from "@hypit/media";
+import type { SynchronizedMedia } from "@hypit/media";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
-import { assertTemporalWindowFor, temporalDurationInSamples } from "@hypit/hypit/temporal";
-import type { TemporalWindow, TemporalDuration } from "@hypit/hypit/temporal";
+import { assertTemporalWindowFor, temporalDurationInSamples } from "@hypit/temporal";
+import type { TemporalWindow, TemporalDuration } from "@hypit/temporal";
 
 import type {
   AudioClipSpec,

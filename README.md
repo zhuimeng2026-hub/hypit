@@ -212,6 +212,10 @@ commands and the repository layout.
     <td>Questions</td>
     <td><a href="https://discord.gg/85hnyQnxpn">Discord</a> or <a href="https://t.me/hypitai">Telegram</a></td>
   </tr>
+  <tr>
+    <td>Upgrading existing projects</td>
+    <td><a href="./migrations/0.3.md">0.3 migration guide</a> · <a href="./migrations/0.3.1.md">0.3.1 SDK migration guide</a></td>
+  </tr>
 </table>
 
 ## Launch Partners

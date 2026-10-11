@@ -1,5 +1,5 @@
-import { createAdmissionPackageFacet } from "@hypit/admission";
-import { createProducerPackageFacet } from "@hypit/producer";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
 import { timelineComponent, timelineManifest } from "./index.js";
 
 export const hypitPackage = {

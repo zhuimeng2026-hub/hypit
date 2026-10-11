@@ -1,5 +1,5 @@
 import type { CapabilityRef, ModuleRef } from "@hypit/hypit/protocol";
-import type { GenerationWireMapping } from "@hypit/hypit/generation";
+import type { GenerationWireMapping } from "@hypit/generation";
 
 /** HypiHub model IDs and the normalized request fields they accept. */
 const SEEDANCE: ModuleRef = { name: "@hypit/seedance", version: "1" };

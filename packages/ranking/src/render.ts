@@ -1,11 +1,11 @@
-import { assertTimelineIdentity, timelineFrameSampleBoundary, timelineSampleFrames } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertTimelineIdentity, timelineFrameSampleBoundary, timelineSampleFrames } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import {
   assertAudioTrackIdentity,
   assertVisualTrackIdentity,
   sealAudioTrack,
   sealVisualTrack,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import type {
   AudioClip,
   AudioTrack,
@@ -14,8 +14,8 @@ import type {
   VisualPresent,
   VisualStyleDeclaration,
   VisualTrack,
-} from "@hypit/hypit/composition";
-import { synchronizedMediaSampleFrames, verifySynchronizedMedia } from "@hypit/hypit/media";
+} from "@hypit/composition";
+import { synchronizedMediaSampleFrames, verifySynchronizedMedia } from "@hypit/media";
 
 import {
   assertColumnProgram,

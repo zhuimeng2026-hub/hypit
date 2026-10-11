@@ -1,5 +1,5 @@
-import { blobDependency, blobTypes } from "@hypit/blob";
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import { blobDependency, blobTypes } from "@hypit/hypit/blob";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import { compositableSurfaceSchema, fontArtifactSchema, fontStackSchema, mediaInspectionSchema, mediaStreamSelectionSchema, muxedMediaSchema, timelineVisualSchema, synchronizedMediaSchema, timelineAudioSchema } from "./schema.js";
 import { temporalDependency, temporalTypes } from "@hypit/temporal";
 export const mediaModuleRef = { name: "@hypit/media", version: "1" } as const;

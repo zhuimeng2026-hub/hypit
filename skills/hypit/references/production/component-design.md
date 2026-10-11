@@ -117,6 +117,8 @@ coordinated explainer scenes. Trace why a behavior has its owner, what drives it
 inputs a changed brief would replace. Their notes explain those choices; the scene lists are each
 production's design. In the explainer, scenes retain fixed internal details while Script events,
 Caption and presenter framing remain independently authored.
+Install the selected example's declared dependencies with `npm ci` as its README directs;
+in another project selecting Ranking, use `npm install @hypit/ranking@^0.1.0`.
 For that whole-work relationship, read [Presenter-led visual explainers](../playbooks/formats/presenter-led-explainer.md).
 The [explainer's craft notes](https://github.com/hypit-ai/hypit/blob/main/examples/complex-explainer/productions/explainer/CRAFT-NOTES.md)
 trace concrete revisions back to their design decisions and source owners.

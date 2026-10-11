@@ -1,9 +1,9 @@
 import { mkdir, open, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { materializeHtmlProgram, selectHtmlArtifacts } from "@hypit/hypit/html-program";
-import type { HtmlProgram, HtmlFrameSpan } from "@hypit/hypit/html-program";
-import type { CompositableSurfaceRef } from "@hypit/hypit/media";
+import { materializeHtmlProgram, selectHtmlArtifacts } from "@hypit/html-program";
+import type { HtmlProgram, HtmlFrameSpan } from "@hypit/html-program";
+import type { CompositableSurfaceRef } from "@hypit/media";
 import type { BlobRef } from "@hypit/hypit/protocol";
 
 /** Reads one execution resource. Whose store it comes from is the caller's business. */

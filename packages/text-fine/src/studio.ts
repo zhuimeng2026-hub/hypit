@@ -1,6 +1,6 @@
 import { textFineMarkupSurfaces, textFineModuleRef, textFineTypes } from "./manifest.js";
 import type { FineTextOccurrence, TextItem } from "./types.js";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { StudioTrackCompanion, StudioTrackCompanionContext, StudioItemDraft, StudioInspectorFieldDeclaration, StudioSourceBindingDeclaration } from "@hypit/studio-companion";
 import { childItems, requiredSurfaceValue, temporalLineageFor, textLayer } from "@hypit/studio-companion";
 

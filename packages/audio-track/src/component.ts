@@ -2,9 +2,9 @@ import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
 import { canonicalize } from "@hypit/hypit/protocol";
-import type { SynchronizedMedia } from "@hypit/hypit/media";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { SynchronizedMedia } from "@hypit/media";
+import type { TemporalWindow } from "@hypit/temporal";
+import type { Timeline } from "@hypit/timeline";
 
 import { audioTrackProducers, audioTrackTypes } from "./manifest.js";
 import {

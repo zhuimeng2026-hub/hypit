@@ -1,8 +1,8 @@
 import { blobTypes } from "@hypit/hypit/blob";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { generationProducers } from "@hypit/hypit/generation";
-import { createExactModelPrimaryGenerationFragment } from "@hypit/hypit/generation/model";
-import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/hypit/generation/model";
+import { generationProducers } from "@hypit/generation";
+import { createExactModelPrimaryGenerationFragment } from "@hypit/generation/model";
+import type { ExactModelEndpoint, ExactModelMediaInput, ExactModelTextInput } from "@hypit/generation/model";
 
 const input = (name: string) => ({ kind: "fragment-input" as const, name });
 const operation = (id: string) => ({ kind: "fragment-operation" as const, operation: id });

@@ -41,11 +41,23 @@ those capabilities. Its current catalogue, account access and rates still determ
 
 A user's existing service or deployment remains a normal choice. When a suitable maintained Provider
 package is available, use its published version and package instructions; otherwise a project Provider
-can connect the service through the same interfaces. The
+can connect the service through the same interfaces. TokenDance, HiAPI, Pollo, BeatAPI and Monid
+Providers are optional: install the selected npm package in the video project before configuring its
+Endpoint; HypiHub and local Providers are defaults. The
 [model and deployment service page](https://github.com/hypit-ai/hypit/blob/main/docs/guide/service-partners.md)
 introduces partners and links their own documentation. A partnership alone does not establish that a
 particular capability, account or implementation is available. Carry an already suitable, chosen
 service forward.
+
+In the video project, run only the command for the selected service:
+
+```bash
+npm install @hypit/provider-tokendance
+npm install @hypit/provider-hiapi
+npm install @hypit/provider-pollo
+npm install @hypit/provider-beatapi
+npm install @hypit/provider-monid
+```
 
 BYOK means using an account/key supplied by the user. A HypiHub API key connects HypiHub; a different
 service's key connects that service. OAuth and static keys are credential methods, not different
@@ -250,8 +262,8 @@ silently changing an author's request.
 
 | Public import | Accurate interface owner |
 | --- | --- |
-| `@hypit/hypit/generation/model` | Model ports and Producer/Need construction |
-| `@hypit/hypit/generation` | Generated-media values and request/mapping helpers |
+| `@hypit/generation/model` | Model ports and Producer/Need construction |
+| `@hypit/generation` | Generated-media values and request/mapping helpers |
 | `@hypit/hypit/endpoint` | Execution, resources, credentials, support, receipts and capacity |
 | `@hypit/runtime-local/extension` | Profile activation, diagnostics and Managed Programs for the official local Runtime |
 | `@hypit/hypit/author`, `producer`, `admission`, `markup` | Author graphs, deterministic Producers, Type admission and Markup Surfaces respectively |

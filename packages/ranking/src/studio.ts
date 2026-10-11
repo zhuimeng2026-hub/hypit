@@ -1,7 +1,7 @@
 import { rankingMarkupSurfaces, rankingModuleRef, rankingTypes } from "./index.js";
 import type { RankingProgram, RankingSchedule, RankingSoundEventPlan } from "./index.js";
-import { compositionTypes } from "@hypit/hypit/composition";
-import type { AudioTrack } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
+import type { AudioTrack } from "@hypit/composition";
 import type { StudioTrackCompanion, StudioTrackCompanionContext, StudioItemDraft, StudioInspectorFieldDeclaration, StudioSourceBindingDeclaration } from "@hypit/studio-companion";
 import { artifactPreview, authoredChildFor, previewLayer, requiredSurfaceValue, temporalLineageFor, temporalDomainSource } from "@hypit/studio-companion";
 

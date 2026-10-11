@@ -1,4 +1,4 @@
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import {
   anchoredFrameProgramSchema,
   aspectFrameProgramSchema,

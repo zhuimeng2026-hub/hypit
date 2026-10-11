@@ -1,5 +1,5 @@
 
-import type { BlobRef, ResourceId } from "@hypit/protocol";
+import type { BlobRef, ResourceId } from "@hypit/hypit/protocol";
 import type { CompositableSurfaceRef } from "@hypit/media";
 import { VISUAL_IR_V1 } from "@hypit/composition";
 

@@ -1,4 +1,4 @@
-import { canonicalStringify, canonicalize } from "@hypit/protocol";
+import { canonicalStringify, canonicalize } from "@hypit/hypit/protocol";
 
 import { assertCaptionDocumentIdentity } from "./identity.js";
 import { assertTemporalWindowFor } from "@hypit/temporal";

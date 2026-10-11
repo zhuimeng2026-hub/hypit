@@ -1,5 +1,5 @@
-import type { StructuredSurfaceHandler } from "@hypit/markup";
-import { assertAttributes, assertEmptyElement, textAttribute } from "@hypit/markup";
+import type { StructuredSurfaceHandler } from "@hypit/hypit/markup";
+import { assertAttributes, assertEmptyElement, textAttribute } from "@hypit/hypit/markup";
 import { captionTypes } from "./manifest.js";
 import { sealCaptionStyle } from "./style.js";
 

@@ -1,5 +1,5 @@
 import { temporalDependency, temporalTypes, temporalWindowSchema } from "@hypit/temporal";
-import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 
 export const captionModuleRef = { name: "@hypit/caption", version: "1" } as const;
 export const captionProducers = {

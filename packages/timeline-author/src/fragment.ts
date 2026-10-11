@@ -1,9 +1,9 @@
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation, FragmentOperationRef, GraphFragment } from "@hypit/hypit/author";
 import type { TypeRef } from "@hypit/hypit/protocol";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import type { TemporalDuration } from "@hypit/hypit/temporal";
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { temporalTypes } from "@hypit/temporal";
+import type { TemporalDuration } from "@hypit/temporal";
+import { timelineTypes } from "@hypit/timeline";
 
 import { timelineAuthorProducers, timelineAuthorTypes } from "./manifest.js";
 import type { TimelineAuthorBinding, TimelineAuthorDeclaration, TimelineAuthorFragmentOptions } from "./types.js";

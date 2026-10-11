@@ -1,5 +1,11 @@
 # `@hypit/depth-stack`
 
+Install in the video project alongside Hypit:
+
+```bash
+npm install @hypit/depth-stack
+```
+
 The DepthStack Surface accepts `timeline={program.timeline}` plus absolute reveal and terminal Instants.
 Those Instants may be authored directly or published by a domain projector upstream.
 

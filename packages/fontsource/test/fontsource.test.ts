@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { fixtureResource } from "../../../test/fixture-resource.js";
-import { mediaTypes } from "@hypit/hypit/media";
+import { mediaTypes } from "@hypit/media";
 import { decodeFontsourceFaceSurface } from "../src/index.js";
 
 const range = { start: 0, end: 120 };

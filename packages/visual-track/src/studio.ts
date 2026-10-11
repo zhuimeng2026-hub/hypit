@@ -1,4 +1,4 @@
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type {
   StudioTrackCompanion,
   StudioTrackCompanionContext,

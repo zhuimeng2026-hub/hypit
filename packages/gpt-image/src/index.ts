@@ -3,10 +3,10 @@ import {
   sealGenerationPortRequest,
   sealGenerationRequestDraft,
   sealGenerationPortTable,
-} from "@hypit/hypit/generation";
-import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/hypit/generation";
+} from "@hypit/generation";
+import type { GenerationPortTable, GenerationPortValue, GenerationRequest } from "@hypit/generation";
 import type { SurfaceAttributeVocabulary, SurfaceChildVocabulary } from "@hypit/hypit/markup";
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { defineExactModelModule } from "@hypit/generation/model";
 import { imageOperationsModuleRef, imageTransformTypes } from "@hypit/image-operations";
 import { textTypes } from "@hypit/hypit/text";
 

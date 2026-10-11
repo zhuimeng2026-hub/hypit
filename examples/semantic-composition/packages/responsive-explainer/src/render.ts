@@ -1,11 +1,11 @@
-import { sealVisualTrack } from "@hypit/hypit/composition";
-import type { VisualElement } from "@hypit/hypit/composition";
-import { htmlVisual } from "@hypit/hypit/html-program";
-import type { FontArtifactRef } from "@hypit/hypit/media";
-import type { SynchronizedMedia } from "@hypit/hypit/media";
-import type { Timeline } from "@hypit/hypit/timeline";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { sealVisualTrack } from "@hypit/composition";
+import type { VisualElement } from "@hypit/composition";
+import { htmlVisual } from "@hypit/html-program";
+import type { FontArtifactRef } from "@hypit/media";
+import type { SynchronizedMedia } from "@hypit/media";
+import type { Timeline } from "@hypit/timeline";
+import type { SpatialFrame } from "@hypit/spatial";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 export type ExplainerOptions = { id: string; title: string; transitionFrames: number; stackingOrder: number };
 

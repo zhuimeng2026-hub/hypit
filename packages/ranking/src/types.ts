@@ -1,11 +1,11 @@
-import type { FrameSpan } from "@hypit/hypit/composition";
+import type { FrameSpan } from "@hypit/composition";
 import type {
   FontArtifactRef,
   SynchronizedMedia,
-} from "@hypit/hypit/media";
+} from "@hypit/media";
 import type { BlobRef } from "@hypit/hypit/protocol";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import type { SpatialFrame } from "@hypit/spatial";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 export type RankingVariant = "tier-board" | "column" | "top-three";
 

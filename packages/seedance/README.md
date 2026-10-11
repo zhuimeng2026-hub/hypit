@@ -3,7 +3,7 @@
 Exact Seedance author model module. It owns the request schema and exactly three invocation Surfaces;
 it does not contain service credentials, HTTP code, queues, runtime routing or usage-specific Prompt assembly.
 
-Its implementation imports only the public `@hypit/hypit/*` author and model APIs. The repository keeps
+Its implementation uses the public Hypit author APIs and the `@hypit/generation` model APIs. The repository keeps
 TypeScript source entry points for joint development; `npm run pack:independent -- packages/seedance`
 builds the owner package into a temporary release directory whose exports and activation point at compiled
 JavaScript. The resulting tarball contains no private Hypit workspace dependency or second copy of the Host.

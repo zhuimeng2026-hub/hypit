@@ -2,8 +2,8 @@ import {
   assertSpatialFrame,
   assertSpatialMap2D,
   resolveContentFit,
-} from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+} from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 
 import { assertVisualFrameTreatment, visualContentFrame } from "./frame-treatment.js";
 import {

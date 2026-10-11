@@ -1,21 +1,21 @@
-import { assertTimelineIdentity, timelineFrameCount } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertTimelineIdentity, timelineFrameCount } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import {
   assertFontArtifactRef,
   verifySynchronizedMedia,
-} from "@hypit/hypit/media";
-import type { SynchronizedMedia } from "@hypit/hypit/media";
+} from "@hypit/media";
+import type { SynchronizedMedia } from "@hypit/media";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
 import { verifyText } from "@hypit/hypit/text";
 import type { Text } from "@hypit/hypit/text";
-import { assertSpatialFrame } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import { assertSpatialFrame } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 import {
   assertTemporalInstantFor,
   assertTemporalWindowFor,
   resolveTriggeredSchedule,
-} from "@hypit/hypit/temporal";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+} from "@hypit/temporal";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 import type {
   ColumnItem,
@@ -769,7 +769,7 @@ export function buildColumnProgram(header: RankingHeader, withinValue: SpatialFr
   return canonicalize(result) as unknown as ColumnProgram;
 }
 
-export function buildTopThreeProgram(header: RankingHeader, frameValue: import("@hypit/hypit/spatial").SpatialFrame, schedule: RankingSchedule, style: TopThreeStyle, set: TopThreeItemSet): TopThreeProgram {
+export function buildTopThreeProgram(header: RankingHeader, frameValue: import("@hypit/spatial").SpatialFrame, schedule: RankingSchedule, style: TopThreeStyle, set: TopThreeItemSet): TopThreeProgram {
   assert(header.variant === "top-three" && schedule.variant === "top-three", "TopThree variant is inconsistent.");
   assertSpatialFrame(frameValue);
   assertTopThreeStyle(style);

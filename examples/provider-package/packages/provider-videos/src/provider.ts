@@ -3,8 +3,8 @@ import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit
 import {
   compileWireRequest, generationTypes, mappingSupportsRequest,
   sealGeneratedVideoSet, selectWireModelForRequest,
-} from "@hypit/hypit/generation";
-import type { GenerationRequest, GenerationWireMapping } from "@hypit/hypit/generation";
+} from "@hypit/generation";
+import type { GenerationRequest, GenerationWireMapping } from "@hypit/generation";
 
 export const providerModule = { name: "@example/provider-videos", version: "1" } as const;
 export const capability = { module: { name: "@hypit/seedance", version: "1" }, name: "seedance-2-mini" } as const;

@@ -3,7 +3,7 @@ import { plannedNeedInputs } from "@hypit/hypit/producer";
 import type { CanonicalValue, StoredValue } from "@hypit/hypit/protocol";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
-import type { SpeechEvidenceAudio } from "@hypit/hypit/speech-evidence";
+import type { SpeechEvidenceAudio } from "@hypit/speech-evidence";
 
 import { whisperXRequestForEvidenceAudio } from "./evidence.js";
 import { whisperXCapabilities, whisperXProducers } from "./manifest.js";

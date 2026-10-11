@@ -1,8 +1,8 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { Narrative, NarrativeSegmentRef, NarrativeMomentRef, NarrativeSelectionRef } from "@hypit/narrative";
-import { canonicalize } from "@hypit/protocol";
-import type { ProducerRef, StoredValue } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { ProducerRef, StoredValue } from "@hypit/hypit/protocol";
 import type { LocalTemporalDomain, TemporalWindow } from "@hypit/temporal";
 import type { Timeline } from "@hypit/timeline";
 

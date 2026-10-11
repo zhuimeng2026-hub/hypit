@@ -11,8 +11,8 @@ import {
 import type { CliApplicationContext, CliCommandModule, CliIo, CliRuntimeHost } from "@hypit/hypit/cli";
 import { speechEvidenceFile } from "@hypit/media-local";
 import type { Need } from "@hypit/hypit/protocol";
-import { sealSpeechEvidenceAudio, speechEvidenceTypes, transcriptDocumentFromEvidence } from "@hypit/hypit/speech-evidence";
-import type { AlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
+import { sealSpeechEvidenceAudio, speechEvidenceTypes, transcriptDocumentFromEvidence } from "@hypit/speech-evidence";
+import type { AlignedTranscriptEvidence } from "@hypit/speech-evidence";
 
 import { whisperXRequestForEvidenceAudio } from "./evidence.js";
 import { whisperXCapabilities } from "./manifest.js";

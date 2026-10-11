@@ -1,5 +1,5 @@
 import { blobDependency, blobTypes } from "@hypit/hypit/blob";
-import { spatialDependency, spatialTypes } from "@hypit/hypit/spatial";
+import { spatialDependency, spatialTypes } from "@hypit/spatial";
 import type { ModuleManifest, ValueSchema } from "@hypit/hypit/protocol";
 
 import { imageComposeMarkupSurface } from "./compose-declaration.js";

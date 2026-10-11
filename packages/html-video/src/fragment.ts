@@ -1,10 +1,10 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { mediaTypes } from "@hypit/hypit/media";
+import { timelineTypes } from "@hypit/timeline";
+import { mediaTypes } from "@hypit/media";
 import { blobTypes } from "@hypit/hypit/blob";
 
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { htmlProgramProducers } from "@hypit/hypit/html-program";
+import { htmlProgramProducers } from "@hypit/html-program";
 import { mediaOperationsProducers } from "@hypit/media-operations";
 
 const input = (name: string) => ({ kind: "fragment-input" as const, name });

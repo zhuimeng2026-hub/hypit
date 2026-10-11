@@ -1,9 +1,9 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, StoredValue } from "@hypit/hypit/protocol";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 import type { Text } from "@hypit/hypit/text";
 
 import { commentStickerProducers, commentStickerTypes } from "./manifest.js";
@@ -16,7 +16,7 @@ import type {
   CommentStickerSet,
   CommentStickerStyle,
 } from "./types.js";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
 
 function inline<T>(value: StoredValue | undefined, label: string): T {
   if (value?.kind !== "inline") throw new Error(`${label} must be inline.`);

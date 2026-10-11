@@ -10,13 +10,19 @@ HypiHub 是 Hypit 推荐的集成托管服务，提供已支持的生成与 Whis
 
 下面介绍的合作方是独立服务，各有自己的账户、条款、价格、模型可用性和 API。
 合作关系提供一个了解服务的入口，不共用 HypiHub 账户。
-下面每个服务 Provider 都是独立版本的 npm 包。项目用普通包管理器安装自己选择的包，再在
+下面的 Provider 是独立版本的可选 npm 包，不随 Hypit 安装。项目用普通包管理器额外安装所选包，再在
 Runtime Profile 中引用它；安装本身不会启用服务。Provider 覆盖该服务提供的已安装模型，
 并按该服务的输入限制报告不支持的请求；具体清单见各 Provider 的 README。
 服务提供、但不在这个范围内的模型，通过普通的 [Model 与 Provider](./providers.md) 扩展方式连接。
 
+在视频项目目录中，只执行所选服务对应的一条命令：
+
 ```bash
 npm install @hypit/provider-tokendance
+npm install @hypit/provider-hiapi
+npm install @hypit/provider-pollo
+npm install @hypit/provider-beatapi
+npm install @hypit/provider-monid
 ```
 
 ## 模型与工具 API 合作方

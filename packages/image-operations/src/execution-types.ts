@@ -1,5 +1,5 @@
 import type { BlobRef } from "@hypit/hypit/protocol";
-import type { Canvas, SpatialFrame } from "@hypit/hypit/spatial";
+import type { Canvas, SpatialFrame } from "@hypit/spatial";
 
 export type ImageInterpolation = "nearest" | "linear" | "cubic" | "area" | "lanczos";
 export type ImageFit = "contain" | "cover" | "stretch";

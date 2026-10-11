@@ -1,13 +1,13 @@
-import { assertTimelineIdentity } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/hypit/composition";
-import type { VisualAnimation, VisualElement, VisualTrack } from "@hypit/hypit/composition";
+import { assertTimelineIdentity } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
+import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/composition";
+import type { VisualAnimation, VisualElement, VisualTrack } from "@hypit/composition";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef } from "@hypit/hypit/protocol";
-import { assertSpatialFrame } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import { assertTemporalInstantFor, assertTemporalWindowFor } from "@hypit/hypit/temporal";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { assertSpatialFrame } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
+import { assertTemporalInstantFor, assertTemporalWindowFor } from "@hypit/temporal";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 import type { EmojiRevealHeader, EmojiRevealItemSpec, EmojiRevealProgram, EmojiRevealSet, EmojiRevealStyle } from "./types.js";
 

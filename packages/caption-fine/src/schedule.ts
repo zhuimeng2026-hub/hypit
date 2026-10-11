@@ -1,6 +1,6 @@
-import { assertCaptionProgramForDocument, assertCaptionTimingForDocument, captionUseVisibility } from "@hypit/hypit/caption";
-import type { CaptionProgram, CaptionTiming } from "@hypit/hypit/caption";
-import type { CaptionDocument } from "@hypit/hypit/caption";
+import { assertCaptionProgramForDocument, assertCaptionTimingForDocument, captionUseVisibility } from "@hypit/caption";
+import type { CaptionProgram, CaptionTiming } from "@hypit/caption";
+import type { CaptionDocument } from "@hypit/caption";
 
 import { assertFineCaptionParameters, FINE_CAPTION_FAMILY } from "./style.js";
 import type { FineCaptionParameters, FineCaptionSchedule, FineCaptionScheduledCue } from "./types.js";

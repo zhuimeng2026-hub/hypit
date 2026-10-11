@@ -1,11 +1,11 @@
 import {
   assertFontArtifactRef,
   assertFontStackRef,
-} from "@hypit/hypit/media";
+} from "@hypit/media";
 import type {
   FontArtifactRef,
   FontStackRef,
-} from "@hypit/hypit/media";
+} from "@hypit/media";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { Recipe } from "@hypit/hypit/recipe";
 

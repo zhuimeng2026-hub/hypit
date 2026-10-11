@@ -1,4 +1,4 @@
-import { timelineTypes, timelineDependency } from "@hypit/hypit/timeline";
+import { timelineTypes, timelineDependency } from "@hypit/timeline";
 import { readFile } from "node:fs/promises";
 
 import {
@@ -9,21 +9,21 @@ import {
   visualTextPaintSchema,
   visualTextSequenceSchema,
   visualTextTypographySchema,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import {
   spatialDependency,
   spatialFrameSchema,
   spatialPathSchema,
   spatialPointSchema,
   spatialTypes,
-} from "@hypit/hypit/spatial";
-import { VISUAL_STYLE_ENUM_VALUES_V1, VISUAL_STYLE_NAMES_V1 } from "@hypit/hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+} from "@hypit/spatial";
+import { VISUAL_STYLE_ENUM_VALUES_V1, VISUAL_STYLE_NAMES_V1 } from "@hypit/composition";
+import { mediaDependency, mediaTypes } from "@hypit/media";
 import { recipeType } from "@hypit/hypit/recipe";
 import { textDependency, textTypes } from "@hypit/hypit/text";
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
-import { temporalWindowAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
+import { temporalWindowAttributeVocabulary } from "@hypit/temporal/markup";
 
 const previewImage = (file: string) => ({
   mediaType: "image/png",

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { StudioTrackCompanionContext } from "@hypit/studio-companion";
 import { rankingStudioTrackCompanions } from "../src/studio.js";
 

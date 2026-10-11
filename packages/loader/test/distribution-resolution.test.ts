@@ -18,12 +18,14 @@ test("one Distribution resolves its internal and public package spellings", () =
     resolve(process.cwd(), "packages/recipe/src/index.ts"),
   );
   assert.equal(resolveDistributionPackageImport(process.cwd(), "example-package"), undefined);
+  assert.equal(resolveDistributionPackageImport(process.cwd(), "@hypit/script"), undefined);
+  assert.equal(resolveDistributionPackageImport(process.cwd(), "@hypit/temporal"), undefined);
 });
 
 test("an external Author Package imports the active Distribution public API", async () => {
   installDistributionPackageResolution([process.cwd()]);
   const author = await import(String("@hypit/hypit/author")) as { readonly sealGraphFragment?: unknown };
-  const composition = await import(String("@hypit/hypit/composition")) as { readonly sealVisualTrack?: unknown };
+  const composition = await import(String("@hypit/composition")) as { readonly sealVisualTrack?: unknown };
   assert.equal(typeof author.sealGraphFragment, "function");
   assert.equal(typeof composition.sealVisualTrack, "function");
 });

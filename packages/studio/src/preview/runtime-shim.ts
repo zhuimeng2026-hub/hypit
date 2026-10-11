@@ -1,4 +1,4 @@
-import { audioEnvelopeGainAt } from "@hypit/hypit/composition";
+import { audioEnvelopeGainAt } from "@hypit/composition";
 
 /**
  * Studio's frame driver for a compiled HTML renderer document.

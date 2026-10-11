@@ -1,4 +1,4 @@
-import { mediaTypes } from "@hypit/hypit/media";
+import { mediaTypes } from "@hypit/media";
 import { blobTypes } from "@hypit/hypit/blob";
 import {
   executeExtractAudio,
@@ -14,7 +14,7 @@ import {
 import type { MediaExecutionEnvironment, MediaOperationResult } from "./execute.js";
 import { mediaOperationsCapabilities } from "@hypit/media-operations";
 import { isStreamingResourceStore } from "@hypit/hypit/endpoint";
-import { speechEvidenceCapabilities, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
+import { speechEvidenceCapabilities, speechEvidenceTypes } from "@hypit/speech-evidence";
 import { defineEndpoint } from "@hypit/hypit/endpoint";
 import type { EndpointFulfillment, EndpointInvocationContext } from "@hypit/hypit/endpoint";
 

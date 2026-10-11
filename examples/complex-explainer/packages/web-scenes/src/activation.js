@@ -11,11 +11,11 @@ import { renderRoad } from "./scenes/editor-route/index.js";
 import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 import { canonicalize, sameType } from "@hypit/hypit/protocol";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { mediaTypes } from "@hypit/hypit/media";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes, assertTemporalInstantFor } from "@hypit/hypit/temporal";
+import { compositionTypes } from "@hypit/composition";
+import { mediaTypes } from "@hypit/media";
+import { timelineTypes } from "@hypit/timeline";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes, assertTemporalInstantFor } from "@hypit/temporal";
 import {
   resolveTemporalContext,
   resolveTemporalWindowReference,
@@ -25,7 +25,7 @@ import {
   temporalContextAttributeVocabulary,
   temporalInstantAttributeNames,
   temporalInstantAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
+} from "@hypit/temporal/markup";
 import { renderIntro, renderComparison } from "./render.js";
 const module = { name: "@explainer/web-scenes", version: "1" },
   type = (name) => ({ module, name }),

@@ -1,4 +1,4 @@
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 
 const string = { kind: "string", minLength: 1 } as const;
 const object = (

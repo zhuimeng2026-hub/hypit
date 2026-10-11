@@ -1,11 +1,11 @@
-import { sealVisualTrack } from "@hypit/hypit/composition";
-import type { Timeline } from "@hypit/hypit/timeline";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import { sealVisualTrack } from "@hypit/composition";
+import type { Timeline } from "@hypit/timeline";
+import type { SpatialFrame } from "@hypit/spatial";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, TypedRecord } from "@hypit/hypit/protocol";
 import type { ProducerPackage, ProducerHandler } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
-import { VISUAL_IR_V1 } from "@hypit/hypit/composition";
+import { VISUAL_IR_V1 } from "@hypit/composition";
 import { exampleProducers, exampleTypes } from "./manifest.js";
 
 const inline = <T>(record: { readonly value: { readonly kind: string; readonly value?: unknown } } | undefined): T => {

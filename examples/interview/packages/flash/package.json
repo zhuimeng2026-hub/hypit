@@ -10,9 +10,15 @@
     "activation": "./src/activation.ts"
   },
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^"
+    "@hypit/hypit": "^0.3.1"
   },
   "devDependencies": {
-    "@hypit/hypit": "workspace:*"
+    "@hypit/hypit": "^0.3.1"
+  },
+  "dependencies": {
+    "@hypit/composition": "^0.1.0",
+    "@hypit/spatial": "^0.1.0",
+    "@hypit/temporal": "^0.1.0",
+    "@hypit/timeline": "^0.1.0"
   }
 }

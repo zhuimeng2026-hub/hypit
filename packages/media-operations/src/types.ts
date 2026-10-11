@@ -1,6 +1,6 @@
-import type { AudioLevelAutomation } from "@hypit/hypit/composition";
+import type { AudioLevelAutomation } from "@hypit/composition";
 import type { BlobRef } from "@hypit/hypit/protocol";
-import type { MediaFrameRange, MediaInspection, MediaRational, MediaStreamSelection, TimelineVisual, TimelineAudio } from "@hypit/hypit/media";
+import type { MediaFrameRange, MediaInspection, MediaRational, MediaStreamSelection, TimelineVisual, TimelineAudio } from "@hypit/media";
 
 export type MediaSelectionRequest = {
   readonly video:
@@ -92,7 +92,7 @@ export type StillVideoRequest = {
 };
 
 export type TransformMediaNeed = {
-  readonly media: import("@hypit/hypit/media").SynchronizedMedia;
+  readonly media: import("@hypit/media").SynchronizedMedia;
   readonly program: MediaTransformProgram;
 };
 

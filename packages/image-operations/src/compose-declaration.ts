@@ -1,5 +1,5 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 
 import { imageComposeTypes } from "./refs.js";
 

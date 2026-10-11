@@ -1,14 +1,14 @@
 import { blobTypes } from "@hypit/hypit/blob";
-import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/hypit/generation";
+import { sealGenerationPortRequest, sealGenerationPortTable } from "@hypit/generation";
 import type {
   GenerationPort,
   GenerationPortRequirement,
   GenerationPortTable,
   GenerationPortValue,
   GenerationRequest,
-} from "@hypit/hypit/generation";
+} from "@hypit/generation";
 import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/hypit/markup";
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { defineExactModelModule } from "@hypit/generation/model";
 import { textTypes } from "@hypit/hypit/text";
 
 import { pixverseRequestValidator } from "./validation.js";

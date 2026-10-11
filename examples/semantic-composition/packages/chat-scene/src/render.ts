@@ -1,11 +1,11 @@
-import { sealVisualTrack } from "@hypit/hypit/composition";
-import type { VisualElement } from "@hypit/hypit/composition";
-import { htmlVisual } from "@hypit/hypit/html-program";
-import type { FontStackRef } from "@hypit/hypit/media";
-import type { Timeline } from "@hypit/hypit/timeline";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { sealVisualTrack } from "@hypit/composition";
+import type { VisualElement } from "@hypit/composition";
+import { htmlVisual } from "@hypit/html-program";
+import type { FontStackRef } from "@hypit/media";
+import type { Timeline } from "@hypit/timeline";
+import type { SpatialFrame } from "@hypit/spatial";
+import { assertTemporalWindowFor } from "@hypit/temporal";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 export type Message = { id: string; sender: string; text: string; side: "left" | "right"; at: TemporalInstant };
 export type ChatOptions = { id: string; title: string; entranceFrames: number };

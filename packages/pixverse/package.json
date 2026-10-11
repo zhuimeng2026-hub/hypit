@@ -1,6 +1,6 @@
 {
   "name": "@hypit/pixverse",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -10,9 +10,12 @@
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^"
+    "@hypit/hypit": "workspace:^0.3.1"
   },
   "devDependencies": {
     "@hypit/blob": "workspace:*",
@@ -21,5 +24,8 @@
     "@hypit/markup": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/text": "workspace:*"
+  },
+  "dependencies": {
+    "@hypit/generation": "workspace:^0.1.0"
   }
 }

@@ -10,7 +10,7 @@ import type {
   VisualTextTypography,
   VisualVectorPathCommand,
 } from "@hypit/composition";
-import { canonicalStringify } from "@hypit/protocol";
+import { canonicalStringify } from "@hypit/hypit/protocol";
 
 type TerminalTextElement = VisualTextFlowElement | VisualPathTextElement;
 

@@ -1,13 +1,13 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import { blobTypes } from "@hypit/hypit/blob";
-import { mediaTypes } from "@hypit/hypit/media";
-import type { FontStackRef } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { mediaTypes } from "@hypit/media";
+import type { FontStackRef } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
 import { sealText, textTypes } from "@hypit/hypit/text";
 import type { StructuredElement, StructuredSurfaceHandler, SurfaceRecordDraft, SurfaceResolvedReference, MarkupAttributeValue } from "@hypit/hypit/markup";
-import { resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/temporal/markup";
 
 import { decodeCommentStickerStyle } from "./author.js";
 import { createCommentStickerFragment } from "./fragment.js";

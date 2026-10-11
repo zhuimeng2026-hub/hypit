@@ -1,9 +1,9 @@
-import { assertAudioTrackIdentity, assertCompositionIdentity, assertVisualTrackIdentity, sealComposition } from "@hypit/hypit/composition";
-import type { AudioTrack, Composition, Track, VisualTrack } from "@hypit/hypit/composition";
-import { assertCanvas } from "@hypit/hypit/spatial";
-import type { Canvas } from "@hypit/hypit/spatial";
-import { assertTimelineIdentity } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertAudioTrackIdentity, assertCompositionIdentity, assertVisualTrackIdentity, sealComposition } from "@hypit/composition";
+import type { AudioTrack, Composition, Track, VisualTrack } from "@hypit/composition";
+import { assertCanvas } from "@hypit/spatial";
+import type { Canvas } from "@hypit/spatial";
+import { assertTimelineIdentity } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 import type { FilmProgram, FilmTrackSet } from "./types.js";
 

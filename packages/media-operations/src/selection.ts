@@ -1,5 +1,5 @@
-import { sealMediaStreamSelection, verifyMediaInspection } from "@hypit/hypit/media";
-import type { MediaAudioStream, MediaInspection, MediaStreamSelection, MediaVideoStream } from "@hypit/hypit/media";
+import { sealMediaStreamSelection, verifyMediaInspection } from "@hypit/media";
+import type { MediaAudioStream, MediaInspection, MediaStreamSelection, MediaVideoStream } from "@hypit/media";
 import { canonicalize } from "@hypit/hypit/protocol";
 
 import type { MediaSelectionRequest } from "./types.js";

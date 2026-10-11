@@ -1,7 +1,7 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
-import { canonicalize } from "@hypit/protocol";
-import type { StoredValue } from "@hypit/protocol";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { StoredValue } from "@hypit/hypit/protocol";
 import { anchoredFrame, aspectFrame, assertCanvas, assertContentFit, assertIntrinsicExtent, assertSpatialFrame, assertSpatialMap2D, assertSpatialPath, assertSpatialPoint, frameFromEdges, resolveContentFit } from "./geometry.js";
 import { spatialProducers, spatialTypes } from "./manifest.js";
 import type {

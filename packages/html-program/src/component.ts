@@ -1,10 +1,10 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import { plannedNeedInputs } from "@hypit/producer";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import { plannedNeedInputs } from "@hypit/hypit/producer";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { Composition } from "@hypit/composition";
 import type { Timeline } from "@hypit/timeline";
-import type { CanonicalValue, StoredValue } from "@hypit/protocol";
-import { canonicalize } from "@hypit/protocol";
+import type { CanonicalValue, StoredValue } from "@hypit/hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
 
 import { compileHtmlProgram } from "./document.js";
 import type { MediaFrameRange } from "@hypit/media";

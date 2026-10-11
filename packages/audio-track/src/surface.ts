@@ -1,11 +1,11 @@
-import { mediaTypes } from "@hypit/hypit/media";
+import { mediaTypes } from "@hypit/media";
 import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceRecordDraft, SurfaceResolvedReference } from "@hypit/hypit/markup";
-import type { TemporalDuration } from "@hypit/hypit/temporal";
+import type { TemporalDuration } from "@hypit/temporal";
 import {
   resolveTemporalWindowReference,
   resolveTemporalContext,
   temporalWindowAttributeNames,
-} from "@hypit/hypit/temporal/markup";
+} from "@hypit/temporal/markup";
 
 import { createAudioTrackFragment } from "./fragment.js";
 import { audioTrackTypes } from "./manifest.js";

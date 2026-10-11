@@ -1,11 +1,11 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { blobTypes } from "@hypit/hypit/blob";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation } from "@hypit/hypit/author";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes } from "@hypit/temporal";
 
 import { emojiRevealProducers, emojiRevealTypes } from "./manifest.js";
 

@@ -4,8 +4,6 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { packIndependentPackage } from "./pack-independent-package.mjs";
-
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 function npmCli() {
@@ -87,6 +85,17 @@ export function npmTarballFilename(name, version) {
   return `${name.replace(/^@/u, "").replaceAll("/", "-")}-${version}.tgz`;
 }
 
+/** Publishing is an explicit subset of the verified installation candidate. */
+export function selectReleasePackages(plan, names = [], independentOnly = false) {
+  const available = independentOnly ? [...plan.independent] : [...plan.independent, plan.distribution];
+  if (names.length === 0) return available;
+  const requested = new Set(names);
+  for (const name of requested) {
+    if (!available.some((item) => item.name === name)) throw new Error(`Release candidate does not contain ${name}`);
+  }
+  return available.filter((item) => requested.has(item.name));
+}
+
 export async function releaseCandidateTarballs(outputDirectory = "dist/release") {
   const plan = await releaseCandidatePackages();
   const output = resolve(repositoryRoot, outputDirectory);
@@ -98,6 +107,7 @@ export async function releaseCandidateTarballs(outputDirectory = "dist/release")
 }
 
 export async function packReleaseCandidate(outputDirectory = "dist/release") {
+  const { packIndependentPackage } = await import("./pack-independent-package.mjs");
   const plan = await releaseCandidatePackages();
   const output = resolve(repositoryRoot, outputDirectory);
   // One candidate directory represents exactly one dependency closure. Reusing artifacts from an
@@ -109,7 +119,7 @@ export async function packReleaseCandidate(outputDirectory = "dist/release") {
     const tarball = await packIndependentPackage(item.directory, outputDirectory, { buildPublicTypes: false });
     console.log(`Prepared ${item.name}@${item.version}: ${tarball}`);
   }
-  runNpm(["run", "pack:distribution"]);
+  runNpm(["run", "pack:distribution", "--", "--types-built"]);
   const candidate = await releaseCandidateTarballs(outputDirectory);
   await writeFile(candidate.plan, `${JSON.stringify({
     format: "hypit.release-plan@1",

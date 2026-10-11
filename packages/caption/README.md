@@ -1,6 +1,6 @@
 # `@hypit/caption`
 
-External components import `@hypit/hypit/caption`. Source uses the `@hypit/caption@1` Module
+External components import `@hypit/caption`. Source uses the `@hypit/caption@1` Module
 identity for shared declarations such as `Hidden`.
 
 Caption has independent content, timing and presentation structures: CaptionDocument owns display

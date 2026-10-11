@@ -1,7 +1,7 @@
-import type { Narrative, NarrativeSegmentRef } from "@hypit/hypit/narrative";
-import type { NarrativeAlignment } from "@hypit/hypit/narrative-temporal";
-import type { AlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
-import type { LocalTemporalDomain } from "@hypit/hypit/temporal";
+import type { Narrative, NarrativeSegmentRef } from "@hypit/narrative";
+import type { NarrativeAlignment } from "@hypit/narrative-temporal";
+import type { AlignedTranscriptEvidence } from "@hypit/speech-evidence";
+import type { LocalTemporalDomain } from "@hypit/temporal";
 
 import { locateAlignedSegmentTiming } from "./locate.js";
 import { materializeNarrativeAlignment } from "./materialize.js";

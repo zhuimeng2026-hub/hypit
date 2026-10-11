@@ -1,6 +1,6 @@
-import { sealGraphFragment } from "@hypit/author";
+import { sealGraphFragment } from "@hypit/hypit/author";
 import { spatialTypes } from "@hypit/spatial";
-import { recipeType } from "@hypit/recipe";
+import { recipeType } from "@hypit/hypit/recipe";
 import { timelineTypes } from "@hypit/timeline";
 
 import { regionEvidenceProducers, regionEvidenceTypes } from "./manifest.js";

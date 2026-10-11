@@ -1,7 +1,7 @@
 import type {
   VisualAnimation,
   VisualStyleDeclaration,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import { canonicalize } from "@hypit/hypit/protocol";
 
 import type {

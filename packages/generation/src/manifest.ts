@@ -1,8 +1,8 @@
 import {
   blobDependency,
   blobTypes,
-} from "@hypit/blob";
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+} from "@hypit/hypit/blob";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 
 import { generatedAudioSetSchema, generatedImageSetSchema, generatedVideoSetSchema } from "./schema.js";
 

@@ -1,7 +1,7 @@
-import { clockFrameSampleBoundary, timelineFrameCount, timelineFrameSampleBoundary } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { assertAudioLevelAutomation, assertCompositionIdentity } from "@hypit/hypit/composition";
-import type { Composition } from "@hypit/hypit/composition";
+import { clockFrameSampleBoundary, timelineFrameCount, timelineFrameSampleBoundary } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
+import { assertAudioLevelAutomation, assertCompositionIdentity } from "@hypit/composition";
+import type { Composition } from "@hypit/composition";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
 
 import type { AudioProgramPlan } from "./types.js";

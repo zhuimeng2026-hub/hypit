@@ -9,8 +9,9 @@ configured instance of that Provider, with its service address, credential refer
 The Runtime Profile binds the requested capability to an Endpoint.
 
 Hypit's official Distribution selects local Providers and the HypiHub Provider as defaults.
-TokenDance, HiAPI, Pollo, BeatAPI and Monid Providers are independently versioned packages installed
-by projects that choose those services. Other services connect through packages owned by the
+TokenDance, HiAPI, Pollo, BeatAPI and Monid Providers are independently versioned optional npm packages, not default dependencies.
+Install the chosen Provider in the video project, e.g. `npm install @hypit/provider-hiapi`.
+Other services connect through packages owned by the
 production or their authors. The Agent can implement a new service through the public SDK, just as
 it can create a visual component for a video.
 [Model and deployment services](./service-partners.md) introduces independent partners through that
@@ -60,7 +61,7 @@ deployment and executing a video Build have separate lifetimes.
 
 ## Add a Model
 
-Develop a project package against `@hypit/hypit/generation/model`, `@hypit/hypit/generation`,
+Develop a project package against `@hypit/generation/model`, `@hypit/generation`,
 `@hypit/hypit/author`, `@hypit/hypit/producer`, `@hypit/hypit/admission` and `@hypit/hypit/markup`.
 Declare the exact request ports, parameter values, result type and capability. Its author Surface
 connects prompt Text and reference media to the request, then publishes the resulting media as a

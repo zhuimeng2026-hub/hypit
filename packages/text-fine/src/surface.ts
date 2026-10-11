@@ -1,7 +1,7 @@
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { timelineTypes } from "@hypit/timeline";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type {
   VisualColorPaint,
   VisualStyleDeclaration,
@@ -10,22 +10,22 @@ import type {
   VisualTextRunStyle,
   VisualTextSequenceAnimation,
   VisualTextTypography,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import {
   assertFontArtifactRef,
   assertFontStackRef,
   mediaTypes,
-} from "@hypit/hypit/media";
-import type { FontArtifactRef, FontStackRef } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+} from "@hypit/media";
+import type { FontArtifactRef, FontStackRef } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation, GraphFragment } from "@hypit/hypit/author";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
 import { textTypes } from "@hypit/hypit/text";
 import type { StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference, MarkupAttributeValue } from "@hypit/hypit/markup";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import { resolveTemporalWindowReference } from "@hypit/hypit/temporal/markup";
+import { temporalTypes } from "@hypit/temporal";
+import { resolveTemporalWindowReference } from "@hypit/temporal/markup";
 
 import { fineTextWindowAttributeVocabulary, textFineProducers, textFineTypes } from "./manifest.js";
 import {

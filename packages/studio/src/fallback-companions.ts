@@ -1,7 +1,7 @@
 import type { StudioTrackCompanion, StudioTrackCompanionContext, StudioItemDraft } from "@hypit/studio-companion";
 import { artifactPreview, previewLayer, temporalLineageFor, temporalDomainSource } from "@hypit/studio-companion";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { compositionTypes } from "@hypit/composition";
+import { timelineTypes } from "@hypit/timeline";
 
 type TerminalVisualTrack = {
   readonly presents?: readonly {

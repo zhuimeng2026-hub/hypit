@@ -1,5 +1,5 @@
-import { canonicalize } from "@hypit/protocol";
-import type { BlobRef, CanonicalValue } from "@hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { BlobRef, CanonicalValue } from "@hypit/hypit/protocol";
 import type { VisualProgramElement } from "@hypit/composition";
 
 export const HTML_VISUAL_FORMAT = "hypit.html-visual@1" as const;

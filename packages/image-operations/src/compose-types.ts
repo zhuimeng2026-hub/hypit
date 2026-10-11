@@ -1,5 +1,5 @@
 import type { BlobRef } from "@hypit/hypit/protocol";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 
 export type ImageComposeOptions = {
   readonly background: string;

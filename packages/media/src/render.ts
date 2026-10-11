@@ -1,5 +1,5 @@
-import { isResourceId } from "@hypit/protocol";
-import type { BlobRef } from "@hypit/protocol";
+import { isResourceId } from "@hypit/hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
 
 const FONT_MEDIA_TYPES = new Set([
   "font/otf",

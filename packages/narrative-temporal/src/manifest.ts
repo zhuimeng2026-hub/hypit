@@ -1,5 +1,5 @@
 import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import { temporalDependency, temporalTypes } from "@hypit/temporal";
 import { timelineDependency, timelineTypes } from "@hypit/timeline";
 

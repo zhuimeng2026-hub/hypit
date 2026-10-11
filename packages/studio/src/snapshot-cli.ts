@@ -8,9 +8,9 @@ import {
   selectCliProvider,
 } from "@hypit/hypit/cli";
 import type { CliApplicationContext, CliIo } from "@hypit/hypit/cli";
-import { assertHtmlProgram, selectHtmlArtifacts } from "@hypit/hypit/html-program";
-import type { HtmlProgram } from "@hypit/hypit/html-program";
-import { htmlFrameRequest, htmlProgramCapabilities, htmlProgramTypes, verifyHtmlFrameImages } from "@hypit/hypit/html-program";
+import { assertHtmlProgram, selectHtmlArtifacts } from "@hypit/html-program";
+import type { HtmlProgram } from "@hypit/html-program";
+import { htmlFrameRequest, htmlProgramCapabilities, htmlProgramTypes, verifyHtmlFrameImages } from "@hypit/html-program";
 import type { Need } from "@hypit/hypit/protocol";
 import { snapshotFrameLabel, writeFrameGrid } from "@hypit/media-local";
 

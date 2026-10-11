@@ -1,8 +1,8 @@
-import type { AdmissionPackage } from "@hypit/admission";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { TemporalWindow } from "@hypit/temporal";
-import type { ProducerPackage } from "@hypit/producer";
-import type { StoredValue } from "@hypit/protocol";
-import { canonicalize } from "@hypit/protocol";
+import type { ProducerPackage } from "@hypit/hypit/producer";
+import type { StoredValue } from "@hypit/hypit/protocol";
+import { canonicalize } from "@hypit/hypit/protocol";
 
 import { captionProducers, captionTypes } from "./manifest.js";
 import { appendCaptionUse, assertCaptionProgram, assertCaptionStyle } from "./style.js";

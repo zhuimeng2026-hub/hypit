@@ -1,7 +1,7 @@
-import { isResourceId } from "@hypit/protocol";
+import { isResourceId } from "@hypit/hypit/protocol";
 import { mediaDependency, mediaTypes } from "@hypit/media";
 import { temporalDependency, temporalTypes } from "@hypit/temporal";
-import type { BlobRef, CapabilityRef, ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
+import type { BlobRef, CapabilityRef, ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 export { parseTranscriptWords, phraseRanges, transcriptDocumentFromEvidence, wordsAt } from "./transcript-document.js";
 export type { FrameWords, TranscriptWord } from "./transcript-document.js";
 

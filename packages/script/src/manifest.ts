@@ -1,7 +1,7 @@
 import type { ModuleManifest, TypeRef } from "@hypit/hypit/protocol";
-import { captionDependency, captionTypes } from "@hypit/hypit/caption";
-import { narrativeDependency, narrativeSchema, narrativeTypes } from "@hypit/hypit/narrative";
-import { narrativeCaptionDependency, narrativeCaptionTypes } from "@hypit/hypit/narrative-caption";
+import { captionDependency, captionTypes } from "@hypit/caption";
+import { narrativeDependency, narrativeSchema, narrativeTypes } from "@hypit/narrative";
+import { narrativeCaptionDependency, narrativeCaptionTypes } from "@hypit/narrative-caption";
 import { textDependency, textTypes } from "@hypit/hypit/text";
 
 export const scriptModuleRef = { name: "@hypit/script", version: "1" } as const;

@@ -1,5 +1,11 @@
 # `@hypit/ranking`
 
+Optional component, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/ranking
+```
+
 The Track Surface accepts one completed Timeline plus absolute Windows and Instants. Those values
 may be authored directly or published by a domain projector upstream.
 
@@ -59,10 +65,10 @@ installed tarball contains a second editable source tree:
 
 A project component can use these relationships with its own behavior. External TypeScript uses
 `@hypit/hypit/author`, `@hypit/hypit/producer`, `@hypit/hypit/admission`,
-`@hypit/hypit/markup`, `@hypit/hypit/temporal/markup` and the appropriate domain APIs. Copy the relevant idea into
+`@hypit/hypit/markup`, `@hypit/temporal/markup` and the appropriate domain APIs. Copy the relevant idea into
 the project's own package, with its own Module identity, instead of editing the installed Ranking.
 
 The Companion uses published values and temporal lineage, so a visible row and its reveal handle can
 represent different spans. Moving the authored semantic boundary changes the shared event and its
-consumers; editing a Style changes its appearance. [Studio Companion](../studio-companion/README.md)
+consumers; editing a Style changes its appearance. [Studio Companion](https://github.com/hypit-ai/hypit/blob/main/packages/studio-companion/README.md)
 contains a minimal project Companion and the exact presentation/editing interface.

@@ -1,7 +1,7 @@
 import { spatialTypes } from "@hypit/spatial";
-import { recipeType } from "@hypit/recipe";
+import { recipeType } from "@hypit/hypit/recipe";
 import { timelineTypes } from "@hypit/timeline";
-import type { StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/markup";
+import type { StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
 
 import { regionEvidenceFragment } from "./fragment.js";
 

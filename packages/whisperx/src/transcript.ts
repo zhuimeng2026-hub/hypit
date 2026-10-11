@@ -1,4 +1,4 @@
-import type { SpeechTranscriptPassage } from "@hypit/hypit/speech-evidence";
+import type { SpeechTranscriptPassage } from "@hypit/speech-evidence";
 
 type RawWord = {
   readonly text?: unknown;

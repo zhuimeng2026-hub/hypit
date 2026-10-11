@@ -1,13 +1,14 @@
-import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+import { compositionDependency, compositionTypes } from "@hypit/composition";
+import type { StructuredSurfaceDeclaration, SurfaceVocabulary } from "@hypit/hypit/markup";
+import { mediaDependency, mediaTypes } from "@hypit/media";
 import { blobRefObjectSchema } from "@hypit/hypit/protocol";
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
 import {
   temporalContextAttributeVocabulary,
   temporalWindowAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
-import { timelineDependency, timelineTypes } from "@hypit/hypit/timeline";
+} from "@hypit/temporal/markup";
+import { timelineDependency, timelineTypes } from "@hypit/timeline";
 
 export const audioTrackModuleRef = { name: "@hypit/audio-track", version: "1" } as const;
 export const audioTrackTypes = {
@@ -73,7 +74,7 @@ const clipInputs = [
   { name: "spec", type: audioTrackTypes.clipSpec }, { name: "window", type: temporalTypes.window },
 ] as const;
 
-export const audioTrackMarkupSurfaces = [{
+export const audioTrackMarkupSurfaces: readonly (StructuredSurfaceDeclaration & { readonly vocabulary: SurfaceVocabulary })[] = [{
   name: "track", tag: "Track", mode: "structured",
   outputs: [audioTrackTypes.header, audioTrackTypes.sourceTime, audioTrackTypes.clipSpec,
     audioTrackTypes.program, compositionTypes.audioTrack],

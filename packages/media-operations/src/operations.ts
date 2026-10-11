@@ -1,5 +1,5 @@
-import { verifyMediaInspection } from "@hypit/hypit/media";
-import type { MediaAudioStream, MediaInspection, MediaVideoStream } from "@hypit/hypit/media";
+import { verifyMediaInspection } from "@hypit/media";
+import type { MediaAudioStream, MediaInspection, MediaVideoStream } from "@hypit/media";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef } from "@hypit/hypit/protocol";
 

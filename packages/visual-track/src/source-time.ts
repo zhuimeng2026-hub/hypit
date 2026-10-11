@@ -2,9 +2,9 @@ import type {
   VisualSourceTimeMap,
   VisualSourceTimePiece,
   VisualSourceTimeRational,
-} from "@hypit/hypit/composition";
-import { assertTimelineIdentity } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+} from "@hypit/composition";
+import { assertTimelineIdentity } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 import type {
   VisualSourceTimeBounds,

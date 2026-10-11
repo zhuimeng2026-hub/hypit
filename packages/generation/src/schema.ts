@@ -1,4 +1,4 @@
-import type { ObjectFieldSchema, ValueSchema } from "@hypit/protocol";
+import type { ObjectFieldSchema, ValueSchema } from "@hypit/hypit/protocol";
 
 export const generationResourceSchema = {
   kind: "string",

@@ -1,4 +1,4 @@
-import type { HtmlProgram } from "@hypit/hypit/html-program";
+import type { HtmlProgram } from "@hypit/html-program";
 import { assert, runProcess } from "./process.js";
 
 type ProbeStream = {

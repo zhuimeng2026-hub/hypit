@@ -8,10 +8,10 @@ import { composeParameterDeclarations } from "./parameters.js";
 import { relative } from "node:path";
 
 import type { MarkupSurfaceRegistryLike } from "@hypit/hypit/markup";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { timelineFrameCount } from "@hypit/hypit/timeline";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { compositionTypes } from "@hypit/composition";
+import { timelineFrameCount } from "@hypit/timeline";
+import { temporalTypes } from "@hypit/temporal";
+import type { TemporalInstant } from "@hypit/temporal";
 import { sameModule, sameType } from "@hypit/hypit/protocol";
 
 import type {
@@ -39,6 +39,8 @@ type Present = {
   readonly span: { readonly startFrame: number; readonly endFrameExclusive: number };
   readonly z: number;
 };
+
+const timelineBandHeightPx = 15;
 
 /** Sound is placed in samples rather than frames, in the canonical 48 kHz. */
 const SAMPLE_RATE = 48_000;
@@ -117,7 +119,7 @@ function temporalDomains(
   });
 }
 
-/** All package-declared absolute author values share one read-only Timeline row. */
+/** Package-declared Instants share one read-only Timeline row. */
 function temporalDeclarationDomain(
   registry: StudioCompanionRegistry,
   built: StudioProjection,
@@ -132,23 +134,8 @@ function temporalDeclarationDomain(
   for (const { placement, draft } of declarations) {
     if (seen.has(draft.output)) continue;
     const found = values.get(draft.output);
-    if (found === undefined) continue;
+    if (found === undefined || !sameType(found.type, temporalTypes.instant)) continue;
     const range = placement.sourcePath === source.path ? draft.range : undefined;
-    if (sameType(found.type, temporalTypes.window)) {
-      const value = found.value as TemporalWindow;
-      if (value.start.timelineId !== built.timeline.id || value.end.timelineId !== built.timeline.id) continue;
-      const startAnchorId = `${draft.output}:start`;
-      const endAnchorId = `${draft.output}:end`;
-      anchors.push({ id: startAnchorId, kind: "window-start", frame: value.span.startFrame },
-        { id: endAnchorId, kind: "window-end", frame: value.span.endFrameExclusive });
-      items.push({ kind: "span", appearance: "block", id: draft.output, laneId: "declarations",
-        label: draft.label ?? draft.id, startAnchorId, endAnchorId,
-        startFrame: value.span.startFrame, endFrameExclusive: value.span.endFrameExclusive,
-        ...(range === undefined ? {} : { range }) });
-      seen.add(draft.output);
-      continue;
-    }
-    if (!sameType(found.type, temporalTypes.instant)) continue;
     const value = found.value as TemporalInstant;
     if (value.timelineId !== built.timeline.id) continue;
     const anchorId = `${draft.output}:point`;
@@ -170,8 +157,8 @@ function temporalDeclarationDomain(
     id: "absolute-declarations",
     companion: "studio#absolute-declarations",
     timelineId: built.timeline.id,
-    presentation: { family: "temporal", tone: "teal", label: "Windows & Instants", icon: "timeline" },
-    lanes: [{ id: "declarations", label: "Windows & Instants", heightPx: 26 }],
+    presentation: { family: "temporal", tone: "teal", label: "Instants", icon: "timeline" },
+    lanes: [{ id: "declarations", label: "Instants", heightPx: timelineBandHeightPx }],
     anchors,
     items,
     editItems: [],

@@ -5,11 +5,11 @@ import { createStudioTrackCompanionFacet } from "@hypit/studio-companion";
 import { assertAttributes, assertEmptyElement, textAttribute, createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 import { canonicalize, sameType } from "@hypit/hypit/protocol";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { mediaTypes } from "@hypit/hypit/media";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import { temporalTypes, assertTemporalInstantFor } from "@hypit/hypit/temporal";
+import { compositionTypes } from "@hypit/composition";
+import { mediaTypes } from "@hypit/media";
+import { timelineTypes } from "@hypit/timeline";
+import { spatialTypes } from "@hypit/spatial";
+import { temporalTypes, assertTemporalInstantFor } from "@hypit/temporal";
 import {
   resolveTemporalContext,
   resolveTemporalWindowReference,
@@ -19,7 +19,7 @@ import {
   temporalContextAttributeVocabulary,
   temporalInstantAttributeNames,
   temporalInstantAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
+} from "@hypit/temporal/markup";
 import { renderPoster } from "./render.js";
 const module = { name: "@explainer/launch-scenes", version: "1" },
   type = (name) => ({ module, name }),

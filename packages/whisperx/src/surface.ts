@@ -1,9 +1,9 @@
 import { assertExactAttributes as exactAttributes, textAttribute as stringAttribute, type StructuredElement, type StructuredSurfaceHandler, type SurfaceResolvedReference, type SurfaceRecordDraft, type MarkupAttributeValue } from "@hypit/hypit/markup";
 import { sameType } from "@hypit/hypit/protocol";
-import { narrativeTypes } from "@hypit/hypit/narrative";
-import type { NarrativeSegmentRef } from "@hypit/hypit/narrative";
-import { mediaTypes } from "@hypit/hypit/media";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { narrativeTypes } from "@hypit/narrative";
+import type { NarrativeSegmentRef } from "@hypit/narrative";
+import { mediaTypes } from "@hypit/media";
+import { temporalTypes } from "@hypit/temporal";
 
 import { whisperXAlignmentFragment, whisperXBoundaryAlignmentFragment } from "./fragment.js";
 import { whisperXTypes } from "./manifest.js";

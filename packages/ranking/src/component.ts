@@ -1,11 +1,11 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
-import type { SynchronizedMedia } from "@hypit/hypit/media";
+import type { SynchronizedMedia } from "@hypit/media";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, StoredValue } from "@hypit/hypit/protocol";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
+import type { SpatialFrame } from "@hypit/spatial";
 import type { Text } from "@hypit/hypit/text";
 
 import { rankingProducers, rankingTypes } from "./manifest.js";

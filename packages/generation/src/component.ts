@@ -1,5 +1,5 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage } from "@hypit/producer";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage } from "@hypit/hypit/producer";
 
 import {
   verifyGeneratedAudioSet,
@@ -16,12 +16,12 @@ function inline(value: { readonly kind: string; readonly value?: unknown }, subj
 function primary(
   value: { readonly kind: string; readonly value?: unknown },
   kind: "audio" | "image" | "video",
-): import("@hypit/protocol").BlobRef {
+): import("@hypit/hypit/protocol").BlobRef {
   const label = kind === "audio" ? "Audio" : kind === "image" ? "Image" : "Video";
   const content = inline(value, `Generated${label}Set`) as {
-    readonly images?: readonly import("@hypit/protocol").BlobRef[];
-    readonly videos?: readonly import("@hypit/protocol").BlobRef[];
-    readonly audios?: readonly import("@hypit/protocol").BlobRef[];
+    readonly images?: readonly import("@hypit/hypit/protocol").BlobRef[];
+    readonly videos?: readonly import("@hypit/hypit/protocol").BlobRef[];
+    readonly audios?: readonly import("@hypit/hypit/protocol").BlobRef[];
   };
   const selected = kind === "audio"
     ? content.audios?.[0]

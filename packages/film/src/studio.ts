@@ -1,6 +1,6 @@
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import type { StudioFilmCompanion } from "@hypit/studio-companion";
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 
 import { filmModuleRef } from "./manifest.js";
 

@@ -1,9 +1,9 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
-import type { CompositableSurfaceRef } from "@hypit/hypit/media";
-import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/hypit/spatial";
+import type { CompositableSurfaceRef } from "@hypit/media";
+import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/spatial";
 import type { Text } from "@hypit/hypit/text";
 import { canonicalize } from "@hypit/hypit/protocol";
 
@@ -22,7 +22,7 @@ import type {
   TextMaskSpec,
   TextStyle,
 } from "./types.js";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
 
 function inline<T>(value: StoredValue | undefined, subject: string): T {
   if (value?.kind !== "inline") throw new Error(`${subject} must be inline.`);

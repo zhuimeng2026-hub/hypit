@@ -1,4 +1,4 @@
-import type { AdmissionPackage, TypeValidatorFacet } from "@hypit/admission";
+import type { AdmissionPackage, TypeValidatorFacet } from "@hypit/hypit/admission";
 import type {
   ProducerPackage,
   PlannedNeedFacet,
@@ -6,10 +6,10 @@ import type {
   PlannedNeedSpecification,
   ProducerFacet,
   ProducerHandlerContext,
-} from "@hypit/producer";
-import { blobDependency, blobTypes } from "@hypit/blob";
-import { sealGraphFragment } from "@hypit/author";
-import type { Facet } from "@hypit/facet";
+} from "@hypit/hypit/producer";
+import { blobDependency, blobTypes } from "@hypit/hypit/blob";
+import { sealGraphFragment } from "@hypit/hypit/author";
+import type { Facet } from "@hypit/hypit/facet";
 import {
   bindGenerationMedia,
   bindGenerationText,
@@ -31,11 +31,11 @@ import type {
   GenerationRequest,
   GenerationRequestDraft,
 } from "@hypit/generation";
-import { textDependency, textTypes } from "@hypit/text";
-import type { Text } from "@hypit/text";
+import { textDependency, textTypes } from "@hypit/hypit/text";
+import type { Text } from "@hypit/hypit/text";
 import {
   canonicalize,
-} from "@hypit/protocol";
+} from "@hypit/hypit/protocol";
 import type {
   CanonicalValue,
   CapabilityRef,
@@ -44,7 +44,7 @@ import type {
   ModuleRef,
   ProducerRef,
   TypeRef,
-} from "@hypit/protocol";
+} from "@hypit/hypit/protocol";
 
 export type PlannedExactModelMediaReference = {
   readonly port: string;

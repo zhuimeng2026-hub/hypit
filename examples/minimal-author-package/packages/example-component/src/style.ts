@@ -1,4 +1,4 @@
-import type { FontStackRef } from "@hypit/hypit/media";
+import type { FontStackRef } from "@hypit/media";
 import type { Recipe } from "@hypit/hypit/recipe";
 
 /** The two values a Style decoder receives after author references are resolved. */

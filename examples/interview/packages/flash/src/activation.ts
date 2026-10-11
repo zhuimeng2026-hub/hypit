@@ -11,30 +11,30 @@ import {
   assertVisualTrackIdentity,
   compositionTypes,
   sealVisualTrack,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import type {
   VisualElement,
   VisualStyleDeclaration,
-} from "@hypit/hypit/composition";
-import { assertSpatialFrame, spatialTypes } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+} from "@hypit/composition";
+import { assertSpatialFrame, spatialTypes } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 import {
   assertTemporalWindowFor,
   temporalTypes,
-} from "@hypit/hypit/temporal";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
+} from "@hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
 import {
   resolveTemporalWindowReference,
   resolveTemporalContext,
   temporalContextAttributeVocabulary,
   temporalWindowAttributeNames,
   temporalWindowAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
+} from "@hypit/temporal/markup";
 import {
   assertTimelineIdentity,
   timelineTypes,
-} from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+} from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 const moduleRef = { name: "@interview/flash", version: "1" } as const;
 const optionsType = { module: moduleRef, name: "FlashOptions" } as const;

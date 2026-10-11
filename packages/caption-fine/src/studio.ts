@@ -1,6 +1,6 @@
-import type { CaptionDocument, CaptionProgram, CaptionTiming } from "@hypit/hypit/caption";
-import { captionTypes } from "@hypit/hypit/caption";
-import { compositionTypes } from "@hypit/hypit/composition";
+import type { CaptionDocument, CaptionProgram, CaptionTiming } from "@hypit/caption";
+import { captionTypes } from "@hypit/caption";
+import { compositionTypes } from "@hypit/composition";
 import { fineCaptionEditableDefaults } from "./recipe.js";
 import { captionFineMarkupSurfaces, captionFineModuleRef } from "./manifest.js";
 import type { FineCaptionSchedule } from "./types.js";

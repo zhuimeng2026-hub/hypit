@@ -1,5 +1,5 @@
-import type { FrameSpan, VisualEasing, VisualSourceTimeMap, VisualSourceTimeRational } from "@hypit/hypit/composition";
-import type { CompositableSurfaceRef, MediaRational } from "@hypit/hypit/media";
+import type { FrameSpan, VisualEasing, VisualSourceTimeMap, VisualSourceTimeRational } from "@hypit/composition";
+import type { CompositableSurfaceRef, MediaRational } from "@hypit/media";
 import type { BlobRef } from "@hypit/hypit/protocol";
 import type {
   ContentFit,
@@ -7,7 +7,7 @@ import type {
   SpatialFrame,
   SpatialMap2D,
   SpatialPath,
-} from "@hypit/hypit/spatial";
+} from "@hypit/spatial";
 
 /** Intrinsic visual truth resolved before Media authoring; never a Provider or lineage envelope. */
 export type MediaVisualSource =

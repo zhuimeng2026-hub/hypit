@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { HtmlVisual } from "@hypit/hypit/html-program";
+import type { HtmlVisual } from "@hypit/html-program";
 import type { FontStackRef } from "@hypit/media";
 import type { Timeline } from "@hypit/timeline";
 import { composeTemporalWindow, projectProgramInstant } from "@hypit/temporal";

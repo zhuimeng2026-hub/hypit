@@ -1,7 +1,7 @@
 import { blobTypes } from "@hypit/hypit/blob";
 import { sealGraphFragment } from "@hypit/hypit/author";
 import type { FragmentOperation } from "@hypit/hypit/author";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 
 import { imageComposeProducers, imageComposeTypes } from "./refs.js";
 

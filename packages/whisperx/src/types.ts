@@ -1,4 +1,4 @@
-import type { SpeechEvidenceAudio } from "@hypit/hypit/speech-evidence";
+import type { SpeechEvidenceAudio } from "@hypit/speech-evidence";
 
 /** Explicit language code. Executable language support belongs to the selected service. */
 export type WhisperXLanguage = string;

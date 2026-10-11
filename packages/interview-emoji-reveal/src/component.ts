@@ -1,10 +1,10 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { BlobRef, StoredValue } from "@hypit/hypit/protocol";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import type { SpatialFrame } from "@hypit/spatial";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 
 import { emojiRevealProducers, emojiRevealTypes } from "./manifest.js";
 import { appendEmojiRevealItem, appendPresetEmojiRevealItem, assertEmojiRevealProgram, createEmojiRevealSet, finalizeEmojiReveal, renderEmojiReveal } from "./program.js";

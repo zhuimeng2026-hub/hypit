@@ -1,4 +1,4 @@
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+import { mediaDependency, mediaTypes } from "@hypit/media";
 import type { ModuleManifest } from "@hypit/hypit/protocol";
 
 export const fontsourceModuleRef = { name: "@hypit/fontsource", version: "1" } as const;

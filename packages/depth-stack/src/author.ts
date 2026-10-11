@@ -9,7 +9,7 @@ import type {
   MediaPaintLayerSpec,
   MediaSampleLayerSpec,
 } from "@hypit/visual-track";
-import type { ContentFit } from "@hypit/hypit/spatial";
+import type { ContentFit } from "@hypit/spatial";
 import type { Recipe } from "@hypit/hypit/recipe";
 
 import {

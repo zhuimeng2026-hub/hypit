@@ -1,6 +1,6 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { mediaTypes, verifyMediaFrameRange } from "@hypit/hypit/media";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
+import { compositionTypes } from "@hypit/composition";
+import { mediaTypes, verifyMediaFrameRange } from "@hypit/media";
 import type { StructuredElement, StructuredSurfaceHandler, MarkupAttributeValue } from "@hypit/hypit/markup";
 
 import { createHtmlVideoFragment } from "./fragment.js";

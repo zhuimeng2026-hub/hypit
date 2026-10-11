@@ -1,16 +1,23 @@
 {
   "name": "@hypit/provider-hypihub",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "files": ["dist", "README.md"],
-  "hypit": { "activation": "./src/activation.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "hypit": {
+    "activation": "./src/activation.ts"
+  },
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^",
-    "@hypit/runtime-local": "workspace:^",
-    "@hypit/whisperx": "workspace:^"
+    "@hypit/hypit": "workspace:^0.3.1",
+    "@hypit/runtime-local": "workspace:^0.1.1",
+    "@hypit/whisperx": "workspace:^0.2.0"
   },
   "devDependencies": {
     "@hypit/endpoint": "workspace:*",
@@ -30,5 +37,9 @@
     "@hypit/volcengine-matting": "workspace:*",
     "@hypit/gpt-image": "workspace:*",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@hypit/generation": "workspace:^0.1.0",
+    "@hypit/speech-evidence": "workspace:^0.1.0"
   }
 }

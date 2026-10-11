@@ -1,5 +1,5 @@
-import { sealMediaInspection } from "@hypit/hypit/media";
-import type { MediaAudioStream, MediaInspection, MediaOtherStream, MediaRational, MediaStream, MediaTimestamp, MediaVideoStream } from "@hypit/hypit/media";
+import { sealMediaInspection } from "@hypit/media";
+import type { MediaAudioStream, MediaInspection, MediaOtherStream, MediaRational, MediaStream, MediaTimestamp, MediaVideoStream } from "@hypit/media";
 import type { BlobRef } from "@hypit/hypit/protocol";
 
 type JsonObject = Record<string, unknown>;

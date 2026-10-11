@@ -1,7 +1,7 @@
 import { blobTypes } from "@hypit/hypit/blob";
 import type { CanonicalValue } from "@hypit/hypit/protocol";
 import type { MarkupAttributeValue, StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 
 import { createImageComposeFragment } from "./compose-fragment.js";
 import { sealImageComposeLayerSpec, sealImageComposeOptions } from "./compose-program.js";

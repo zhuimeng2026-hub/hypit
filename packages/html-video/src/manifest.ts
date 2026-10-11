@@ -1,9 +1,9 @@
-import { temporalContextAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { temporalContextAttributeVocabulary } from "@hypit/temporal/markup";
 import { blobDependency, blobTypes } from "@hypit/hypit/blob";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
-import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
-import { timelineDependency } from "@hypit/hypit/timeline";
-import { htmlProgramModuleRef } from "@hypit/hypit/html-program";
+import { mediaDependency, mediaTypes } from "@hypit/media";
+import { compositionDependency, compositionTypes } from "@hypit/composition";
+import { timelineDependency } from "@hypit/timeline";
+import { htmlProgramModuleRef } from "@hypit/html-program";
 import type { ModuleManifest } from "@hypit/hypit/protocol";
 import {
   mediaOperationsModuleRef,

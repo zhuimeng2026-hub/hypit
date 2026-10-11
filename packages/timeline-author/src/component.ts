@@ -2,8 +2,8 @@ import { canonicalize } from "@hypit/hypit/protocol";
 import type { ProducerPackage } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { StoredValue } from "@hypit/hypit/protocol";
-import type { LocalTemporalDomain, TemporalExtent, TemporalWindow } from "@hypit/hypit/temporal";
-import type { Clock, Timeline } from "@hypit/hypit/timeline";
+import type { LocalTemporalDomain, TemporalExtent, TemporalWindow } from "@hypit/temporal";
+import type { Clock, Timeline } from "@hypit/timeline";
 
 import { timelineAuthorProducers } from "./manifest.js";
 import {

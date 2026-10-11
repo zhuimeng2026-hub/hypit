@@ -7,8 +7,8 @@ import type {
   VisualTextPaintLayer,
   VisualTextSequenceAnimation,
   VisualTextTypography,
-} from "@hypit/hypit/composition";
-import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/hypit/spatial";
+} from "@hypit/composition";
+import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/spatial";
 
 export type TextDocument = VisualTextDocument;
 export type TextTypography = VisualTextTypography;

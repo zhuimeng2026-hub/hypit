@@ -1,16 +1,17 @@
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
-import { temporalContextAttributeVocabulary, temporalWindowAttributeVocabulary } from "@hypit/hypit/temporal/markup";
-import { timelineDependency, timelineTypes } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
+import type { StructuredSurfaceDeclaration, SurfaceVocabulary } from "@hypit/hypit/markup";
+import { temporalContextAttributeVocabulary, temporalWindowAttributeVocabulary } from "@hypit/temporal/markup";
+import { timelineDependency, timelineTypes } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import { readFile } from "node:fs/promises";
 
-import { captionModuleRef, captionTypes } from "@hypit/hypit/caption";
-import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+import { captionModuleRef, captionTypes } from "@hypit/caption";
+import { compositionDependency, compositionTypes } from "@hypit/composition";
+import { mediaDependency, mediaTypes } from "@hypit/media";
 
 import type { ModuleManifest, ProducerRef } from "@hypit/hypit/protocol";
-import { regionEvidenceDependency, regionEvidenceTypes } from "@hypit/hypit/region-evidence";
-import { spatialDependency, spatialTypes } from "@hypit/hypit/spatial";
+import { regionEvidenceDependency, regionEvidenceTypes } from "@hypit/region-evidence";
+import { spatialDependency, spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 
 import { fineCaptionOneShotMotions } from "./recipe.js";
@@ -31,7 +32,7 @@ export const captionFineProducers = {
   renderWithRegions: { module: captionFineModuleRef, name: "render-fine-caption-with-regions" },
 } satisfies Record<string, ProducerRef>;
 
-export const captionFineMarkupSurfaces = [
+export const captionFineMarkupSurfaces: readonly (StructuredSurfaceDeclaration & { readonly vocabulary: SurfaceVocabulary })[] = [
     {
       name: "style", tag: "Style", mode: "structured", outputs: [captionTypes.style],
       vocabulary: {

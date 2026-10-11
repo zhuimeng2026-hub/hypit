@@ -1,12 +1,12 @@
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import type {
   VisualAnimation,
   VisualElement,
   VisualStyleDeclaration,
   VisualSourceTimeMap,
-} from "@hypit/hypit/composition";
-import { mapSpatialPoint } from "@hypit/hypit/spatial";
-import type { SpatialFrame, SpatialPath } from "@hypit/hypit/spatial";
+} from "@hypit/composition";
+import { mapSpatialPoint } from "@hypit/spatial";
+import type { SpatialFrame, SpatialPath } from "@hypit/spatial";
 
 import { poseAnimation, samplingAnimation } from "./motion.js";
 import { resolveVisualSourceTime } from "./source-time.js";

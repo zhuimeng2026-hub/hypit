@@ -1,18 +1,18 @@
-import { assertTimelineIdentity, timelineFrameCount } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertTimelineIdentity, timelineFrameCount } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import {
   assertSpatialFrame,
   assertSpatialPath,
   assertSpatialPoint,
   resolveContentFit,
-} from "@hypit/hypit/spatial";
-import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/hypit/spatial";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
+} from "@hypit/spatial";
+import type { SpatialFrame, SpatialPath, SpatialPoint } from "@hypit/spatial";
+import { assertTemporalWindowFor } from "@hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
 import {
   assertVisualTrackIdentity,
   sealVisualTrack,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import type {
   VisualElement,
   VisualPathTextElement,
@@ -20,9 +20,9 @@ import type {
   VisualTextElement,
   VisualTextFlowElement,
   VisualTrack,
-} from "@hypit/hypit/composition";
-import { assertCompositableSurfaceRef } from "@hypit/hypit/media";
-import type { CompositableSurfaceRef } from "@hypit/hypit/media";
+} from "@hypit/composition";
+import { assertCompositableSurfaceRef } from "@hypit/media";
+import type { CompositableSurfaceRef } from "@hypit/media";
 import { canonicalize } from "@hypit/hypit/protocol";
 import { verifyText } from "@hypit/hypit/text";
 import type { Text } from "@hypit/hypit/text";

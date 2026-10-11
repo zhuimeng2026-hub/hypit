@@ -7,12 +7,15 @@
   "exports": {
     ".": "./src/index.ts"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "hypit": {
     "activation": "./src/activation.ts"
   },
   "peerDependencies": {
-    "@hypit/runtime-local": "workspace:^"
+    "@hypit/runtime-local": "workspace:^0.1.1"
   },
   "devDependencies": {
     "@hypit/hypit": "workspace:*",

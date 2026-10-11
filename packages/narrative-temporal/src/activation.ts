@@ -1,6 +1,6 @@
-import { createAdmissionPackageFacet } from "@hypit/admission";
-import { createProducerPackageFacet } from "@hypit/producer";
-import { createMarkupSurfaceFacet } from "@hypit/markup";
+import { createAdmissionPackageFacet } from "@hypit/hypit/admission";
+import { createProducerPackageFacet } from "@hypit/hypit/producer";
+import { createMarkupSurfaceFacet } from "@hypit/hypit/markup";
 import { createStudioCompanionFacet } from "@hypit/studio-companion";
 import { decodeNarrativeInstantSurface, decodeNarrativeProjectionSurface, decodeNarrativeWindowSurface,
   narrativeProjectionMarkupSurfaces, narrativeTemporalComponent,

@@ -1,13 +1,13 @@
-import { sealGenerationPortTable } from "@hypit/hypit/generation";
+import { sealGenerationPortTable } from "@hypit/generation";
 import type {
   GenerationPortTable,
   GenerationPortValue,
   GenerationRequest,
-} from "@hypit/hypit/generation";
+} from "@hypit/generation";
 import { blobTypes } from "@hypit/hypit/blob";
 import type { ResourceId } from "@hypit/hypit/protocol";
 import type { SurfaceAttributeVocabulary, SurfacePortVocabulary } from "@hypit/hypit/markup";
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
+import { defineExactModelModule } from "@hypit/generation/model";
 import { textTypes } from "@hypit/hypit/text";
 import { validateSeedanceInputs } from "./validation.js";
 

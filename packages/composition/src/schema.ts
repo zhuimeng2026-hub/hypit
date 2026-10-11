@@ -1,6 +1,6 @@
 import { compositableSurfaceSchema, fontArtifactSchema, mediaDependency } from "@hypit/media";
 import { timelineDependency } from "@hypit/timeline";
-import type { ValueSchema } from "@hypit/protocol";
+import type { ValueSchema } from "@hypit/hypit/protocol";
 import { VISUAL_IR_V1, VISUAL_STYLE_ENUM_VALUES_V1, VISUAL_STYLE_NAMES_V1 } from "./visual.js";
 export { mediaDependency, timelineDependency };
 const string = { kind: "string", minLength: 1 } as const; const number = { kind: "number", minimum: 0 } as const;

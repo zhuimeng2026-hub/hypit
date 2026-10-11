@@ -3,7 +3,7 @@ import type { BlobRef, CanonicalValue, StoredValue } from "@hypit/hypit/protocol
 import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import { canonicalize } from "@hypit/hypit/protocol";
-import type { Canvas, SpatialFrame } from "@hypit/hypit/spatial";
+import type { Canvas, SpatialFrame } from "@hypit/spatial";
 
 import { imageComposeRequest } from "./execution.js";
 import { imageComposeProducers, imageComposeTypes, imageOperationsCapabilities } from "./refs.js";

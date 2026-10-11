@@ -32,8 +32,8 @@ Author Kit; import only the owner of each responsibility:
 | `@hypit/hypit/admission` | package-owned Type validators and Admission package facets |
 | `@hypit/hypit/author` | sealed Author Graph Fragments |
 | `@hypit/hypit/markup` | Markup Surface declarations and handlers |
-| `@hypit/hypit/temporal/markup` | author-time semantic Window/Instant projection helpers |
-| `@hypit/hypit/composition` | peer Track values and renderer-independent visual representation |
+| `@hypit/temporal/markup` | author-time semantic Window/Instant projection helpers |
+| `@hypit/composition` | peer Track values and renderer-independent visual representation |
 | `@hypit/studio-companion` (optional, in Companion code) | editor Item projection, Inspector bindings and executed temporal lineage |
 
 The Author Package keeps `@hypit/hypit` as its framework development dependency. A package that

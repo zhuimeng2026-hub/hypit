@@ -1,10 +1,10 @@
 import { assertEmptyElement as empty, localName, textAttribute as text, type StructuredElement, type StructuredSurfaceHandler, type SurfaceResolvedReference, type MarkupAttributeValue } from "@hypit/hypit/markup";
 import { sameType, type CanonicalValue } from "@hypit/hypit/protocol";
 import { blobTypes } from "@hypit/hypit/blob";
-import { mediaTypes } from "@hypit/hypit/media";
-import { temporalTypes } from "@hypit/hypit/temporal";
-import { parseTemporalDuration } from "@hypit/hypit/temporal/markup";
-import { timelineTypes, type Clock } from "@hypit/hypit/timeline";
+import { mediaTypes } from "@hypit/media";
+import { temporalTypes } from "@hypit/temporal";
+import { parseTemporalDuration } from "@hypit/temporal/markup";
+import { timelineTypes, type Clock } from "@hypit/timeline";
 import { recipeType, type Recipe } from "@hypit/hypit/recipe";
 
 import {

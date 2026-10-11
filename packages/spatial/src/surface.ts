@@ -1,11 +1,11 @@
-import type { CanonicalValue } from "@hypit/protocol";
-import type { AuthorValueRef } from "@hypit/author";
+import type { CanonicalValue } from "@hypit/hypit/protocol";
+import type { AuthorValueRef } from "@hypit/hypit/author";
 import type {
   StructuredElement,
   StructuredSurfaceHandler,
   SurfaceResolvedReference,
   MarkupAttributeValue,
-} from "@hypit/markup";
+} from "@hypit/hypit/markup";
 
 import {
   anchoredFrameFragment,

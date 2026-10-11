@@ -1,4 +1,4 @@
-import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 import { timelineDependency, timelineTypes } from "@hypit/timeline";
 
 const string = { kind: "string", minLength: 1 } as const;

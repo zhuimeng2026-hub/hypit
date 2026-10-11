@@ -29,9 +29,14 @@ export function studioFeedbackPlugin(options: {
     store: ReturnType<typeof createFeedbackStore>;
     run: string;
     view: (document: FeedbackDocument) => FeedbackView;
-    watcher: FSWatcher;
+    // Absent when the filesystem refused to watch this workspace; the endpoint
+    // still serves, only external-edit notification is lost.
+    watcher?: FSWatcher;
   };
   const perWorkspace = new Map<string, PerWorkspace>();
+  // configureServer is the only place that sees the Vite logger; openFor runs
+  // lazily from a middleware, so the warn sink is captured rather than closed over.
+  let warn = (message: string): void => { console.warn(message); };
 
   const openFor = (workspaceId: string): PerWorkspace | undefined => {
     const existing = perWorkspace.get(workspaceId);
@@ -43,25 +48,41 @@ export function studioFeedbackPlugin(options: {
     const view = (document: FeedbackDocument): FeedbackView => ({
       file: "FEEDBACK.json", run, comments: document.comments.filter((comment) => comment.run === run),
     });
-    const watcher = watch(spec.workspaceRoot, (_event, filename) => {
-      if (filename === null || filename.toString() === "FEEDBACK.json") {
-        // Broadcast through the SSE hub; events are stamped with the
-        // workspace id by SseHub.broadcast.
-        options.sseHub.broadcast("studio:feedback-changed", {}, workspaceId);
-      }
-    });
-    const created: PerWorkspace = { store, run, view, watcher };
+    const created: PerWorkspace = { store, run, view };
     perWorkspace.set(workspaceId, created);
+    // Watch capacity is a finite OS resource; a failure here must degrade to
+    // "no external-edit notification", never take the feedback endpoint down.
+    const failed = (error: unknown): void => {
+      if (perWorkspace.get(workspaceId) !== created) return;
+      created.watcher?.close();
+      delete created.watcher;
+      warn(`Studio cannot watch ${spec.workspaceRoot}/FEEDBACK.json: ${error instanceof Error ? error.message : String(error)}. External comment edits require a browser refresh; restart Studio to restore watching.`);
+    };
+    try {
+      created.watcher = watch(spec.workspaceRoot, (_event, filename) => {
+        if (perWorkspace.get(workspaceId) !== created || created.watcher === undefined) return;
+        if (filename === null || filename.toString() === "FEEDBACK.json") {
+          // Broadcast through the SSE hub; events are stamped with the
+          // workspace id by SseHub.broadcast.
+          options.sseHub.broadcast("studio:feedback-changed", {}, workspaceId);
+        }
+      });
+      created.watcher.on("error", failed);
+    } catch (error) {
+      failed(error);
+    }
     return created;
   };
 
   return {
     name: "hypit-studio-feedback",
     configureServer(server) {
+      warn = (message: string): void => server.config.logger.warn(message);
+
       // Close every per-workspace watcher on HTTP server shutdown.
       server.httpServer?.once("close", () => {
         for (const entry of perWorkspace.values()) {
-          try { entry.watcher.close(); } catch { /* ignore */ }
+          try { entry.watcher?.close(); } catch { /* ignore */ }
         }
         perWorkspace.clear();
       });

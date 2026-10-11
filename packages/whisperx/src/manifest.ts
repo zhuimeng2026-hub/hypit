@@ -1,10 +1,10 @@
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
-import { narrativeDependency, narrativeTypes } from "@hypit/hypit/narrative";
-import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/hypit/narrative-temporal";
-import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/hypit/speech-evidence";
+import { mediaDependency, mediaTypes } from "@hypit/media";
+import { narrativeDependency, narrativeTypes } from "@hypit/narrative";
+import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/narrative-temporal";
+import { speechEvidenceDependency, speechEvidenceTypes } from "@hypit/speech-evidence";
 import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import { speechAlignmentModuleRef } from "@hypit/narrative-speech-alignment";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
 
 export const whisperXModuleRef = { name: "@hypit/whisperx", version: "1" } as const;
 export const whisperXTypes = {

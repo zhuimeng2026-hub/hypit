@@ -1,5 +1,5 @@
 import type { Recipe } from "@hypit/hypit/recipe";
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 /**
  * The Film Recipe owns Film appearance only. Canvas geometry and Timeline

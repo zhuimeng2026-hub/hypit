@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
 
-import { assertCompositableSurfaceRef } from "@hypit/hypit/media";
-import type { CompositableSurfaceRef } from "@hypit/hypit/media";
+import { assertCompositableSurfaceRef } from "@hypit/media";
+import type { CompositableSurfaceRef } from "@hypit/media";
 import { runProcess } from "./process.js";
 
 type JsonObject = Record<string, unknown>;

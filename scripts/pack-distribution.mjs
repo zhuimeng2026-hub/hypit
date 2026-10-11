@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { distributionEmbeddedPackageDirectories } from "./distribution-ownership.mjs";
+import { releaseDependencyVersion } from "./release-dependencies.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = resolve(root, "dist/release");
@@ -26,19 +27,9 @@ function npm(args, cwd, capture = false) {
   });
 }
 
-async function releaseDependencyVersion(owner, name, declared) {
-  if (!declared.startsWith("workspace:")) return declared;
-  if (declared !== "workspace:^") {
-    throw new Error(`${owner} cannot publish dependency ${name}@${declared}`);
-  }
-  const dependency = JSON.parse(await readFile(resolve(root, "packages", name.split("/")[1], "package.json"), "utf8"));
-  if (dependency.name !== name || typeof dependency.version !== "string" || dependency.version.length === 0) {
-    throw new Error(`${owner} dependency ${name} has no release version`);
-  }
-  return dependency.version.includes("-") ? dependency.version : `^${dependency.version}`;
-}
-
-npm(["run", "build:public-types"], root);
+const arguments_ = process.argv.slice(2);
+if (arguments_.some((argument) => argument !== "--types-built")) throw new Error("Unknown distribution pack option.");
+if (!arguments_.includes("--types-built")) npm(["run", "build:public-types"], root);
 const [inventory] = JSON.parse(npm(["pack", "--dry-run", "--ignore-scripts", "--json"], root, true));
 const embeddedPackageDirectories = await distributionEmbeddedPackageDirectories(root);
 let readme = await readFile(resolve(root, "README.md"), "utf8");

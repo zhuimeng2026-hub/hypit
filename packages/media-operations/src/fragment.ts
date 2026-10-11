@@ -1,7 +1,7 @@
-import { mediaProducers, mediaTypes } from "@hypit/hypit/media";
-import { temporalProducers, temporalTypes } from "@hypit/hypit/temporal";
+import { mediaProducers, mediaTypes } from "@hypit/media";
+import { temporalProducers, temporalTypes } from "@hypit/temporal";
 import { blobTypes } from "@hypit/hypit/blob";
-import { timelineTypes } from "@hypit/hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
 import { sealGraphFragment } from "@hypit/hypit/author";
 
 import {

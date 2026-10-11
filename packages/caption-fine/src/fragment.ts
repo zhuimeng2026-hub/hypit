@@ -1,9 +1,9 @@
-import { captionTypes } from "@hypit/hypit/caption";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { captionTypes } from "@hypit/caption";
+import { compositionTypes } from "@hypit/composition";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { regionEvidenceTypes } from "@hypit/hypit/region-evidence";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { timelineTypes } from "@hypit/timeline";
+import { regionEvidenceTypes } from "@hypit/region-evidence";
+import { spatialTypes } from "@hypit/spatial";
 
 import { captionFineProducers, captionFineTypes } from "./manifest.js";
 

@@ -1,5 +1,5 @@
-import { timelineTypes, timelineDependency } from "@hypit/hypit/timeline";
-import { temporalContextAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { timelineTypes, timelineDependency } from "@hypit/timeline";
+import { temporalContextAttributeVocabulary } from "@hypit/temporal/markup";
 import { readFile } from "node:fs/promises";
 
 import { blobTypes } from "@hypit/hypit/blob";
@@ -10,8 +10,8 @@ import {
   visualTextFlowSchema,
   visualTextPaintSchema,
   visualTextTypographySchema,
-} from "@hypit/hypit/composition";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
+} from "@hypit/composition";
+import { mediaDependency, mediaTypes } from "@hypit/media";
 import {
   visualFrameTreatmentSchema,
   mediaLayerSetSchema,
@@ -20,10 +20,10 @@ import {
 } from "@hypit/visual-track";
 
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
-import { spatialDependency, spatialFrameSchema, spatialTypes } from "@hypit/hypit/spatial";
+import { spatialDependency, spatialFrameSchema, spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
-import { temporalInstantAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
+import { temporalInstantAttributeVocabulary } from "@hypit/temporal/markup";
 import { textDependency, textTypes } from "@hypit/hypit/text";
 
 const previewImage = (file: string) => ({

@@ -1,5 +1,11 @@
 # `@hypit/provider-pollo`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-pollo
+```
+
 Hypit Runtime Provider for a [Pollo AI](https://docs.pollo.ai) API platform account. Each capability
 posts `{ "input": … }` to the model's generation path with the `x-api-key` header, polls
 `GET /v1/generation/{taskId}/status` until every generation reaches `succeed`, downloads each

@@ -1,4 +1,4 @@
-import type { GenerationRequestDraft } from "@hypit/hypit/generation";
+import type { GenerationRequestDraft } from "@hypit/generation";
 import type { BlobRef } from "@hypit/hypit/protocol";
 
 /** Seedance's reference-audio rule, shared by known imports and request assembly. */

@@ -204,11 +204,15 @@ Agent 会检查环境，索要这条视频需要的凭据，生成素材并构�
     <td>问题咨询</td>
     <td><a href="https://discord.gg/85hnyQnxpn">Discord</a> 或 <a href="https://t.me/hypitai">Telegram</a></td>
   </tr>
+  <tr>
+    <td>旧项目升级</td>
+    <td><a href="./migrations/0.3.zh-CN.md">0.3 迁移指南</a> · <a href="./migrations/0.3.1.zh-CN.md">0.3.1 SDK 迁移指南</a></td>
+  </tr>
 </table>
 
-扫码添加 Hypit 小助手加入微信群：
+扫码加入微信群：
 
-<img alt="扫码添加 Hypit 小助手加入微信群" src="./docs/public/wechat-assistant.jpg" width="320">
+<img alt="扫码加入微信群" src="./docs/public/wechat_group.jpg" width="320">
 
 ## Launch 伙伴
 

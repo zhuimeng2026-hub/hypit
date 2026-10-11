@@ -1,10 +1,10 @@
-import { narrativeTypes } from "@hypit/hypit/narrative";
-import { narrativeTemporalProducers, narrativeTemporalTypes } from "@hypit/hypit/narrative-temporal";
-import { mediaTypes } from "@hypit/hypit/media";
+import { narrativeTypes } from "@hypit/narrative";
+import { narrativeTemporalProducers, narrativeTemporalTypes } from "@hypit/narrative-temporal";
+import { mediaTypes } from "@hypit/media";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { speechEvidenceProducers } from "@hypit/hypit/speech-evidence";
+import { speechEvidenceProducers } from "@hypit/speech-evidence";
 import { speechAlignmentProducers } from "@hypit/narrative-speech-alignment";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 
 import { whisperXProducers, whisperXTypes } from "./manifest.js";
 

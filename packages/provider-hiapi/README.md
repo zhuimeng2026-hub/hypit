@@ -1,5 +1,11 @@
 # `@hypit/provider-hiapi`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-hiapi
+```
+
 Hypit Runtime Provider for a [HiAPI](https://www.hiapi.ai) account. Every capability submits one
 task to `POST /v1/tasks` with the model's documented `input` fields, polls
 `GET /v1/tasks/{taskId}` until the task is terminal, downloads `data.output[].url` and stores the

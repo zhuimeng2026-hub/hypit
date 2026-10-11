@@ -1,8 +1,8 @@
-import type { Composition } from "@hypit/hypit/composition";
-import { compileHtmlProgram, materializeHtmlProgram } from "@hypit/hypit/html-program";
-import type { HtmlProgram } from "@hypit/hypit/html-program";
+import type { Composition } from "@hypit/composition";
+import { compileHtmlProgram, materializeHtmlProgram } from "@hypit/html-program";
+import type { HtmlProgram } from "@hypit/html-program";
 import { compileAudioProgramPlan } from "@hypit/media-operations";
-import type { Timeline } from "@hypit/hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 
 import { injectRuntimeShim } from "./runtime-shim.js";
 

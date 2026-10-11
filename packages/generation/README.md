@@ -1,8 +1,8 @@
-# `@hypit/hypit/generation`
+# `@hypit/generation`
 
 Provider-neutral generated-media contracts shared by exact image, video and audio model packages.
 
-External Model and Provider packages import this public subpath from the `@hypit/hypit` Distribution.
+Model and Provider packages declare `@hypit/generation` as an ordinary npm dependency.
 It gives both sides the same request and result vocabulary without a dependency between their
 implementations. `sealGenerationPortTable` describes a model's inputs; `GenerationWireMapping` and
 `compileWireRequest` can translate those inputs to one Provider's documented wire fields.
@@ -30,14 +30,14 @@ Capabilities in a selected Runtime Profile.
 
 ## Exact Model authoring
 
-`@hypit/hypit/generation/model` is the author-model subpath for defining an exact generated-media
+`@hypit/generation/model` is the author-model subpath for defining an exact generated-media
 Model without repeating the nominal Type → Producer → Need → Graph Fragment shell. It belongs to
 Generation because it derives request Types, validation, facets and author bindings directly from
 one `GenerationPortTable`; it is not a second Model registry or a generic kit.
 
 ```ts
-import { defineExactModelModule } from "@hypit/hypit/generation/model";
-import { sealGenerationPortTable } from "@hypit/hypit/generation";
+import { defineExactModelModule } from "@hypit/generation/model";
+import { sealGenerationPortTable } from "@hypit/generation";
 ```
 
 The Model still owns its exact name, accepted ports, constraints and validation. The selected

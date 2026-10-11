@@ -1,7 +1,7 @@
-import type { AdmissionPackage } from "@hypit/admission";
-import type { ProducerPackage, ProducerHandlerContext } from "@hypit/producer";
-import { canonicalize } from "@hypit/protocol";
-import type { StoredValue } from "@hypit/protocol";
+import type { AdmissionPackage } from "@hypit/hypit/admission";
+import type { ProducerPackage, ProducerHandlerContext } from "@hypit/hypit/producer";
+import { canonicalize } from "@hypit/hypit/protocol";
+import type { StoredValue } from "@hypit/hypit/protocol";
 import type { Timeline } from "@hypit/timeline";
 
 import {

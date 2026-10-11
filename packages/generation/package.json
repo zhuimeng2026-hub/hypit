@@ -1,6 +1,6 @@
 {
   "name": "@hypit/generation",
-  "version": "0.0.0-dev",
+  "version": "0.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
@@ -11,17 +11,22 @@
   "hypit": {
     "activation": "./src/activation.ts"
   },
-  "dependencies": {
+  "devDependencies": {
+    "@hypit/executor": "workspace:*",
+    "@hypit/admission": "workspace:*",
     "@hypit/author": "workspace:*",
     "@hypit/blob": "workspace:*",
     "@hypit/facet": "workspace:*",
     "@hypit/producer": "workspace:*",
     "@hypit/protocol": "workspace:*",
     "@hypit/text": "workspace:*",
-    "@hypit/admission": "workspace:*"
+    "@hypit/hypit": "workspace:*"
   },
-  "devDependencies": {
-    "@hypit/executor": "workspace:*",
-    "@hypit/admission": "workspace:*"
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "@hypit/hypit": "workspace:^0.3.1"
   }
 }

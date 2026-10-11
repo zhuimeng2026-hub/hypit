@@ -1,5 +1,11 @@
 # `@hypit/provider-tokendance`
 
+Optional Provider, not installed with Hypit. Install in the video project:
+
+```bash
+npm install @hypit/provider-tokendance
+```
+
 Hypit Runtime Provider for a [TokenDance](https://tokendance.space) account. It submits generation
 requests with a TokenDance API key through the gateway protocols TokenDance documents for each model
 and stores the returned files in the current Build.

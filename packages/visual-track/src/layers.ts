@@ -1,16 +1,16 @@
 import {
   assertCompositableSurfaceRef,
   verifySynchronizedMedia,
-} from "@hypit/hypit/media";
-import type { CompositableSurfaceRef, SynchronizedMedia } from "@hypit/hypit/media";
+} from "@hypit/media";
+import type { CompositableSurfaceRef, SynchronizedMedia } from "@hypit/media";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
 import type { BlobRef } from "@hypit/hypit/protocol";
 import {
   assertContentFit,
   assertIntrinsicExtent,
   assertSpatialMap2D,
-} from "@hypit/hypit/spatial";
-import type { ContentFit, IntrinsicExtent, SpatialMap2D } from "@hypit/hypit/spatial";
+} from "@hypit/spatial";
+import type { ContentFit, IntrinsicExtent, SpatialMap2D } from "@hypit/spatial";
 
 import type {
   MediaGradientStop,

@@ -1,9 +1,9 @@
 import { blobDependency } from "@hypit/hypit/blob";
-import { mediaDependency, mediaTypes } from "@hypit/hypit/media";
-import { timelineDependency, timelineTypes } from "@hypit/hypit/timeline";
+import { mediaDependency, mediaTypes } from "@hypit/media";
+import { timelineDependency, timelineTypes } from "@hypit/timeline";
 import { recipeModuleRef, recipeType } from "@hypit/hypit/recipe";
-import { compositionDependency, compositionTypes, audioSampleSpanSchema, audioGainEnvelopeSchema } from "@hypit/hypit/composition";
-import { temporalDependency, temporalTypes } from "@hypit/hypit/temporal";
+import { compositionDependency, compositionTypes, audioSampleSpanSchema, audioGainEnvelopeSchema } from "@hypit/composition";
+import { temporalDependency, temporalTypes } from "@hypit/temporal";
 import { blobTypes } from "@hypit/hypit/blob";
 import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 

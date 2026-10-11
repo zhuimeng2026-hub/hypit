@@ -1,8 +1,8 @@
-import { assertTimelineIdentity, timelineFrameCount } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { assertCaptionProgramForDocument } from "@hypit/hypit/caption";
-import type { CaptionProgram } from "@hypit/hypit/caption";
-import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/hypit/composition";
+import { assertTimelineIdentity, timelineFrameCount } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
+import { assertCaptionProgramForDocument } from "@hypit/caption";
+import type { CaptionProgram } from "@hypit/caption";
+import { assertVisualTrackIdentity, sealVisualTrack } from "@hypit/composition";
 import type {
   VisualAnimation,
   VisualBoxElement,
@@ -14,17 +14,17 @@ import type {
   VisualTextElement,
   VisualTextPaintLayer,
   VisualTrack,
-} from "@hypit/hypit/composition";
-import type { CaptionDocument, CaptionDisplayWord, CaptionUnit } from "@hypit/hypit/caption";
-import { assertRegionEvidence } from "@hypit/hypit/region-evidence";
-import type { RegionEvidence } from "@hypit/hypit/region-evidence";
-import { assertSpatialFrame } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+} from "@hypit/composition";
+import type { CaptionDocument, CaptionDisplayWord, CaptionUnit } from "@hypit/caption";
+import { assertRegionEvidence } from "@hypit/region-evidence";
+import type { RegionEvidence } from "@hypit/region-evidence";
+import { assertSpatialFrame } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 
 import { assertFineCaptionParameters, FINE_CAPTION_FAMILY } from "./style.js";
 import { assertFineCaptionSchedule } from "./schedule.js";
 import { uniformGap, wordGaps } from "./spacing.js";
-import { htmlVisual } from "@hypit/hypit/html-program";
+import { htmlVisual } from "@hypit/html-program";
 import { joinedBoxSetup } from "./joined-box.js";
 import type {
   FineCaptionActiveUnderline,

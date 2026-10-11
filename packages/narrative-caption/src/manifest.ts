@@ -1,6 +1,6 @@
 import { captionDependency, captionTypes } from "@hypit/caption";
 import { narrativeDependency } from "@hypit/narrative";
-import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/protocol";
+import type { ModuleManifest, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 import { narrativeTemporalDependency, narrativeTemporalTypes } from "@hypit/narrative-temporal";
 
 export const narrativeCaptionModuleRef = { name: "@hypit/narrative-caption", version: "1" } as const;

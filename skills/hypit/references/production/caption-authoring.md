@@ -62,7 +62,7 @@ speech Tokens with spaces or guessing from a writing system. Suppress a separato
 a displayed Cue/line. Use the same authored boundaries in base glyphs, active layers and backgrounds.
 Separators are display content, not timed Tokens.
 
-Use `@hypit/hypit/caption` for content timing and Use coverage, and `@hypit/hypit/narrative` for
+Use `@hypit/caption` for content timing and Use coverage, and `@hypit/narrative` for
 Script document types. A family Track accepts `document`, resolved `timing`, `timeline` and ordered
 `Use` children:
 

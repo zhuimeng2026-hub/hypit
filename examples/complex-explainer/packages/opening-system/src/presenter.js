@@ -1,18 +1,18 @@
 import { assertAttributes, assertEmptyElement, createMarkupSurfaceFacet, optionalTextAttribute, textAttribute } from "@hypit/hypit/markup";
 import { canonicalize, sameType } from "@hypit/hypit/protocol";
 import { sealGraphFragment } from "@hypit/hypit/author";
-import { compositionTypes, sealVisualTrack } from "@hypit/hypit/composition";
-import { mediaTypes, verifySynchronizedMedia } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { compositionTypes, sealVisualTrack } from "@hypit/composition";
+import { mediaTypes, verifySynchronizedMedia } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
-import { temporalTypes, assertTemporalWindowFor } from "@hypit/hypit/temporal";
+import { temporalTypes, assertTemporalWindowFor } from "@hypit/temporal";
 import {
   resolveTemporalWindowReference,
   resolveTemporalContext,
   temporalWindowAttributeNames,
   temporalWindowAttributeVocabulary,
-} from "@hypit/hypit/temporal/markup";
-import { timelineTypes } from "@hypit/hypit/timeline";
+} from "@hypit/temporal/markup";
+import { timelineTypes } from "@hypit/timeline";
 import {
   appendVisualClip,
   appendTimedMediaLayer,

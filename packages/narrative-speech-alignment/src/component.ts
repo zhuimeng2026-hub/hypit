@@ -1,10 +1,10 @@
 import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { ProducerPackage } from "@hypit/hypit/producer";
-import type { Narrative, NarrativeSegmentRef } from "@hypit/hypit/narrative";
+import type { Narrative, NarrativeSegmentRef } from "@hypit/narrative";
 import type { StoredValue } from "@hypit/hypit/protocol";
 import { canonicalize } from "@hypit/hypit/protocol";
-import type { AlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
-import type { LocalTemporalDomain } from "@hypit/hypit/temporal";
+import type { AlignedTranscriptEvidence } from "@hypit/speech-evidence";
+import type { LocalTemporalDomain } from "@hypit/temporal";
 
 import { alignNarrative } from "./local.js";
 import { speechAlignmentProducers } from "./manifest.js";

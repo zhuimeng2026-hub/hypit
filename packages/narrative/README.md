@@ -1,6 +1,6 @@
 # `@hypit/narrative`
 
-External components use `@hypit/hypit/narrative` from their `@hypit/hypit` development dependency. The package
+External components declare `@hypit/narrative` as an ordinary npm dependency. The package
 owns the types and helpers below; Source imports retain the `@hypit/narrative@1` Module identity.
 
 

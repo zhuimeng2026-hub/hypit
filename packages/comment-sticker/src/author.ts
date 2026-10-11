@@ -1,5 +1,5 @@
-import { assertFontStackRef } from "@hypit/hypit/media";
-import type { FontStackRef } from "@hypit/hypit/media";
+import { assertFontStackRef } from "@hypit/media";
+import type { FontStackRef } from "@hypit/media";
 import type { Recipe } from "@hypit/hypit/recipe";
 
 import { sealCommentStickerStyle } from "./program.js";

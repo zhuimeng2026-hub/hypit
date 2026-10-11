@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { canonicalize } from "@hypit/hypit/protocol";
 import type { Need } from "@hypit/hypit/protocol";
-import { sealAlignedTranscriptEvidence } from "@hypit/hypit/speech-evidence";
+import { sealAlignedTranscriptEvidence } from "@hypit/speech-evidence";
 import { interpretWhisperXTranscript } from "@hypit/whisperx";
 import type { WhisperXAlignmentRequest } from "@hypit/whisperx";
 

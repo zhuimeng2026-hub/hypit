@@ -1,15 +1,15 @@
-import { mediaFrameRangeSamples, verifyMediaFrameRange } from "@hypit/hypit/media";
-import { mediaComponent } from "@hypit/hypit/media";
+import { mediaFrameRangeSamples, verifyMediaFrameRange } from "@hypit/media";
+import { mediaComponent } from "@hypit/media";
 import { plannedNeedInputs } from "@hypit/hypit/producer";
 import type { ProducerPackage, PlannedNeedFacet } from "@hypit/hypit/producer";
 import type { AdmissionPackage } from "@hypit/hypit/admission";
-import { verifyMediaInspection, verifyMediaStreamSelection, verifyMuxedMedia, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "@hypit/hypit/media";
-import type { MediaInspection, MediaStreamSelection, MuxedMedia, TimelineVisual, TimelineAudio } from "@hypit/hypit/media";
-import { assertClockIdentity } from "@hypit/hypit/timeline";
-import type { Clock, Timeline } from "@hypit/hypit/timeline";
-import { durationInFrames } from "@hypit/hypit/temporal";
-import type { TemporalDuration } from "@hypit/hypit/temporal";
-import type { Composition } from "@hypit/hypit/composition";
+import { verifyMediaInspection, verifyMediaStreamSelection, verifyMuxedMedia, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "@hypit/media";
+import type { MediaInspection, MediaStreamSelection, MuxedMedia, TimelineVisual, TimelineAudio } from "@hypit/media";
+import { assertClockIdentity } from "@hypit/timeline";
+import type { Clock, Timeline } from "@hypit/timeline";
+import { durationInFrames } from "@hypit/temporal";
+import type { TemporalDuration } from "@hypit/temporal";
+import type { Composition } from "@hypit/composition";
 import type { BlobRef, CanonicalValue, CapabilityRef, ProducerRef, StoredValue } from "@hypit/hypit/protocol";
 import { canonicalize } from "@hypit/hypit/protocol";
 

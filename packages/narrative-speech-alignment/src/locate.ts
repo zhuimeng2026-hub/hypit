@@ -1,4 +1,4 @@
-import type { Narrative, NarrativeToken } from "@hypit/hypit/narrative";
+import type { Narrative, NarrativeToken } from "@hypit/narrative";
 import type { NarrativeAlignmentTiming } from "./types.js";
 import type {
   AlignedTranscriptEvidence,
@@ -6,7 +6,7 @@ import type {
   SpeechCharacterEvidence,
   SpeechTranscriptPassage,
   SpeechWordEvidence,
-} from "@hypit/hypit/speech-evidence";
+} from "@hypit/speech-evidence";
 
 import { alignWordGroups } from "./align.js";
 import { SpeechAlignmentError } from "./error.js";

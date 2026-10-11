@@ -2,7 +2,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 import type { BuildState, ProducerStep, StoredValue, TypedRecord } from "@hypit/hypit/protocol";
 import { sameType } from "@hypit/hypit/protocol";
-import { temporalTypes } from "@hypit/hypit/temporal";
+import { temporalTypes } from "@hypit/temporal";
 import type {
   StudioSourceBinding,
   StudioTemporalConstraint,

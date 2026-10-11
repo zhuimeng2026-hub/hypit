@@ -1,9 +1,9 @@
-import { compositionTypes } from "@hypit/hypit/composition";
-import type { AudioTrack, Track, VisualTrack } from "@hypit/hypit/composition";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { compositionTypes } from "@hypit/composition";
+import type { AudioTrack, Track, VisualTrack } from "@hypit/composition";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import type { StructuredElement, StructuredSurfaceHandler, SurfaceResolvedReference, MarkupAttributeValue } from "@hypit/hypit/markup";
 
 import { createFilmAssemblyFragment } from "./fragment.js";

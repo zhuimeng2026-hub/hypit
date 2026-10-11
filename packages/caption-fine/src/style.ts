@@ -1,7 +1,7 @@
-import type { CaptionStyleIntent } from "@hypit/hypit/caption";
-import { sealCaptionStyle } from "@hypit/hypit/caption";
-import { assertFontArtifactRef } from "@hypit/hypit/media";
-import type { FontArtifactRef } from "@hypit/hypit/media";
+import type { CaptionStyleIntent } from "@hypit/caption";
+import { sealCaptionStyle } from "@hypit/caption";
+import { assertFontArtifactRef } from "@hypit/media";
+import type { FontArtifactRef } from "@hypit/media";
 import { canonicalStringify } from "@hypit/hypit/protocol";
 import type { Recipe } from "@hypit/hypit/recipe";
 

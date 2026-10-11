@@ -21,7 +21,7 @@ import type {
 } from "@hypit/studio-companion";
 import { studioParameterControls } from "@hypit/studio-companion";
 import { parameterOption } from "./parameter-values.js";
-import { compositionTypes } from "@hypit/hypit/composition";
+import { compositionTypes } from "@hypit/composition";
 import { sameModule, sameType } from "@hypit/hypit/protocol";
 import type { ModuleRef, ProducerRef, TypeRef } from "@hypit/hypit/protocol";
 

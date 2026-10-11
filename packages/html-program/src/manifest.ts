@@ -1,6 +1,6 @@
 import { compositionDependency, compositionTypes, VISUAL_IR_V1 } from "@hypit/composition";
 import { compositableSurfaceSchema, mediaDependency, mediaTypes } from "@hypit/media";
-import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/protocol";
+import type { CapabilityRef, ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 import { timelineDependency, timelineTypes } from "@hypit/timeline";
 
 export const htmlProgramModuleRef = { name: "@hypit/html-program", version: "1" } as const;

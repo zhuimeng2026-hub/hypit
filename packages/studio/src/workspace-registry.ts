@@ -9,7 +9,7 @@ import type { IncomingHttpHeaders, ServerResponse } from "node:http";
 
 import type { ViteDevServer } from "vite";
 import type { BuildResultFileRange } from "@hypit/hypit/result";
-import type { HtmlProgram } from "@hypit/hypit/html-program";
+import type { HtmlProgram } from "@hypit/html-program";
 import type { StudioTemporalInstantProjection } from "@hypit/studio-companion";
 
 import type { StudioBuildLibrary } from "./build-library.js";
@@ -204,20 +204,32 @@ export class WorkspaceSession {
     this.#watchedFiles.add(absolute);
     const directory = dirname(absolute);
     if (this.#watched.has(directory)) return;
+    const failed = (error: unknown): void => {
+      if (this.#watched.get(directory) !== watcher) return;
+      try { watcher.close(); } catch { /* ignore */ }
+      this.#watched.delete(directory);
+      // Watch capacity is a finite OS resource. Exhausting it must degrade to
+      // "no external-edit notification", never take Studio down.
+      this.#server?.config.logger.warn(
+        `Studio cannot watch Source directory ${directory}: ${error instanceof Error ? error.message : String(error)}. External Source edits in this directory may not update the preview. Browser refresh does not recompile Sources; restart Studio to restore watching.`,
+      );
+    };
+    let watcher: FSWatcher;
     try {
-      const watcher = watch(directory, (_event, filename) => {
+      watcher = watch(directory, (_event, filename) => {
         const changed = filename === null ? undefined : resolve(directory, filename.toString());
         if (!this.#mutating && (changed === undefined || this.#watchedFiles.has(changed))) this.#schedule();
       });
-      watcher.on("error", () => {
-        watcher.close();
-        if (this.#watched.get(directory) === watcher) this.#watched.delete(directory);
-      });
-      this.#watched.set(directory, watcher);
-    } catch {
+    } catch (error) {
       // Some Hosts may report virtual Source ids. They are still recompiled
       // whenever a real Source revision is scheduled; they simply emit no file event.
+      this.#server?.config.logger.warn(
+        `Studio cannot watch Source directory ${directory}: ${error instanceof Error ? error.message : String(error)}. External Source edits in this directory may not update the preview. Restart Studio to restore watching.`,
+      );
+      return;
     }
+    this.#watched.set(directory, watcher);
+    watcher.on("error", failed);
   }
 
   async #publish(attempt: number, notify = true): Promise<void> {
@@ -252,6 +264,9 @@ export class WorkspaceSession {
         workspaceRoot: this.#workspaceRoot,
       });
       if (attempt !== this.#requestedRevision) return;
+      // Declaration issues are advisory — they never fail a revision, but the
+      // author must see them, so surface them through the Vite logger.
+      for (const issue of result.declarationIssues) this.#server?.config.logger.warn(issue);
       this.#revision = attempt;
       this.#snapshot = result.snapshot;
       this.#visualHtml = result.visualHtml;

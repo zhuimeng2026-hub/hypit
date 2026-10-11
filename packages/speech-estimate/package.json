@@ -12,7 +12,7 @@
     "cmu-pronouncing-dictionary": "3.0.0"
   },
   "peerDependencies": {
-    "@hypit/hypit": "workspace:^"
+    "@hypit/hypit": "workspace:^0.3.0"
   },
   "devDependencies": {
     "@hypit/hypit": "workspace:*",

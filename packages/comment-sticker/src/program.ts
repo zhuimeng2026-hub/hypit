@@ -1,9 +1,9 @@
-import { assertTimelineIdentity } from "@hypit/hypit/timeline";
-import type { Timeline } from "@hypit/hypit/timeline";
+import { assertTimelineIdentity } from "@hypit/timeline";
+import type { Timeline } from "@hypit/timeline";
 import {
   assertVisualTrackIdentity,
   sealVisualTrack,
-} from "@hypit/hypit/composition";
+} from "@hypit/composition";
 import type {
   VisualAnimation,
   VisualElement,
@@ -11,14 +11,14 @@ import type {
   VisualTextFlow,
   VisualTextTypography,
   VisualTrack,
-} from "@hypit/hypit/composition";
-import { assertFontArtifactRef } from "@hypit/hypit/media";
+} from "@hypit/composition";
+import { assertFontArtifactRef } from "@hypit/media";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
 import type { BlobRef } from "@hypit/hypit/protocol";
-import { assertSpatialFrame } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import { assertTemporalWindowFor } from "@hypit/hypit/temporal";
-import type { TemporalWindow } from "@hypit/hypit/temporal";
+import { assertSpatialFrame } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
+import { assertTemporalWindowFor } from "@hypit/temporal";
+import type { TemporalWindow } from "@hypit/temporal";
 import { verifyText } from "@hypit/hypit/text";
 import type { Text } from "@hypit/hypit/text";
 

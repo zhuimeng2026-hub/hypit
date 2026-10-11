@@ -1,12 +1,12 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import { blobTypes } from "@hypit/hypit/blob";
-import { mediaTypes } from "@hypit/hypit/media";
-import type { FontStackRef } from "@hypit/hypit/media";
+import { mediaTypes } from "@hypit/media";
+import type { FontStackRef } from "@hypit/media";
 import { visualTrackTypes } from "@hypit/visual-track";
 import type { TypeRef } from "@hypit/hypit/protocol";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
-import { resolveTemporalInstantReference, temporalInstantAttributeNames } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalInstantReference, temporalInstantAttributeNames } from "@hypit/temporal/markup";
 import type { Recipe } from "@hypit/hypit/recipe";
 import { sealText, textTypes } from "@hypit/hypit/text";
 import { sealGraphFragment } from "@hypit/hypit/author";

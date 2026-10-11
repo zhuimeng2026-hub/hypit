@@ -1,6 +1,6 @@
 import { defineEndpoint } from "@hypit/hypit/endpoint";
-import { mediaTypes } from "@hypit/hypit/media";
-import { htmlProgramCapabilities, htmlProgramTypes, verifyHtmlFrameRequest, verifyHtmlRasterRequest } from "@hypit/hypit/html-program";
+import { mediaTypes } from "@hypit/media";
+import { htmlProgramCapabilities, htmlProgramTypes, verifyHtmlFrameRequest, verifyHtmlRasterRequest } from "@hypit/html-program";
 import { canonicalize } from "@hypit/hypit/protocol";
 import { rasterizeHtmlProgram, rasterizeHtmlFrames, resolveExecutionOptions } from "./render.js";
 import { renderWorkerLimit } from "./concurrency.js";

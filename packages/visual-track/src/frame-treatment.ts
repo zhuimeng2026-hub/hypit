@@ -1,5 +1,5 @@
-import { assertSpatialFrame, assertSpatialPath } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
+import { assertSpatialFrame, assertSpatialPath } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
 
 import type { VisualFrameTreatment } from "./types.js";
 

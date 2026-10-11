@@ -1,6 +1,6 @@
 import { compositionTypes } from "@hypit/composition";
 import type { Composition } from "@hypit/composition";
-import { sealGraphFragment } from "@hypit/author";
+import { sealGraphFragment } from "@hypit/hypit/author";
 import { timelineTypes } from "@hypit/timeline";
 
 import { htmlProgramProducers, htmlProgramTypes } from "./manifest.js";

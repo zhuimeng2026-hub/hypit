@@ -1,11 +1,11 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import { assertAttributes, assertEmptyElement, optionalTextAttribute, textAttribute, type MarkupAttributeValue, type StructuredSurfaceHandler, type SurfaceComponentDraft, type SurfaceRecordDraft, type SurfaceResolvedReference } from "@hypit/hypit/markup";
 import { blobTypes } from "@hypit/hypit/blob";
 import { sameType, type CanonicalValue, type TypeRef } from "@hypit/hypit/protocol";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
-import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalWindowAttributeNames } from "@hypit/temporal/markup";
 
 import { createEmojiRevealFragment } from "./fragment.js";
 import { emojiRevealTypes } from "./manifest.js";

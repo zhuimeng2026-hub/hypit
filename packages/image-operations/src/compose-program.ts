@@ -1,4 +1,4 @@
-import { assertSpatialFrame } from "@hypit/hypit/spatial";
+import { assertSpatialFrame } from "@hypit/spatial";
 import { canonicalize, isResourceId } from "@hypit/hypit/protocol";
 
 import type {

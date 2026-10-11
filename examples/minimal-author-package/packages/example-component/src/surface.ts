@@ -1,10 +1,10 @@
 import type { StructuredElement, StructuredSurfaceHandler, SurfaceComponentDraft, SurfaceRecordDraft, SurfaceResolvedReference } from "@hypit/hypit/markup";
 import { exampleBoxFragment, exampleImageFragment, exampleTextFragment } from "./fragment.js";
 import { exampleMarkupSurfaces, exampleTypes } from "./manifest.js";
-import { mediaTypes } from "@hypit/hypit/media";
+import { mediaTypes } from "@hypit/media";
 import { recipeType } from "@hypit/hypit/recipe";
 import { blobTypes } from "@hypit/hypit/blob";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { spatialTypes } from "@hypit/spatial";
 
 function text(element: StructuredElement, name: string): string {
   const value = element.attributes[name];

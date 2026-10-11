@@ -1,6 +1,6 @@
 {
   "name": "@hypit/hypit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "homepage": "https://hypit.ai",
   "repository": {
     "type": "git",
@@ -115,16 +115,6 @@
       "types": "./dist/public/result-node.d.ts",
       "import": "./packages/result/src/node/index.ts"
     },
-    "./caption": {
-      "hypit-source": "./packages/caption/src/index.ts",
-      "types": "./dist/public/caption.d.ts",
-      "import": "./packages/caption/src/index.ts"
-    },
-    "./composition": {
-      "hypit-source": "./packages/composition/src/index.ts",
-      "types": "./dist/public/composition.d.ts",
-      "import": "./packages/composition/src/index.ts"
-    },
     "./endpoint": {
       "hypit-source": "./packages/endpoint/src/index.ts",
       "types": "./dist/public/endpoint.d.ts",
@@ -134,21 +124,6 @@
       "hypit-source": "./packages/endpoint/src/http.ts",
       "types": "./dist/public/endpoint-http.d.ts",
       "import": "./packages/endpoint/src/http.ts"
-    },
-    "./generation": {
-      "hypit-source": "./packages/generation/src/index.ts",
-      "types": "./dist/public/generation.d.ts",
-      "import": "./packages/generation/src/index.ts"
-    },
-    "./media": {
-      "hypit-source": "./packages/media/src/index.ts",
-      "types": "./dist/public/media.d.ts",
-      "import": "./packages/media/src/index.ts"
-    },
-    "./generation/model": {
-      "hypit-source": "./packages/generation/src/model.ts",
-      "types": "./dist/public/generation-model.d.ts",
-      "import": "./packages/generation/src/model.ts"
     },
     "./loader": {
       "hypit-source": "./packages/loader/src/index.ts",
@@ -165,70 +140,20 @@
       "types": "./dist/public/loader-node-module-scope.d.ts",
       "import": "./packages/loader/src/node/module-scope.ts"
     },
-    "./narrative": {
-      "hypit-source": "./packages/narrative/src/index.ts",
-      "types": "./dist/public/narrative.d.ts",
-      "import": "./packages/narrative/src/index.ts"
-    },
-    "./narrative-caption": {
-      "hypit-source": "./packages/narrative-caption/src/index.ts",
-      "types": "./dist/public/narrative-caption.d.ts",
-      "import": "./packages/narrative-caption/src/index.ts"
-    },
-    "./narrative-temporal": {
-      "hypit-source": "./packages/narrative-temporal/src/index.ts",
-      "types": "./dist/public/narrative-temporal.d.ts",
-      "import": "./packages/narrative-temporal/src/index.ts"
-    },
     "./atomic-file": {
       "hypit-source": "./packages/atomic-file/src/index.ts",
       "types": "./dist/public/atomic-file.d.ts",
       "import": "./packages/atomic-file/src/index.ts"
-    },
-    "./timeline": {
-      "hypit-source": "./packages/timeline/src/index.ts",
-      "types": "./dist/public/timeline.d.ts",
-      "import": "./packages/timeline/src/index.ts"
-    },
-    "./spatial": {
-      "hypit-source": "./packages/spatial/src/index.ts",
-      "types": "./dist/public/spatial.d.ts",
-      "import": "./packages/spatial/src/index.ts"
-    },
-    "./region-evidence": {
-      "hypit-source": "./packages/region-evidence/src/index.ts",
-      "types": "./dist/public/region-evidence.d.ts",
-      "import": "./packages/region-evidence/src/index.ts"
-    },
-    "./speech-evidence": {
-      "hypit-source": "./packages/speech-evidence/src/index.ts",
-      "types": "./dist/public/speech-evidence.d.ts",
-      "import": "./packages/speech-evidence/src/index.ts"
     },
     "./recipe": {
       "hypit-source": "./packages/recipe/src/index.ts",
       "types": "./dist/public/recipe.d.ts",
       "import": "./packages/recipe/src/index.ts"
     },
-    "./temporal": {
-      "hypit-source": "./packages/temporal/src/index.ts",
-      "types": "./dist/public/temporal.d.ts",
-      "import": "./packages/temporal/src/index.ts"
-    },
-    "./temporal/markup": {
-      "hypit-source": "./packages/temporal/src/markup/index.ts",
-      "types": "./dist/public/temporal-markup.d.ts",
-      "import": "./packages/temporal/src/markup/index.ts"
-    },
     "./text": {
       "hypit-source": "./packages/text/src/index.ts",
       "types": "./dist/public/text.d.ts",
       "import": "./packages/text/src/index.ts"
-    },
-    "./html-program": {
-      "hypit-source": "./packages/html-program/src/index.ts",
-      "types": "./dist/public/html-program.d.ts",
-      "import": "./packages/html-program/src/index.ts"
     }
   },
   "bin": {
@@ -246,7 +171,10 @@
         "@hypit/video/cli",
         "@hypit/studio/cli"
       ]
-    }
+    },
+    "packageSources": [
+      "@hypit/video"
+    ]
   },
   "packageManager": "pnpm@10.33.0",
   "files": [
@@ -382,49 +310,28 @@
     "linkedom": "0.18.13",
     "rollup": "4.62.4",
     "rollup-plugin-dts": "6.2.3",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "@hypit/fontsource": "workspace:*",
+    "@hypit/audio-track": "workspace:*",
+    "@hypit/caption-fine": "workspace:*",
+    "@hypit/film": "workspace:*",
+    "@hypit/provider-hypihub": "workspace:*",
+    "@hypit/seedance": "workspace:*",
+    "@hypit/seedance-kits": "workspace:*",
+    "@hypit/script": "workspace:*",
+    "@hypit/text-fine": "workspace:*",
+    "@hypit/timeline-author": "workspace:*",
+    "@hypit/visual-track": "workspace:*"
   },
   "dependencies": {
-    "@hypit/browser-capture": "workspace:^",
-    "@hypit/fontsource": "workspace:^",
-    "@hypit/audio-track": "workspace:^",
-    "@hypit/caption-fine": "workspace:^",
-    "@hypit/credential-store-env": "workspace:^",
-    "@hypit/credential-store-local": "workspace:^",
-    "@hypit/film": "workspace:^",
-    "@hypit/elevenlabs-speech": "workspace:^",
-    "@hypit/fishaudio-speech": "workspace:^",
-    "@hypit/gpt-image": "workspace:^",
-    "@hypit/gpt-image-kits": "workspace:^",
-    "@hypit/grok-imagine": "workspace:^",
-    "@hypit/html-video": "workspace:^",
-    "@hypit/image-operations": "workspace:^",
-    "@hypit/media-operations": "workspace:^",
-    "@hypit/speech-estimate": "workspace:^",
-    "@hypit/mimo-speech": "workspace:^",
-    "@hypit/minimax-h3": "workspace:^",
-    "@hypit/nano-banana": "workspace:^",
-    "@hypit/pixverse": "workspace:^",
-    "@hypit/provider-html-local": "workspace:^",
-    "@hypit/provider-image-opencv-local": "workspace:^",
-    "@hypit/provider-hypihub": "workspace:^",
-    "@hypit/media-local": "workspace:^",
-    "@hypit/provider-whisperx-local": "workspace:^",
-    "@hypit/seedance": "workspace:^",
-    "@hypit/seedance-kits": "workspace:^",
-    "@hypit/seedream": "workspace:^",
-    "@hypit/script": "workspace:^",
-    "@hypit/studio-companion": "workspace:^",
-    "@hypit/runtime-local": "workspace:^",
-    "@hypit/video": "workspace:^",
-    "@hypit/studio": "workspace:^",
-    "@hypit/text-fine": "workspace:^",
-    "@hypit/timeline-author": "workspace:^",
-    "@hypit/volcengine-matting": "workspace:^",
-    "@hypit/visual-track": "workspace:^",
-    "@hypit/wan": "workspace:^",
-    "@hypit/whisperx": "workspace:^",
-    "@hypit/yt-dlp": "workspace:^",
+    "@hypit/browser-capture": "workspace:^0.2.0",
+    "@hypit/speech-estimate": "workspace:^0.1.1",
+    "@hypit/media-local": "workspace:^0.2.0",
+    "@hypit/runtime-local": "workspace:^0.1.1",
+    "@hypit/video": "workspace:^0.2.0",
+    "@hypit/studio": "workspace:^0.2.0",
+    "@hypit/whisperx": "workspace:^0.2.0",
+    "@hypit/yt-dlp": "workspace:^0.2.0",
     "@types/node": "24.10.1",
     "koffi": "3.2.1",
     "tsx": "4.21.0",

@@ -10,7 +10,7 @@ No Hypit checkout is needed to develop or install the extension.
 ```ts
 import { defineEndpoint } from "@hypit/hypit/endpoint";
 import type { AsyncEndpoint, CredentialRef, EndpointRequest } from "@hypit/hypit/endpoint";
-import { generationTypes, compileWireRequest, sealGeneratedImageSet } from "@hypit/hypit/generation";
+import { generationTypes, compileWireRequest, sealGeneratedImageSet } from "@hypit/generation";
 ```
 
 The shipped [project Provider example](../../examples/provider-package/README.md) follows an image
@@ -21,7 +21,7 @@ This SDK also exports `canonicalize`, `BlobRef`, `ResourceId`, `credentialRef` a
 
 For an existing model, name its exact versioned Capability and expected result Type. Map its request
 ports into the service's wire format; the Provider need not import the model's implementation.
-`@hypit/hypit/generation` supplies the common generated-media values and optional wire-mapping helpers.
+`@hypit/generation` supplies the common generated-media values and optional wire-mapping helpers.
 One Provider can implement multiple capabilities, and another Provider can implement those same
 capabilities. The Profile selects the implementation used by a project.
 

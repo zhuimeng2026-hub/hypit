@@ -1,15 +1,15 @@
-import { timelineTypes, timelineDependency } from "@hypit/hypit/timeline";
-import { temporalContextAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { timelineTypes, timelineDependency } from "@hypit/timeline";
+import { temporalContextAttributeVocabulary } from "@hypit/temporal/markup";
 import { readFile } from "node:fs/promises";
 
 import { blobDependency, blobTypes } from "@hypit/hypit/blob";
-import { compositionDependency, compositionTypes } from "@hypit/hypit/composition";
+import { compositionDependency, compositionTypes } from "@hypit/composition";
 
 import type { ModuleManifest, ProducerRef, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
-import { spatialDependency, spatialTypes } from "@hypit/hypit/spatial";
+import { spatialDependency, spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
-import { temporalDependency, temporalInstantSchema, temporalTypes, temporalWindowSchema } from "@hypit/hypit/temporal";
-import { temporalWindowAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+import { temporalDependency, temporalInstantSchema, temporalTypes, temporalWindowSchema } from "@hypit/temporal";
+import { temporalWindowAttributeVocabulary } from "@hypit/temporal/markup";
 
 const previewImage = (file: string) => ({
   mediaType: "image/png",

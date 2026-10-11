@@ -1,13 +1,13 @@
-import { resolveTemporalContext } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalContext } from "@hypit/temporal/markup";
 import { assertEmptyElement as empty, assertAttributes as allowed, localName, textAttribute as text, optionalTextAttribute as optionalText, type StructuredElement, type StructuredSurfaceHandler, type SurfaceRecordDraft, type SurfaceResolvedReference, type MarkupAttributeValue } from "@hypit/hypit/markup";
 import { sameType, type CanonicalValue, type TypeRef } from "@hypit/hypit/protocol";
-import { mediaTypes } from "@hypit/hypit/media";
-import type { FontArtifactRef, FontStackRef } from "@hypit/hypit/media";
-import { spatialTypes } from "@hypit/hypit/spatial";
+import { mediaTypes } from "@hypit/media";
+import type { FontArtifactRef, FontStackRef } from "@hypit/media";
+import { spatialTypes } from "@hypit/spatial";
 import { recipeType } from "@hypit/hypit/recipe";
 import type { Recipe } from "@hypit/hypit/recipe";
 import { textTypes } from "@hypit/hypit/text";
-import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalInstantAttributeNames } from "@hypit/hypit/temporal/markup";
+import { resolveTemporalInstantReference, resolveTemporalWindowReference, temporalInstantAttributeNames } from "@hypit/temporal/markup";
 
 import { createRankingFragment } from "./fragment.js";
 import type { RankingFragmentItem, RankingFragmentSound } from "./fragment.js";

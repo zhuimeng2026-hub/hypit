@@ -1,5 +1,5 @@
 import type { ModuleRef } from "@hypit/hypit/protocol";
-import type { GenerationWireMapping } from "@hypit/hypit/generation";
+import type { GenerationWireMapping } from "@hypit/generation";
 
 const SEEDANCE: ModuleRef = { name: "@hypit/seedance", version: "1" };
 const MINIMAX: ModuleRef = { name: "@hypit/minimax-h3", version: "1" };

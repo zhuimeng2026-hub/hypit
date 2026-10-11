@@ -6,18 +6,18 @@ import type { AdmissionPackage } from "@hypit/hypit/admission";
 import type { FragmentOperation } from "@hypit/hypit/author";
 import type { ModuleManifest, TypeRef } from "@hypit/hypit/protocol";
 import type { StructuredSurfaceHandler, SurfaceResolvedReference } from "@hypit/hypit/markup";
-import { compositionTypes } from "@hypit/hypit/composition";
-import { mediaTypes } from "@hypit/hypit/media";
-import type { FontStackRef } from "@hypit/hypit/media";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { timelineTypes } from "@hypit/hypit/timeline";
-import { spatialTypes } from "@hypit/hypit/spatial";
-import type { SpatialFrame } from "@hypit/hypit/spatial";
-import { assertTemporalInstantFor, temporalTypes } from "@hypit/hypit/temporal";
-import type { TemporalInstant, TemporalWindow } from "@hypit/hypit/temporal";
+import { compositionTypes } from "@hypit/composition";
+import { mediaTypes } from "@hypit/media";
+import type { FontStackRef } from "@hypit/media";
+import type { Timeline } from "@hypit/timeline";
+import { timelineTypes } from "@hypit/timeline";
+import { spatialTypes } from "@hypit/spatial";
+import type { SpatialFrame } from "@hypit/spatial";
+import { assertTemporalInstantFor, temporalTypes } from "@hypit/temporal";
+import type { TemporalInstant, TemporalWindow } from "@hypit/temporal";
 import { resolveTemporalInstantReference, resolveTemporalWindowReference, resolveTemporalContext,
   temporalContextAttributeVocabulary, temporalInstantAttributeNames, temporalInstantAttributeVocabulary,
-  temporalWindowAttributeNames, temporalWindowAttributeVocabulary } from "@hypit/hypit/temporal/markup";
+  temporalWindowAttributeNames, temporalWindowAttributeVocabulary } from "@hypit/temporal/markup";
 import { renderChat } from "./render.js";
 import type { ChatOptions, Message } from "./render.js";
 

@@ -1,4 +1,4 @@
-import type { ModuleManifest, TypeRef, ValueSchema } from "@hypit/protocol";
+import type { ModuleManifest, TypeRef, ValueSchema } from "@hypit/hypit/protocol";
 
 export const timelineModuleRef = { name: "@hypit/timeline", version: "1" } as const;
 export const timelineTypes = {

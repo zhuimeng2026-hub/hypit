@@ -1,5 +1,5 @@
-import type { CaptionTimingUnit } from "@hypit/hypit/caption";
-import type { FontArtifactRef } from "@hypit/hypit/media";
+import type { CaptionTimingUnit } from "@hypit/caption";
+import type { FontArtifactRef } from "@hypit/media";
 
 export type FineCaptionGlyphPaint = {
   readonly fill: string;

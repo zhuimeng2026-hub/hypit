@@ -4,11 +4,11 @@ import { createReadStream } from "node:fs";
 import { mkdtemp, open, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { verifyMediaFrameRange, mediaFrameRangeSamples, mediaTypes, sealMediaInspection, sealMuxedMedia, sealSynchronizedMedia, sealTimelineAudio, verifyMediaInspection, verifyMediaStreamSelection, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "@hypit/hypit/media";
-import type { MediaAudioStream, MediaInspection, MediaRational, MediaStream, MediaStreamSelection, MediaTimestamp, MediaVideoStream, MuxedMedia, TimelineVisual, SynchronizedMedia, TimelineAudio } from "@hypit/hypit/media";
-import type { Timeline } from "@hypit/hypit/timeline";
-import { assertSpeechEvidenceAudioIdentity, sealSpeechEvidenceAudio, speechEvidenceSampleBoundary } from "@hypit/hypit/speech-evidence";
-import type { ProjectSpeechEvidenceAudioNeed, SpeechEvidenceAudio } from "@hypit/hypit/speech-evidence";
+import { verifyMediaFrameRange, mediaFrameRangeSamples, mediaTypes, sealMediaInspection, sealMuxedMedia, sealSynchronizedMedia, sealTimelineAudio, verifyMediaInspection, verifyMediaStreamSelection, verifyTimelineVisual, verifySynchronizedMedia, verifyTimelineAudio } from "@hypit/media";
+import type { MediaAudioStream, MediaInspection, MediaRational, MediaStream, MediaStreamSelection, MediaTimestamp, MediaVideoStream, MuxedMedia, TimelineVisual, SynchronizedMedia, TimelineAudio } from "@hypit/media";
+import type { Timeline } from "@hypit/timeline";
+import { assertSpeechEvidenceAudioIdentity, sealSpeechEvidenceAudio, speechEvidenceSampleBoundary } from "@hypit/speech-evidence";
+import type { ProjectSpeechEvidenceAudioNeed, SpeechEvidenceAudio } from "@hypit/speech-evidence";
 import {
   verifyAudioExtractionRequest,
   verifyAudioProgramPlan,

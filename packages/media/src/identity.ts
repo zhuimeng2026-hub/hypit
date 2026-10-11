@@ -1,8 +1,8 @@
 import {
   canonicalize,
   isResourceId,
-} from "@hypit/protocol";
-import type { BlobRef } from "@hypit/protocol";
+} from "@hypit/hypit/protocol";
+import type { BlobRef } from "@hypit/hypit/protocol";
 
 import type {
   MediaInspection,
