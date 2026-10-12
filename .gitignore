@@ -131,3 +131,20 @@ examples/**/gen-*.py
 # Additional debug-output patterns for this session
 examples/**/output-short-fresh.mp4
 services/whisperx/**/.tmp-*.wav
+
+# project.pdf 的图片资源：由 scripts/build-project-pdf.mjs 内联进 PDF，
+# 二进制合计 ~2MB，不入库。重新生成的步骤见 project-images.md。
+/.pdfimg/
+
+# tools/md-to-pdf 的依赖（独立小包，自带 package.json，不进 workspace）
+/tools/md-to-pdf/node_modules/
+
+# 并行会话的临时工作区：164MB 的 chromium profile 与扩展缓存，不是交付物
+/docs/docs/
+
+# 本文档的成品产物：由 node scripts/build-project-pdf.mjs 生成，不入库
+/project.pdf
+/project.zip
+
+# 参考用第三方文档：佛山华远筑业《混凝土屋面漏水修缮方案》，非本项目资产
+/混凝土屋面漏水修缮方案.pdf

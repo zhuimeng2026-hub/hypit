@@ -1,0 +1,335 @@
+/*
+ * md-to-pdf.css — 默认打印样式表（中文工程文档版式）
+ *
+ * 配套 tools/md-to-pdf/md-to-pdf.mjs 使用。渲染器会把本文件内联进 <head>，随后再追加：
+ *   1. --style 指定的额外样式（在本文件之后，因此可以覆盖这里的任何规则）
+ *   2. 生成的 @page 页眉页脚块（--header-text / --footer-text）
+ *
+ * 所以这里刻意不写 !important：本文件 -> 用户样式 -> 生成的页眉页脚，
+ * 后者覆盖前者，靠顺序即可。
+ *
+ * 关键点：Chromium 的 print-to-pdf 会丢弃元素的背景色与背景图，
+ * 除非显式开启 -webkit-print-color-adjust: exact（见 :root）。
+ */
+
+/* ---------- 页面 ---------- */
+
+:root {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  --ink: #1c1b19;
+  --muted: #6b6862;
+  --rule: #b5b0a8;
+  --accent: #1a4f9c;
+  --accent-deep: #1a3a6b;
+  --code-bg: #f4f2ee;
+}
+
+/*
+ * 页边距。页眉页脚落在 @page 的边距盒里，所以上下留出足够的空间给它们
+ * （页眉小字 + 细横线约 8mm，页脚同理）。
+ *
+ * 渲染器生成的 @top-center / @bottom-center 会追加到这里，本规则只管几何。
+ */
+@page {
+  size: A4;
+  margin: 22mm 18mm 20mm;
+}
+
+/* ---------- 正文 ---------- */
+
+html {
+  font-size: 10.5pt;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+  line-height: 1.78;
+  text-align: justify;
+  word-wrap: break-word;
+}
+
+p {
+  margin: 0 0 0.6em;
+  orphans: 3;
+  widows: 3;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+hr {
+  border: 0;
+  border-top: 0.6pt solid var(--rule);
+  margin: 16pt 0;
+}
+
+strong {
+  font-weight: 700;
+}
+
+del {
+  color: var(--muted);
+}
+
+/* ---------- 标题 ---------- */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--accent);
+  font-weight: 700;
+  line-height: 1.4;
+  page-break-after: avoid;
+  break-after: avoid-page;
+}
+
+h1 {
+  font-size: 23px;
+  margin: 26px 0 12px;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 22px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 0.6pt solid var(--rule);
+}
+
+h3 {
+  font-size: 15px;
+  margin: 16px 0 8px;
+}
+
+h4 {
+  font-size: 13px;
+  margin: 14px 0 6px;
+}
+
+h5,
+h6 {
+  font-size: 11.5px;
+  margin: 12px 0 6px;
+}
+
+/* ---------- 表格 ---------- */
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10pt 0;
+  font-size: 9.5pt;
+  page-break-inside: auto;
+}
+
+/* 跨页时表头在每一页重复 */
+thead {
+  display: table-header-group;
+}
+
+tfoot {
+  display: table-footer-group;
+}
+
+thead th {
+  background: var(--accent-deep);
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+  border: 1px solid var(--accent-deep);
+  padding: 6px 8px;
+}
+
+tbody td,
+tbody th {
+  border: 1px solid var(--rule);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+tbody tr:nth-child(even) td {
+  background: #faf9f6;
+}
+
+/* 一整行不跨页断开 */
+tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* ---------- 引用 ---------- */
+
+blockquote {
+  margin: 12px 0;
+  padding: 4px 0 4px 14px;
+  border-left: 3px solid var(--accent);
+  color: #555;
+  break-inside: avoid;
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- 代码 ---------- */
+
+code,
+pre {
+  font-family: "DejaVu Sans Mono", "Noto Sans Mono CJK SC", "Noto Serif CJK SC", monospace;
+}
+
+code {
+  background: var(--code-bg);
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 0.92em;
+}
+
+pre {
+  background: var(--code-bg);
+  border: 0.6pt solid var(--rule);
+  border-radius: 2px;
+  padding: 10px 12px;
+  margin: 10pt 0;
+  font-size: 8.5pt;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  break-inside: avoid;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ---------- 图片 ---------- */
+
+/*
+ * --content-height 是正文可用高度（A4 高 297mm - 上下页边距 42mm）。
+ * 必须在 max-height 上再设一道限制：Chromium 的 print 引擎不会像浏览器那样
+ * 把超高的图缩到版心内，9:16 的竖版成片在「只限宽」时会被裁掉下半截。
+ * 两侧都限之后，宽图仍占满栏宽，竖图则等比缩到一整页高。
+ */
+img {
+  display: block;
+  max-width: 100%;
+  max-height: var(--content-height, 245mm);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  margin: 10pt auto;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* ---------- 列表 ---------- */
+
+ul,
+ol {
+  margin: 0 0 0.6em;
+  padding-left: 2em;
+}
+
+li {
+  margin: 0.2em 0;
+}
+
+li > ul,
+li > ol {
+  margin: 0.2em 0;
+}
+
+/* ---------- 目录（--toc） ---------- */
+
+.toc {
+  margin: 0 0 18pt;
+  padding: 0;
+  break-after: avoid-page;
+}
+
+.toc-title {
+  margin-top: 0;
+}
+
+.toc ol {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.toc li {
+  margin: 0.15em 0;
+}
+
+.toc li.toc-h3 {
+  padding-left: 1.6em;
+  font-size: 9.5pt;
+  color: var(--muted);
+}
+
+.toc ol {
+  font-size: 10pt;
+}
+
+/* ---------- 封面（--cover） ---------- */
+
+/*
+ * height 用 mm 而不是百分比：分页媒体里 section 没有可解析的确定高度，
+ * height:100% 会被当成 auto，flex 的垂直居中随之失效。
+ * 225mm 是 A4 与 Letter 都能安全容纳的值（改 --margin / --page-size 后
+ * 若留白过多，把这里调大即可）。
+ */
+.cover {
+  page: cover;
+  page-break-after: always;
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+  height: 225mm;
+  text-align: center;
+}
+
+.cover-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cover-title {
+  font-size: 30px;
+  color: var(--accent);
+  margin: 0 0 10px;
+  border: 0;
+  padding: 0;
+  line-height: 1.35;
+}
+
+.cover-subtitle {
+  font-size: 15px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.cover-meta {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 0.6pt solid var(--rule);
+  padding-top: 10pt;
+  display: inline-block;
+}
+
+/* 封面不排页眉页脚（由 md-to-pdf.mjs 生成的 @page cover 负责清空） */

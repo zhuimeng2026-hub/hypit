@@ -65,6 +65,9 @@ npm run check:distribution <tarball> # install + exercise the tarball outside th
 npm run pack:independent -- packages/<name>
 ```
 
+Root `package.json` wires `prepack` → `build:public-types`, so **any** `npm pack` triggers a full
+`dist/public/**/*.d.ts` rebuild first — not just the scripts above.
+
 The nine `npm run check:*-package` scripts (`check:author-packages`, `check:component-packages`,
 `check:hypihub-package`, `check:ranking-package`, `check:runtime-packages`, `check:seedance-package`,
 `check:visual-track-package`, `check:audio-track-package`, `check:fine-packages`) each verify one
@@ -129,8 +132,8 @@ Rename map from that commit (useful when reading older docs, issues or git histo
 
 `docs/guide/renderer-choice.md` is also stale for the same reason — it cites
 `packages/hyperframes/src/document.ts` and `packages/provider-hyperframes-local/src/capture.ts`. The
-same contracts now live at `packages/html-program/src/document.ts:752` and
-`packages/html-program/src/text.ts:1186` / `packages/provider-html-local/src/capture.ts`. The four
+same contracts now live at `packages/html-program/src/document.ts:750` and
+`packages/html-program/src/text.ts:1186` / `packages/provider-html-local/src/capture.ts:208`. The four
 C-category render blockers it describes (the per-seek `waitUntil` barrier, paused-CSS seek-and-cancel,
 the `VisualProgram` escape hatch, source-frame video slot injection) are all still real.
 
@@ -141,7 +144,7 @@ the current names off the code instead:
 |---|---|
 | `hf-seek` event (5 mentions) | `hypit-frame` — dispatched in-page by `frameProgramRuntime` (`html-program/src/document.ts:750`), not by the Renderer over CDP |
 | `packages/hyperframes/src/browser-program.ts` | `packages/html-program/src/html-visual.ts`; the `(root, data) => render(localFrame)` escape hatch is enforced there |
-| Renderer "dispatches `hf-seek`, awaits `detail.waitUntil`" | The page owns the loop. It exposes `window.__hypitFrameProgram.{prepare,applyFrame}` (`document.ts:755-760`); `capture.ts:205` calls `prepare()` once and `applyFrame` per frame. `waitUntil` is still the per-frame barrier contract — `applyFrame` dispatches, `await Promise.all(pending)`, then forces layout. |
+| Renderer "dispatches `hf-seek`, awaits `detail.waitUntil`" | The page owns the loop. It exposes `window.__hypitFrameProgram.{prepare,applyFrame}` (`document.ts:758-762`). `prepare()` is called once during worker init (`capture.ts:208`); the per-frame `applyFrame` is a **different file** — `provider-html-local/src/opaque-capture.ts:244`. `waitUntil` is still the per-frame barrier contract — `applyFrame` dispatches, `await Promise.all(pending)`, then forces layout. |
 
 So the *contract* CLAUDE.md and your memory record (per-seek `waitUntil` barrier) is intact; only the
 event name and the dispatch direction changed. Treat the four blockers as real, and grep for
@@ -168,6 +171,10 @@ hypit/
 `docs/guide/` is the maintained prose documentation and is current where the root CLAUDE.md used to
 be. Read `docs/guide/develop.md`, `packages.md`, `runtime.md`, `conventions.md`, `testing.md`,
 `component-anatomy.md`, `author-packages.md`, `providers.md` rather than re-deriving the model.
+The remaining files are narrower: `agents.md` + `skill.md` (the agent/Skill entry points),
+`studio-companion-architecture.md`, `studio-temporal-windows.md`, `service-partners.md`
+(deployment vendors), and `win10-internal-mirrors.md` (closed-LAN setup). Note that
+`renderer-choice.md` is the one file here that is **stale** — see the trap above.
 `docs/` and `docs/zh/` are side-by-side twins — a change to one belongs with the change to its
 counterpart, in the same commit.
 
@@ -386,8 +393,10 @@ export; that map is derived, not hand-maintained.
 ## Testing
 
 Node's built-in `node:test` — not Jest/Vitest/Mocha. Test files: `packages/<name>/test/**/*.test.ts`.
-`test/run.mjs` globs `packages/*/test/**` (211 files), `services/*/test/**`, `test/**`, and
-`examples/*/packages/*/test/**`, with `--test-timeout=120_000`.
+`test/run.mjs` globs `packages/*/test/**` (213 files), `services/*/test/**` (matches 0 — the
+WhisperX Python tests live under `packages/provider-whisperx-local/test/service/`, already inside
+the `packages/` glob), `test/**`, and
+`examples/*/packages/*/test/**` (3 files), with `--test-timeout=120_000`.
 
 **Admission rule** (`docs/guide/testing.md`): a test belongs in the default suite only when it
 protects an observable contract, an architectural boundary, or a failure mode that could corrupt work,

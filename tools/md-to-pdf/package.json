@@ -1,0 +1,17 @@
+{
+  "name": "hypit-md-to-pdf",
+  "version": "0.1.0",
+  "description": "Markdown → PDF via headless Chromium, with real @page margin-box headers/footers. Not part of the npm Distribution — see ../dub-server for the same convention.",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "md-to-pdf": "./md-to-pdf.mjs"
+  },
+  "scripts": {
+    "build": "node md-to-pdf.mjs ../../project.md ../../project.pdf --page-size a4 --title \"热点驱动 · 多平台视频矩阵流水线\" --author \"设计目标\" --cover --toc --header-text \"追梦成真 ｜ AI视频智能生产解决方案专家\" --footer-text \"第 {page} 页 ｜ 热点驱动 · 多平台视频矩阵流水线 · 系统设计 V1.0\""
+  },
+  "dependencies": {
+    "marked": "^18.1.0"
+  },
+  "license": "Apache-2.0"
+}
