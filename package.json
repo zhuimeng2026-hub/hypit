@@ -258,6 +258,7 @@
     "@hypit/gpt-image": "workspace:*",
     "@hypit/gpt-image-kits": "workspace:*",
     "@hypit/grok-imagine": "workspace:*",
+    "@hypit/html-document": "workspace:*",
     "@hypit/html-program": "workspace:*",
     "@hypit/image-operations": "workspace:*",
     "@hypit/interview-emoji-reveal": "workspace:*",
