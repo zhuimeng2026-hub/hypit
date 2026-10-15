@@ -1,0 +1,41 @@
+{
+  "_readme": "字幕时间轴 v2。事实源 —— subtitle.v2.ass 由 build_subs.py 从本文件生成。",
+  "_basis": "每张卡 = 一个【事实】，不是一段 slot。词级时间取自对成片的 WhisperX 转写，与 nar_tts.json 的 slot 对照后按音频实际落点重排。",
+  "_fixes": [
+    "修 slot/tts_dur 错位：n1 少说 2.68s，把后续全部前移 —— 这是 3.8s 滞后的根因，不是排版问题",
+    "补 3 张漏掉的卡：陈设43组天然太湖石 / 一步一景皆传奇 / 串连九重楼宇",
+    "调换 2 张卡的顺序：以进口柚木为主体 回到 汉白玉为柱础 之前，与旁白语序一致",
+    "最长停留 8.9s -> 5.0s；最短 0.9s -> 1.55s（抬下限，防止闪字）",
+    "论点句「一步一景，皆传奇」原本全片唯一不落字，现用 Thesis 样式独立成卡"
+  ],
+  "canvas": { "w": 1024, "h": 576 },
+  "narration_ground_truth": [
+    { "slot": "n0", "start": 7.34, "end": 12.60, "slot_len": 5.26, "tts_dur": 4.90, "text": "特邀香山帮非遗榫卯匠人，寻回古老苏式记忆，" },
+    { "slot": "n1", "start": 12.60, "end": 18.20, "slot_len": 5.60, "tts_dur": 2.92, "text": "复原传承千年的亭台楼榭。" },
+    { "slot": "n2", "start": 18.20, "end": 22.80, "slot_len": 4.60, "tts_dur": 5.51, "text": "全冠移植六百余株名木，陈设四十三组天然太湖石。" },
+    { "slot": "n3", "start": 22.80, "end": 28.80, "slot_len": 6.00, "tts_dur": 5.18, "text": "九十六块匾额取自唐诗宋词，一步一景皆传奇。" },
+    { "slot": "n4", "start": 32.88, "end": 37.60, "slot_len": 4.72, "tts_dur": 5.36, "text": "千米古典连廊以进口柚木为主体，汉白玉为柱础，" },
+    { "slot": "n5", "start": 37.60, "end": 41.86, "slot_len": 4.26, "tts_dur": 4.36, "text": "串连九重楼宇，营造完美归家动线美学。" }
+  ],
+  "cards": [
+    { "start": 3.40,  "end": 6.10,  "style": "Title",  "zh": "传颂东方人文雅致",   "yue": "傳頌東方人文雅致",   "speaks": null,       "fact": "片头题卡，无旁白" },
+    { "start": 7.30,  "end": 12.30, "style": "Body",   "zh": "香山帮非遗榫卯匠人", "yue": "香山幫非遺榫卯工匠", "speaks": "n0a",      "fact": "谁来做的" },
+    { "start": 12.45, "end": 15.20, "style": "Body",   "zh": "复原传承千年的亭台楼榭", "yue": "復原傳承咗千年嘅亭台樓榭", "speaks": "n1", "fact": "做了什么" },
+    { "start": 16.30, "end": 18.60, "style": "Body",   "zh": "全冠移植600余株名木", "yue": "全冠移植咗六百幾株名木", "speaks": "n2a",   "fact": "数字一" },
+    { "start": 18.80, "end": 21.60, "style": "Body",   "zh": "陈设43组天然太湖石",  "yue": "陳設咗四十三組天然太湖石", "speaks": "n2b",   "fact": "数字二（原本无字幕）" },
+    { "start": 23.10, "end": 26.80, "style": "Body",   "zh": "96块匾额取自唐诗宋词", "yue": "九十六塊匾額都係取自唐詩宋詞", "speaks": "n3a", "fact": "数字三" },
+    { "start": 26.90, "end": 29.20, "style": "Thesis", "zh": "一步一景，皆传奇",     "yue": "一步一景都係傳奇呀", "speaks": "n3b",   "fact": "论点句（原本无字幕）" },
+    { "start": 32.80, "end": 34.35, "style": "Body",   "zh": "千米古典连廊",        "yue": "千米長嘅古典連廊",  "speaks": "n4a",     "fact": "第二段·长度" },
+    { "start": 34.40, "end": 36.25, "style": "Body",   "zh": "以进口柚木为主体",    "yue": "以進口柚木做主體",  "speaks": "n4b",     "fact": "第二段·材质（原本排在柱础之后）" },
+    { "start": 36.30, "end": 38.20, "style": "Body",   "zh": "汉白玉为柱础",        "yue": "漢白玉做柱礎",      "speaks": "n4c",     "fact": "第二段·基座" },
+    { "start": 38.25, "end": 39.90, "style": "Body",   "zh": "串连九重楼宇",        "yue": "串連埋九重樓宇",    "speaks": "n5a",     "fact": "第二段·串联（原本无字幕）" },
+    { "start": 39.95, "end": 42.20, "style": "Body",   "zh": "营造完美归家动线美学", "yue": "營造完美嘅歸家動線美學", "speaks": "n5b",  "fact": "第二段·落点" }
+  ],
+  "tail": {
+    "current_end": 54.55,
+    "picture_fade_to_black_at": 47.90,
+    "endcard_visible": [48.5, 51.0],
+    "recommend_end": 51.20,
+    "note": "51.2s 保住约 2.7s 片尾卡，砍掉后面 3.35s 纯黑 + 近全静（-62~-88 dBFS）。"
+  }
+}

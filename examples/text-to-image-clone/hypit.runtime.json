@@ -1,0 +1,53 @@
+{
+  "format": "hypit.runtime-local@1",
+  "dataRoot": ".hypit/runtimes/local",
+  "credentials": {
+    "env": {
+      "use": "@hypit/credential-store-env"
+    }
+  },
+  "endpoints": {
+    "media.local": {
+      "use": "@hypit/media-local",
+      "config": {
+        "defaultConcurrency": 2
+      }
+    },
+    "minimax.local": {
+      "use": "@hypit/provider-minimax",
+      "config": {
+        "baseUrl": "https://api.minimaxi.com",
+        "apiKey": {
+          "store": "env",
+          "key": "MINIMAX_API_KEY"
+        },
+        "defaultConcurrency": 2,
+        "requestTimeoutMs": 180000,
+        "operationTimeoutMs": 600000
+      }
+    },
+    "whisperx.local": {
+      "use": "@hypit/provider-whisperx-local",
+      "config": {
+        "baseUrl": "http://127.0.0.1:8765",
+        "expectedModel": "small",
+        "expectedDevice": "cpu",
+        "expectedCompute": "int8",
+        "expectedBatchSize": 8,
+        "defaultConcurrency": 1
+      }
+    },
+    "html.local": {
+      "use": "@hypit/provider-html-local",
+      "config": {
+        "workers": 2,
+        "quality": "standard",
+        "defaultConcurrency": 1,
+        "chromePath": "/root/.cache/hypit/html-rasterizer/chrome/chrome-headless-shell/linux-152.0.7928.2/chrome-headless-shell-linux64/chrome-headless-shell"
+      }
+    }
+  },
+  "bindings": {
+    "@hypit/whisperx@1#whisperx-alignment": "whisperx.local"
+  }
+}

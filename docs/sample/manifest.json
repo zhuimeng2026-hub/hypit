@@ -1,0 +1,109 @@
+{
+  "_comment": "本目录放抽帧，也放视频副本。视频仅供客户演示，已由 .gitignore 挡住不进版本历史；唯一真源在 OpenMontage_Voicebox。",
+  "_update_20261013": {
+    "change": "原 _comment 写的是「只放抽帧，不放视频」，依据是下面 why_frames_not_video 那三条。用户 2026-10-13 决定视频要留在磁盘上——用途是给客户看演示，不是入库。",
+    "how_the_concern_is_handled": "在 /opt/hypit/.gitignore 加了 docs/sample/*.mp4（该文件现有 150+ 行同类输出忽略规则）。视频在磁盘上可随时演示，git add -A 也扫不进去，why_frames_not_video 的第一条因此不再成立。",
+    "staleness_caveat_still_true": "第三条仍然成立：根目录 crontab 每天 04:00 重跑 fix_kenburns_audio.py，会重写 audio_fixed/*.mp4 的音频编码。磁盘上这份副本不会跟着更新，要演示前请核对 source_video 的 mtime。"
+  },
+  "generated": "2026-10-13",
+  "why_frames_not_video": [
+    "42MB 视频一旦 git add 就进历史且永久留在对象库里，删不掉 —— 已用 .gitignore 解决",
+    "hypit 仓库 CLAUDE.md 明确：不要提交付费产出 —— 已用 .gitignore 解决",
+    "cron 每晚 04:00 重写音轨，复制过去的视频会悄悄过期而没人察觉 —— 仍然成立，见 _update_20261013"
+  ],
+  "loudness_spec": {
+    "integrated_lufs": -16.0,
+    "true_peak_dbtp": -1.0,
+    "note": "-16 是这批内容在不牺牲动态前提下共同能达到的最高值，不是按惯例选的。详见 OpenMontage_Voicebox/pipeline_defs/loudness.default.json"
+  },
+  "films": [
+    {
+      "key": "garden",
+      "title": "星河湾半岛五號《传奇园境 东方雅韵》",
+      "source_video": "/opt/OpenMontage_Voicebox/dw_video/_fix/v2_final.mp4",
+      "duration_s": 51.2,
+      "resolution": "1024x576",
+      "fps": 25,
+      "measured": {
+        "integrated_lufs": -15.9,
+        "true_peak_dbtp": -3.4,
+        "av_drift_ms": 0
+      },
+      "notes": [
+        "由 54.55s 交付母版重出：字幕 8 张 -> 12 张，时间轴全部按词级 ASR 推导",
+        "片尾 3.35s 死黑已裁，片尾卡补了音乐托底（原为 -62~-88 dBFS）",
+        "AI 生成的匾额汉字是乱码，未修 —— 需实拍素材"
+      ],
+      "caption_source": "./caps.v2.json"
+    },
+    {
+      "key": "west-announcer",
+      "title": "《传奇园境》西式建筑风格验证片 · 播报男声",
+      "source_video": "/opt/hypit/projects/west-style/audio_fixed/west_style_fixed.mp4",
+      "duration_s": 54.53,
+      "resolution": "1024x576",
+      "fps": 25,
+      "measured": {
+        "integrated_lufs": -16.0,
+        "true_peak_dbtp": -2.6
+      },
+      "notes": [
+        "20 张静帧 + zoompan Ken Burns 合成，不调任何生成模型，整片约 39s"
+      ],
+      "caption_source": "./west_style_character_v1.ass"
+    },
+    {
+      "key": "west-scholar",
+      "title": "《传奇园境》西式建筑风格验证片 · 温润男声",
+      "source_video": "/opt/hypit/projects/west-style/audio_fixed/west_style_scholar_fixed.mp4",
+      "duration_s": 54.53,
+      "resolution": "1024x576",
+      "fps": 25,
+      "measured": {
+        "integrated_lufs": -16.0,
+        "true_peak_dbtp": -2.1
+      },
+      "notes": [
+        "原本全片 12.7 秒是数字零（build.py 的'换音轨'参数吞掉了混音），已修",
+        "该版本从未有过带音乐的参照物，听感需人工确认",
+        "字幕复用园林片文案，与西式建筑画面并不匹配 —— 这是'复用版式重做素材'的已知代价"
+      ],
+      "caption_source": "./west_style_character_v1.ass"
+    },
+    {
+      "key": "boyfairy",
+      "title": "boy-fairy 角色替换演示片 · 女宝换男孩小精灵",
+      "source_video": "/opt/hypit/projects/boyfairy/final_boy.mp4",
+      "local_copy": "./boyfairy_character_swap_v1.mp4",
+      "duration_s": 54.44,
+      "resolution": "1024x576",
+      "fps": 25,
+      "measured": {
+        "integrated_lufs": -16.0,
+        "peak_dbtp": -2.9
+      },
+      "spec_status": "合格：-16.0 LUFS / 峰值 -2.9 dBTP。原为 -12.9 LUFS / +0.2 dBTP（亮 3.1 LU 且越过 0 dBFS），2026-10-13 在 plan.json 加 audio 段走两遍式归一后重出。",
+      "notes": [
+        "原片是星河湾半岛五號《传奇园境 东方雅韵》的 nosub 母版",
+        "定点替换 3 段共 13.92s（26.56-31.52 / 36.92-42.68 / 42.68-45.88），源片与成片时长同为 54.698667s，一帧不差",
+        "替换素材用 MiniMax image-01 首帧 + I2V 生成，再用 ffmpeg 按原时间码回填",
+        "三段替换素材里的男孩形象不完全一致（发色、服装有差异），受限于生成模型未采用参考图",
+        "原角色在未替换的 14.28s 里仍出镜，本片是加工演示，刻意保留供对比",
+        "音频归一由 plan.json 的 audio 段驱动（narration 指向源片自身，只做响度归一不改内容），splice.py 重跑即可复现"
+      ],
+      "doc": "/opt/hypit/projects/boyfairy/client_doc/角色替换加工说明.md"
+    }
+  ],
+  "regenerate": {
+    "caption_plan": "python3 /opt/OpenMontage_Voicebox/scripts/caption_rewrite.py plan <video> --facts <facts.json> --script <narration.txt> -o plan.json",
+    "build": "python3 /opt/OpenMontage_Voicebox/scripts/caption_rewrite.py build <video> --plan plan.json -o out.mp4",
+    "normalize": "python3 /opt/OpenMontage_Voicebox/scripts/caption_rewrite.py normalize in.mp4 -o out.mp4",
+    "verify": "python3 /opt/OpenMontage_Voicebox/scripts/caption_rewrite.py verify out.mp4",
+    "audio_fix_cron": "0 4 * * * cd /opt/hypit/projects/west-style && python3 -I scripts/fix_kenburns_audio.py",
+    "refetch_frames": "对每条片子取 4%~96% 之间等距 8 帧，scale=640:-2 -q:v 3"
+  },
+  "open_questions": [
+    "西式两条的音乐是用原片混音凑的（音乐原曲不在仓库），需试听确认",
+    "园林片的 AI 匾额乱码需实拍素材才能修，生成解决不了"
+  ]
+}

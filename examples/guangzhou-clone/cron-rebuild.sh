@@ -87,7 +87,14 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     | python3 -c 'import json,sys
 try:
   j=json.load(sys.stdin)
-  print(j.get("state") or j.get("outcome") or "")
+  # ⚠️ `status --json` 的字段都在 build 对象下面，顶层只有 format/build。
+  #    2026-10-11/12 连着两天读顶层，STATE 恒为空串 → 空转满 45 分钟 →
+  #    落到 case 的 * 分支，把已经构建成功的成片当失败丢弃。
+  #    work.outcome 优先（它是终态判定），其次 result.state，最后 work.state。
+  b=j.get("build") or {}
+  w=b.get("work") or {}
+  r=b.get("result") or {}
+  print(w.get("outcome") or r.get("state") or w.get("state") or "")
 except Exception:
   print("")')
   echo "  $(date +%H:%M:%S) state=$STATE" >> "$LOG"

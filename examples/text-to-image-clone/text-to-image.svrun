@@ -1,0 +1,6 @@
+<?svml using="@hypit/markup/run@1"?>
+
+<svrun version="1">
+  <author source="./text-to-image.svml"/>
+  <target output="text-to-image-final.video"/>
+</svrun>

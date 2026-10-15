@@ -148,3 +148,19 @@ services/whisperx/**/.tmp-*.wav
 
 # 参考用第三方文档：佛山华远筑业《混凝土屋面漏水修缮方案》，非本项目资产
 /混凝土屋面漏水修缮方案.pdf
+
+# 客户演示视频：磁盘上保留供演示，但绝不进 git 历史
+# 24MB 付费产出一旦 add 就永久留在对象库，删不掉；git rm 只删工作区副本。
+# 2026-10-13 用户决定保留（docs/sample/manifest.json 记录了这次推翻的理由）
+docs/sample/*.mp4
+
+# 业务项目目录：每个客户/项目一个子目录，自带 package.json + hypit.runtime.json
+# 按惯例不入 git——源视频、构建产物和付费生成素材体积大且每项目独立，
+# 仓库只留 SDK/packages/examples。需要版本化时在各自目录里另开仓库。
+/projects/
+
+# 迁移进来的既有工程（仍在被另一个会话使用，暂不移动，只先排除）
+/work/
+
+# examples/text-to-image-clone 的成片：付费文生图产物，与 docs/sample/*.mp4 同理
+/examples/text-to-image-clone/out/

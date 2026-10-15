@@ -1,0 +1,15 @@
+<?svml using="@hypit/recipe@1"?>
+
+<sheet version="1">
+  /* One recipe: a black backdrop behind the portrait canvas. The picture
+     fills the frame edge to edge (`fit="cover"` on every Clip below), so
+     the backdrop is only visible during a cut. Kept from gz-exbi-en,
+     whose unused media.cover/cover-2…cover-8 group was dropped in the
+     same migration that moved stack-order and fit onto the Clip.
+
+     Note: <sheet> closes implicitly at </sheet> — an explicit `}` before
+     the closing tag is a parse error ("Expected a dotted recipe path"). */
+  film.vertical {
+    background: #000000;
+  }
+</sheet>

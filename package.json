@@ -266,6 +266,7 @@
     "@hypit/media-operations": "workspace:*",
     "@hypit/mimo-speech": "workspace:*",
     "@hypit/minimax-h3": "workspace:*",
+    "@hypit/minimax-image": "workspace:*",
     "@hypit/nano-banana": "workspace:*",
     "@hypit/narrative": "workspace:*",
     "@hypit/narrative-caption": "workspace:*",
@@ -317,12 +318,14 @@
     "@hypit/caption-fine": "workspace:*",
     "@hypit/film": "workspace:*",
     "@hypit/provider-hypihub": "workspace:*",
+    "@hypit/provider-minimax": "workspace:*",
     "@hypit/seedance": "workspace:*",
     "@hypit/seedance-kits": "workspace:*",
     "@hypit/script": "workspace:*",
     "@hypit/text-fine": "workspace:*",
     "@hypit/timeline-author": "workspace:*",
-    "@hypit/visual-track": "workspace:*"
+    "@hypit/visual-track": "workspace:*",
+    "@hypit/minimax-hailuo": "workspace:*"
   },
   "dependencies": {
     "@hypit/browser-capture": "workspace:^0.2.0",

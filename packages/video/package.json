@@ -35,6 +35,7 @@
     "@hypit/media-operations": "workspace:^0.2.0",
     "@hypit/mimo-speech": "workspace:^0.2.0",
     "@hypit/minimax-h3": "workspace:^0.2.0",
+    "@hypit/minimax-image": "workspace:^0.1.0",
     "@hypit/nano-banana": "workspace:^0.2.0",
     "@hypit/narrative": "workspace:^0.1.0",
     "@hypit/narrative-caption": "workspace:^0.1.0",
@@ -42,6 +43,7 @@
     "@hypit/pixverse": "workspace:^0.2.0",
     "@hypit/provider-html-local": "workspace:^0.2.0",
     "@hypit/provider-hypihub": "workspace:^0.2.0",
+    "@hypit/provider-minimax": "workspace:^0.1.0",
     "@hypit/provider-image-opencv-local": "workspace:^0.2.0",
     "@hypit/provider-whisperx-local": "workspace:^0.2.0",
     "@hypit/region-evidence": "workspace:^0.1.0",
@@ -58,7 +60,8 @@
     "@hypit/timeline-author": "workspace:^0.2.0",
     "@hypit/visual-track": "workspace:^0.2.0",
     "@hypit/volcengine-matting": "workspace:^0.2.0",
-    "@hypit/wan": "workspace:^0.2.0"
+    "@hypit/wan": "workspace:^0.2.0",
+    "@hypit/minimax-hailuo": "workspace:^0.1.0"
   },
   "peerDependencies": {
     "@hypit/hypit": "workspace:^0.3.1"
