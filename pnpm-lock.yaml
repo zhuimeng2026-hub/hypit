@@ -120,6 +120,9 @@ importers:
       '@hypit/grok-imagine':
         specifier: workspace:*
         version: link:packages/grok-imagine
+      '@hypit/html-document':
+        specifier: workspace:*
+        version: link:packages/html-document
       '@hypit/html-program':
         specifier: workspace:*
         version: link:packages/html-program
@@ -1268,6 +1271,30 @@ importers:
       '@hypit/text':
         specifier: workspace:*
         version: link:../text
+
+  packages/html-document:
+    dependencies:
+      '@hypit/composition':
+        specifier: workspace:^0.1.0
+        version: link:../composition
+      '@hypit/html-program':
+        specifier: workspace:^0.1.0
+        version: link:../html-program
+      '@hypit/hypit':
+        specifier: workspace:^0.3.1
+        version: link:../..
+      '@hypit/media-operations':
+        specifier: workspace:^0.2.0
+        version: link:../media-operations
+      '@hypit/temporal':
+        specifier: workspace:^0.1.0
+        version: link:../temporal
+      '@hypit/timeline':
+        specifier: workspace:^0.1.0
+        version: link:../timeline
+      linkedom:
+        specifier: 0.18.13
+        version: 0.18.13
 
   packages/html-program:
     dependencies:
@@ -2733,6 +2760,9 @@ importers:
       '@hypit/grok-imagine':
         specifier: workspace:^0.2.0
         version: link:../grok-imagine
+      '@hypit/html-document':
+        specifier: workspace:^0.1.0
+        version: link:../html-document
       '@hypit/html-program':
         specifier: workspace:^0.1.0
         version: link:../html-program
